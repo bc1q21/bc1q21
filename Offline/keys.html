@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mnemonic to WIF</title>
+</head>
+<body>
+  <h1>12-word Seed to WIF</h1>
+  <textarea id="mnemonic" rows="3" cols="60">tide theme twin express youth neutral camp breeze marriage oak business fatigue</textarea><br>
+  <button id="convertBtn">Convert to WIF</button>
+  <pre id="output"></pre>
+
+  <script type="module">
+    import * as bip39 from 'https://cdn.jsdelivr.net/npm/@scure/bip39@1.6.0/+esm';
+    import { HDKey } from 'https://cdn.jsdelivr.net/npm/@scure/bip32@1.7.0/+esm';
+    import { wordlist as english } from './scure.wordlist.english.js';
+    import { ripemd160 } from 'https://esm.sh/@noble/hashes@1.3.0/ripemd160';
+    import { sha256 } from 'https://esm.sh/@noble/hashes@1.3.0/sha256';
+    import * as bech32 from 'https://cdn.jsdelivr.net/npm/bech32@2.0.0/+esm';
+
+
+    async function base58checkEncode(payload) {
+      const checksum = await sha256(await sha256(payload));
+      const full = new Uint8Array(payload.length + 4);
+      full.set(payload);
+      full.set(checksum.subarray(0, 4), payload.length);
+      return base58Encode(full);
+    }
+
+    async function getLegacyAddress(pubkey) {
+      const pubHash = ripemd160(sha256(pubkey));
+      const versionedPayload = new Uint8Array(pubHash.length + 1);
+      versionedPayload[0] = 0x00; // mainnet prefix for P2PKH
+      versionedPayload.set(pubHash, 1);
+      return await base58checkEncode(versionedPayload);
+    }
+
+    function getSegwitAddress(pubkey) {
+      const pubHash = ripemd160(sha256(pubkey));
+      const words = bech32.bech32.toWords(pubHash);  // ✅ FIXED
+      words.unshift(0x00); // witness version 0
+      return bech32.bech32.encode('bc', words); // Bitcoin mainnet prefix
+    }
+
+    function toBech32Address(pubkey) {
+      const pubkeyHash = sha256(pubkey); // Actually should be: hash160 (sha256 + ripemd160)
+      //const ripemd160 = await import('https://cdn.jsdelivr.net/npm/@noble/hashes@1.3.0/ripemd160');
+      const hash160 = ripemd160(pubkeyHash);
+      const words = bech32.bech32.toWords(hash160);
+      words.unshift(0x00); // witness version 0
+      return bech32.bech32.encode('bc', words);
+    }
+
+
+    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    function base58Encode(buffer) {
+      let digits = [0];
+      for (const byte of buffer) {
+        let carry = byte;
+        for (let j = 0; j < digits.length; ++j) {
+          carry += digits[j] << 8;
+          digits[j] = carry % 58;
+          carry = (carry / 58) | 0;
+        }
+        while (carry) {
+          digits.push(carry % 58);
+          carry = (carry / 58) | 0;
+        }
+      }
+      let result = '';
+      for (const byte of buffer) {
+        if (byte === 0) result += '1';
+        else break;
+      }
+      return result + digits.reverse().map(d => ALPHABET[d]).join('');
+    }
+
+    function toHex(uint8array) {
+      return Array.from(uint8array)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+
+    document.getElementById('convertBtn').addEventListener('click', async () => {
+      const mnemonic = document.getElementById('mnemonic').value.trim();
+
+      console.log('Mnemonic:', JSON.stringify(mnemonic));
+
+      if (!bip39.validateMnemonic(mnemonic, english)) {
+        document.getElementById('output').textContent = '❌ Invalid mnemonic';
+        return;
+      }
+
+      const seed = await bip39.mnemonicToSeed(mnemonic);
+      const root = HDKey.fromMasterSeed(seed);
+      const child = root.derive("m/44'/0'/0'/0/0");
+
+      if (!child.privateKey) {
+        document.getElementById('output').textContent = '❌ Failed to derive private key.';
+        return;
+      }
+
+      const extended = new Uint8Array(child.privateKey.length + 2);
+      extended[0] = 0x80; // version byte
+      extended.set(child.privateKey, 1);
+      extended[child.privateKey.length + 1] = 0x01; // compressed flag
+
+      const wif = await base58checkEncode(extended);
+
+      const pubkeyHex = toHex(child.publicKey);
+
+      document.getElementById('output').textContent = '✅ WIF:\n' + wif +  '\n✅ pubkeyHex:\n' + pubkeyHex;
+
+      const legacyAddress = await getLegacyAddress(child.publicKey);
+      const segwitAddress = getSegwitAddress(child.publicKey);
+      const xpub = root.derive("m/44'/0'/0'").publicExtendedKey;
+
+      //common derivation path
+      const account = root.derive("m/84'/0'/0'");
+      const extPubKey = account.publicExtendedKey;
+
+      const firstAddressKey = account.deriveChild(0).deriveChild(0); // m/84'/0'/0'/0/0
+      const bech32Address = await toBech32Address(firstAddressKey.publicKey);
+      //console.log("First bech32 address:", bech32Address);
+
+      const secondAddressKey = account.deriveChild(0).deriveChild(1); // m/84'/0'/0'/0/1
+      const bech32Address2 = await toBech32Address(secondAddressKey.publicKey);
+      //console.log("Second bech32 address:", bech32Address2);
+
+
+      document.getElementById('output').textContent +=
+        '\n\n🏠 Legacy (P2PKH) address:\n' + legacyAddress +
+        '\n\n💫 SegWit (bech32) address:\n' + segwitAddress +
+        '\n\n📤 XPUB:\n' + xpub +
+        '\n\n1st bech32 address:\n' + bech32Address +
+        '\n\n2nd bech32 address:\n' + bech32Address2;
+
+    });
+  </script>
+</body>
+</html>

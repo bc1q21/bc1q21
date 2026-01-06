@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sign CLTV Transaction</title>
+    <script type="text/javascript" src="coinbin/js/crypto-min.js"></script>
+    <script type="text/javascript" src="coinbin/js/crypto-sha256.js"></script>
+    <script type="text/javascript" src="coinbin/js/crypto-sha256-hmac.js"></script>
+    <script type="text/javascript" src="coinbin/js/sha512.js"></script>
+    <script type="text/javascript" src="coinbin/js/ripemd160.js"></script>
+    <script type="text/javascript" src="coinbin/js/aes.js"></script>
+
+    <script type="text/javascript" src="coinbin/js/jsbn.js"></script>
+    <script type="text/javascript" src="coinbin/js/ellipticcurve.js"></script>
+    <script type="text/javascript" src="coinbin/js/coin.js"></script>
+  <script>
+  function signCltvTransaction(unsignedTxHex, wif, redeemScript) {
+      try {
+            const tx = coinjs.transaction();
+            const txUnserialized = tx.deserialize(unsignedTxHex);
+            console.log("signCltvTransaction unsignedTxHex:", unsignedTxHex);
+            console.log("signCltvTransaction wif:", wif);
+
+            if (!txUnserialized || !txUnserialized.ins || txUnserialized.ins.length === 0) {
+            throw new Error("Invalid or empty transaction inputs.");
+            }
+
+            const signedTx = txUnserialized.signhodl(0, wif, 1);
+            const output = txUnserialized.serialize();
+            console.log("signCltvTransaction output", output);
+            console.log("signCltvTransaction output.size", txUnserialized.size());
+            return output;
+        } catch (err) {
+            console.error("Error signing CLTV transaction:", err);
+            return "Error: " + err.message;
+        }
+    }
+
+    function signCltvTransaction2(unsignedTxHex, wif, redeemScript) {
+      try {
+        const tx = coinjs.transaction();
+        const txUnserialized = tx.deserialize(unsignedTxHex);
+        const signedTx = txUnserialized.signhodl(wif, redeemScript, 0);
+        return signedTx;
+      } catch (err) {
+        console.error("Error signing CLTV transaction:", err);
+        return "Error: " + err;
+      }
+    }
+
+    function runSigning() {
+      const wif = document.getElementById('wif').value.trim();
+      const unsignedTx = document.getElementById('unsigned').value.trim();
+      const redeemScript = document.getElementById('redeem').value.trim();
+
+      const result = signCltvTransaction(unsignedTx, wif, redeemScript);
+      document.getElementById('signed').value = result;
+    }
+  </script>
+</head>
+<body>
+  <h3>WIF Private Key</h3>
+  <input type="text" id="wif" style="width:100%" value="KyfmgdQxPZC3p852dbxgYuZNRE288rzvS6ToCprdenSnn7dypLjL">
+
+  <h3>Unsigned Transaction (Hex)</h3>
+  <textarea id="unsigned" rows="5" style="width:100%">0100000001e5411ef7620c7d8737c8451588b783c286a8e1406e9c91a5ec9fa9a10df974bb000000002a04a0736568b1752103c31a6f54710b24b32c030ffed5af93ba7d5151c95febf9e0aad9fc069a7b070eacfdffffff01f808000000000000160014f096e98b23076a776b59a3b158f5a1ee49b084d1a0736568</textarea>
+
+  <h3>Redeem Script (Hex)</h3>
+  <input type="text" id="redeem" style="width:100%" value="04a0736568b1752103c31a6f54710b24b32c030ffed5af93ba7d5151c95febf9e0aad9fc069a7b070eac">
+
+  <br><br>
+  <button onclick="runSigning()">Sign Transaction</button>
+
+  <h3>Signed Transaction (Hex)</h3>
+  <textarea id="signed" rows="5" style="width:100%"></textarea>
+</body>
+</html>

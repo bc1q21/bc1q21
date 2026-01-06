@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Broadcast Transaction · EverTrust</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --border: #444;
+      --text: #ffffff;
+      --muted: #cccccc;
+      --accent: #f7931a;
+      --accent-hover: #e68200;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 1.25rem;
+      background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      display: flex; flex-direction: column; align-items: center;
+    }
+    header { width: 100%; max-width: 720px; }
+    h1 { margin: 0 0 .5rem 0; font-size: 1.6rem; }
+    p.sub { margin: 0 0 1rem 0; color: var(--muted); }
+    .card {
+      width: 100%; max-width: 720px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    label { display: block; margin: .5rem 0 .25rem; color: #ddd; font-size: .95rem; }
+    textarea {
+      width: 100%; min-height: 180px; resize: vertical;
+      background: #1a1a1a; color: #fff; border: 1px solid var(--border);
+      border-radius: 8px; padding: .75rem; font-family: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      line-height: 1.35; font-size: .92rem;
+    }
+    button {
+      margin-top: .75rem; padding: .7rem 1.2rem; font-weight: 700; font-size: 1rem;
+      background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer;
+    }
+    button:hover { background: var(--accent-hover); }
+    .row { display: flex; gap: .75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .muted { color: var(--muted); font-size: .9rem; }
+    .out {
+      background: #1a1a1a; border: 1px solid var(--border);
+      border-radius: 8px; padding: .75rem; margin-top: .75rem;
+      font-family: "Courier New", ui-monospace, Menlo, Consolas, monospace; word-break: break-all;
+    }
+    .ok { border-left: 4px solid #2d7d2d; }
+    .err { border-left: 4px solid #7d2d2d; }
+    .badge {
+      display: inline-block; padding: .2rem .5rem; border-radius: 999px; font-size: .8rem; font-weight: 700;
+      background: #2a2a2a; border: 1px solid var(--border); color: #ddd;
+    }
+    footer { opacity: .7; margin-top: 1.25rem; font-size: .85rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Broadcast Signed Transaction</h1>
+    <p class="sub">Paste your fully signed Bitcoin transaction (hex) and submit. Your node will broadcast it and return the transaction ID.</p>
+  </header>
+
+  <section class="card">
+    <div class="row">
+      <div class="badge">Mainnet</div>
+      <div class="muted">Powered by your node</div>
+    </div>
+
+    <label for="txhex">Signed Transaction (hex)</label>
+    <textarea id="txhex" placeholder="010000000001..."></textarea>
+
+    <button id="btnSend">Broadcast Transaction</button>
+
+    <div id="result" class="out" style="display:none;"></div>
+  </section>
+
+  <footer>
+    Tip: If you get a “non-final” or “non-mandatory-script-verify” error, check locktime/sequence and script correctness.
+  </footer>
+
+  <script>
+    const endpoint = "/bitcoin/sendrawtransaction"; // same-origin FastAPI or proxied via nginx
+
+    function showResult(ok, text) {
+      const el = document.getElementById("result");
+      el.style.display = "block";
+      el.className = "out " + (ok ? "ok" : "err");
+      el.textContent = text;
+    }
+
+    document.getElementById("btnSend").addEventListener("click", async () => {
+      const hex = (document.getElementById("txhex").value || "").trim();
+
+      if (!hex) {
+        showResult(false, "Please paste a signed transaction hex.");
+        return;
+      }
+      if (/[^0-9a-fA-F]/.test(hex)) {
+        showResult(false, "Transaction hex contains invalid characters.");
+        return;
+      }
+      // Basic even-length check
+      if (hex.length % 2 !== 0) {
+        showResult(false, "Transaction hex must have an even number of characters.");
+        return;
+      }
+
+      showResult(true, "Broadcasting…");
+
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hex })
+        });
+
+        const data = await res.json();
+        if (data.txid) {
+          showResult(true, "Broadcast OK. TXID: " + data.txid);
+        } else if (data.error) {
+          showResult(false, "Broadcast failed: " + data.error);
+        } else {
+          showResult(false, "Unexpected response from server.");
+        }
+      } catch (e) {
+        showResult(false, "Network or server error: " + e.message);
+      }
+    });
+  </script>
+</body>
+</html>

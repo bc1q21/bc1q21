@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>bc1q21 • Gifting Wizard</title>
+
+  <!-- UI libs -->
+  <script src="static/collapse.min.js" defer></script>
+  <script src="static/alpine.min.js" defer></script>
+  <link rel="stylesheet" href="static/pico.min.css" />
+
+  <link rel="stylesheet" href="static/style.css" />
+</head>
+
+<body>
+  <main class="container" x-data="giftWizard()">
+    <header class="brand">
+      <img src="static/img/bc1q21-logo.png" alt="bc1q21 logo" onerror="this.style.display='none'"><br>
+      <div>
+        <h1>Gifting Wizard</h1>
+        <!-- <small class="muted">Simple, time-locked Bitcoin gifts</small> -->
+      </div>
+    </header>
+
+    <!-- CIRCLE STEPPER -->
+    <div class="stepper-wrap" x-data>
+      <div class="stepper">
+        <div class="progress" :style="`width:${(navigationState.stepGroup-1)/3*100}%`"></div>
+
+        <div class="step"
+          :class="navigationState.stepGroup>1 ? 'done' : (navigationState.stepGroup===1 ? 'active' : '')">
+          <div class="bubble">1</div>
+          <div class="label">Plan</div>
+        </div>
+        <div class="step"
+          :class="navigationState.stepGroup>2 ? 'done' : (navigationState.stepGroup===2 ? 'active' : '')">
+          <div class="bubble">2</div>
+          <div class="label">Recovery</div>
+        </div>
+        <div class="step"
+          :class="navigationState.stepGroup>3 ? 'done' : (navigationState.stepGroup===3 ? 'active' : '')">
+          <div class="bubble">3</div>
+          <div class="label">Add Funds</div>
+        </div>
+        <div class="step" :class="navigationState.stepGroup===4 ? 'active' : ''">
+          <div class="bubble">4</div>
+          <div class="label">Finish</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION HEADER BAR -->
+    <div class="section-bar">
+      <h2 x-text="
+  navigationState.currentStep === 'welcome' ? 'Welcome' :
+  navigationState.stepGroup===1 ? 'Plan Your Gift' :
+  navigationState.stepGroup===2 ? 'Your Recovery Words' :
+  navigationState.stepGroup===3 ? 'Add Funds & Create Gift Addresses' :
+  'Finish & Share' "></h2>
+
+      <strong x-show="navigationState.currentStep !== 'welcome'">&nbsp; (Step <span
+          x-text="navigationState.stepGroup"></span>
+        of 4)</strong>
+
+      <!-- New: context help link (opens in new tab) -->
+      <a x-show="getHelpUrl()" :href="getHelpUrl()" target="_blank" rel="noopener" class="help-link"
+        title="Open help video for this step" style="margin-left:auto;">Help</a>
+
+    </div>
+
+    <!-- ==== STEP GROUP 1: PLAN ==== -->
+    <div class="card" x-show="navigationState.stepGroup===1" x-cloak>
+      <!-- STEP 0: Welcome -->
+      <template x-if="navigationState.currentStep==='welcome'">
+        <article>
+          <div class="callout small">
+            <strong>Security pledge:</strong> Your recovery words never leave this browser. We can't change the amount,
+            the date, or the destination of your gift.
+          </div>
+
+          <p class="small muted">In this short setup you will:</p>
+          <ul>
+            <li>Pick dates and amounts.</li>
+            <li>We build time-locked addresses you can fund.</li>
+            <li>You keep the keys.</li>
+          </ul>
+          <p class="small muted">Service fee: 1,000 sats + 250 sats per each additional date.</p>
+          <p class="small muted">You must review and accept the Liability Disclaimer below before continuing. You cannot
+            access the application without confirming that you have read and accepted these terms.</p>
+          <div style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; margin:0.5rem 0; height:420px;">
+            <iframe src="https://www.bc1q21.com/doc/bc1q21_disclaimers.pdf" title="Liability Disclaimer"
+              style="width:100%; height:100%;" frameborder="0"></iframe>
+          </div>
+          <label class="small muted" style="display:flex; gap:.5rem; align-items:center; margin-top:.5rem;">
+            <input type="checkbox" x-model="disclaimerAccepted" style="min-width: 20px;">
+            <span>I confirm that I have read, understand, and accept the <a
+                href="https://www.bc1q21.com/doc/bc1q21_disclaimers.pdf" target="_blank" rel="noopener">Liability
+                Disclaimer</a>, and I assume all risks associated with using this application.</span>
+          </label>
+        </article>
+      </template>
+
+      <!-- STEP 1: Plan basics -->
+      <template x-if="navigationState.currentStep==='start'">
+        <article>
+          <p class="small muted">Enter the total in:</p>
+
+          <div class="row-2" style="margin:.25rem 0 1rem">
+            <div class="actions unit-toggle" role="group" aria-label="Amount unit">
+              <button type="button" :class="amountUnit==='BTC' ? 'btn-primary' : 'btn-outline'"
+                :aria-pressed="amountUnit==='BTC'" @click="setUnit('BTC')">BTC</button>
+              <button type="button" :class="amountUnit==='USD' ? 'btn-primary' : 'btn-outline'"
+                :aria-pressed="amountUnit==='USD'" @click="setUnit('USD')">USD</button>
+            </div>
+          </div>
+
+          <div class="row-2">
+            <!-- BTC mode -->
+            <template x-if="amountUnit==='BTC'">
+              <div>
+                <label>Total gift amount</label>
+                <div class="input-addon">
+                  <span class="addon">BTC</span>
+                  <input type="number" min="0" step="0.00001" x-model.number="btcAmount" @input="updateFromBTC()"
+                    placeholder="e.g. 0.25" required>
+                </div>
+              </div>
+            </template>
+
+            <!-- USD mode -->
+            <template x-if="amountUnit==='USD'">
+              <div>
+                <label>Total gift amount</label>
+                <div class="input-addon">
+                  <span class="addon">$</span>
+                  <input type="number" min="0" step="1" x-model.number="usdAmount" @input="updateFromUSD()"
+                    placeholder="e.g. 27500" required>
+                </div>
+              </div>
+            </template>
+
+            <div class="result-line" style="margin-top:.75rem" aria-live="polite">
+              <span>≈</span>
+              <strong x-show="amountUnit==='BTC'" x-text="formatUSD(usdAmount || 0)"></strong>
+              <strong x-show="amountUnit==='USD'"
+                x-text="(btcAmount ? btcAmount.toFixed(8) : '0.0000') + ' BTC'"></strong>
+              <span class="small muted" x-show="!priceManager.currentPrice">Set a price to calculate.</span>
+            </div>
+          </div>
+        </article>
+      </template>
+
+      <!-- one vs multiple -->
+      <template x-if="navigationState.currentStep==='gift_type'">
+        <article>
+          <h3>How would you like to give?</h3>
+          <div class="actions">
+            <button type="button" :class="giftType==='one' ? 'btn-primary' : 'btn-outline'"
+              @click="giftType='one'; navigateToStep('one_time_claim_date')">One-time
+              gift</button>
+            <button type="button" :class="giftType==='multiple' ? 'btn-primary' : 'btn-outline'"
+              @click="giftType='multiple'; navigateToStep('schedule_duration')">Multiple
+              dates</button>
+          </div>
+
+          <p class="small muted">Service fee: 1,000 sats for one-time, or 250 sats per each additional date.</p>
+        </article>
+      </template>
+
+      <!-- one-time: single unlock date -->
+      <template x-if="navigationState.currentStep==='one_time_claim_date'">
+        <article>
+          <label>
+            First day they can claim
+            <input type="date" x-model="claimDate" required>
+          </label>
+          <p class="small muted">Before this date, the gift can't move. On or after this date, it can be claimed.</p>
+        </article>
+      </template>
+
+      <!-- duration -->
+      <template x-if="navigationState.currentStep==='schedule_duration'">
+        <article>
+          <div class="grid-2">
+            <label>
+              How many times?
+              <input type="number" min="1" step="1" x-model.number="periodCount" placeholder="e.g. 12" required>
+            </label>
+            <fieldset>
+              <legend>How often?</legend>
+              <label><input type="radio" name="ptype" value="monthly" x-model="periodType"> Monthly</label>
+              <label><input type="radio" name="ptype" value="yearly" x-model="periodType"> Yearly</label>
+            </fieldset>
+          </div>
+          <label>
+            First date
+            <input type="date" x-model="firstPayment" required>
+          </label>
+        </article>
+      </template>
+
+      <!-- equal or not -->
+      <template x-if="navigationState.currentStep==='equal_payouts'">
+        <article>
+          <h3>Do you want each gift to be the same BTC amount?</h3>
+          <div class="actions">
+            <button type="button" :class="equal===true ? 'btn-primary' : 'btn-outline'"
+              @click="equal=true; buildEqualTable();  navigateToStep('prefilled_equal_table')">Yes, same BTC each
+              time</button>
+            <button type="button" :class="equal===false ? 'btn-primary' : 'btn-outline'"
+              @click="equal=false; navigateToStep('schedule_or_manual')">No, different
+              amounts</button>
+          </div>
+        </article>
+      </template>
+
+      <!-- equal table -->
+      <template x-if="navigationState.currentStep==='prefilled_equal_table'">
+        <article>
+          <h4>Your gift plan</h4>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Date</th>
+                  <th>BTC</th>
+                  <th>USD*</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(row, i) in scheduleRows" :key="i">
+                  <tr>
+                    <td x-text="i+1"></td>
+                    <td x-text="row.date"></td>
+                    <td class="mono" x-text="row.btc.toFixed(8)"></td>
+                    <td class="mono" x-text="formatUSD(row.usd)"></td>
+                  </tr>
+                </template>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2">Totals</td>
+                  <td class="mono" x-text="totalBTC().toFixed(8)"></td>
+                  <td class="mono" x-text="formatUSD(totalUSD())"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <p class="small muted">* Based on today's price.</p>
+        </article>
+      </template>
+
+      <!-- choose helper or manual — Select + Continue pattern -->
+      <template x-if="navigationState.currentStep==='schedule_or_manual'">
+        <article>
+          <h3>How should we set the amounts?</h3>
+          <div class="options-grid" role="radiogroup" aria-label="Amount setting options">
+            <!-- Manual entry -->
+            <label class="option-card" :class="{selected: amountStrategy==='manual'}">
+              <input type="radio" name="amt_strategy" value="manual" x-model="amountStrategy">
+              <h4>I'll set amounts myself</h4>
+              <p class="small muted">Type the exact BTC to send on each date.</p>
+              <details class="learn">
+                <summary>Learn more</summary>
+                <p class="small muted">You enter one line per date (YYYY-MM-DD, BTC). We'll build addresses that can
+                  only move on or after each date.</p>
+              </details>
+            </label>
+
+            <!-- Suggest amounts -->
+            <label class="option-card" :class="{selected: amountStrategy==='suggest'}">
+              <input type="radio" name="amt_strategy" value="suggest" x-model="amountStrategy">
+              <div class="meta">
+                <h4>Let bc1q21 suggest amounts</h4>
+                <span class="pill small">Advanced</span>
+              </div>
+              <p class="small muted">Keeps dates roughly even in USD using your price guess.</p>
+            </label>
+
+          </div>
+        </article>
+      </template>
+      <!-- Price projection (optional) -->
+      <template x-if="navigationState.currentStep === 'btc_value_projection'">
+        <article>
+          <h4>Optional: growth guess</h4>
+          <p class="small muted">
+            Enter an estimated yearly growth % for the value of Bitcoin. It's just a guess, leave it blank if you’re not
+            sure.
+            This won't change your total BTC gift.
+          </p>
+
+          <label>
+            Average annual growth (%, optional)
+            <div style="display:flex; gap:.5rem; align-items:center; max-width:36rem;">
+              <input type="number" min="0" step="0.1" x-model.number="growthPct" placeholder="e.g. 8" style="flex:1;">
+              <div style="display:flex; gap:.25rem;">
+                <button type="button" class="btn-chip" @click="growthPct = 0">0%</button>
+                <button type="button" class="btn-chip" @click="growthPct = 5">5%</button>
+                <button type="button" class="btn-chip" @click="growthPct = 10">10%</button>
+                <button type="button" class="btn-chip" @click="growthPct = 15">15%</button>
+                <button type="button" class="btn-chip" @click="growthPct = 20">20%</button>
+              </div>
+            </div>
+          </label>
+
+          <!-- Tiny preview so the guess feels concrete -->
+          <p class="small muted" x-show="priceManager?.currentPrice">
+            Today:
+            <strong x-text="priceManager.currentPrice.toLocaleString(undefined,{maximumFractionDigits:0})"></strong>
+            USD/BTC
+            <template x-if="Number(growthPct) > 0">
+              <span>
+                • In 1 year:
+                <strong
+                  x-text="(priceManager.currentPrice*Math.pow(1 + (growthPct/100), 1)).toLocaleString(undefined,{maximumFractionDigits:0})"></strong>
+                • In 5 years:
+                <strong
+                  x-text="(priceManager.currentPrice*Math.pow(1 + (growthPct/100), 5)).toLocaleString(undefined,{maximumFractionDigits:0})"></strong>
+                USD/BTC
+              </span>
+            </template>
+          </p>
+        </article>
+      </template>
+
+
+      <!-- projected (equal fiat) table -->
+      <template x-if="navigationState.currentStep==='projected_table'">
+        <article>
+          <h4>Suggested plan</h4>
+          <div class="callout small">
+            <strong>Initial deposit:</strong> <span x-text="(btcAmount || 0).toFixed(8) + ' BTC'"></span> (≈ $<span
+              x-text="(usdAmount || 0).toFixed(2)"></span> today).
+            <br>
+            USD values are projected based on your guess of <span x-text="(growthPct || 0).toFixed(1) + ' %'"></span>
+            growth.
+          </div>
+          <template  x-if="amountStrategy != 'manual'">
+            <span class="pill small">Target per date: <b x-text="formatUSD(targetFiatPerPayout)"></b></span>
+          </template>
+          <div class="tbl-wrap" style="margin-top:.5rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Date</th>
+                  <th>Est. Price</th>
+                  <th>BTC</th>
+                  <th>Projected USD</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(row, i) in scheduleRows" :key="i">
+                  <tr>
+                    <td x-text="i+1"></td>
+                    <td x-text="row.date"></td>
+                    <td class="mono" x-text="formatUSD(row.price)"></td>
+                    <td class="mono" x-text="row.btc.toFixed(8)"></td>
+                    <td class="mono" x-text="formatUSD(row.usd)"></td>
+                  </tr>
+                </template>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3">Totals</td>
+                  <td class="mono" x-text="totalBTC().toFixed(8)"></td>
+                  <td class="mono" x-text="formatUSD(totalUSD())"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </article>
+      </template>
+
+      <!-- manual entry -->
+      <template x-if="navigationState.currentStep==='manual_entry'">
+        <article>
+          <div class="grid-2" style="margin-bottom: 1rem;">
+            <div>
+              <h4>Target Total</h4>
+              <div class="result-line">
+                <strong x-text="(btcAmount || 0).toFixed(8) + ' BTC'"></strong>
+                <span>≈ <span x-text="formatUSD((btcAmount || 0) * (priceManager.currentPrice || 0))"></span></span>
+              </div>
+            </div>
+            <div>
+              <h4>Current Total</h4>
+              <div class="result-line"
+                :class="Math.abs(manualScheduleTotalBTC() - (btcAmount || 0)) < 0.00000001 ? '' : 'accent'">
+                <strong x-text="manualScheduleTotalBTC().toFixed(8) + ' BTC'"></strong>
+                <span>≈ <span x-text="formatUSD(manualScheduleTotalUSD())"></span></span>
+              </div>
+            </div>
+          </div>
+
+          <label>Enter one line per date: <span class="mono">YYYY-MM-DD, BTC</span></label>
+          <textarea rows="8" x-model="manualSchedule"
+            @input="$nextTick(() => $el.style.height = 'auto'); $nextTick(() => $el.style.height = $el.scrollHeight + 'px')"
+            placeholder="2026-06-01, 0.0105&#10;2026-07-01, 0.0105"></textarea>
+
+          <p class="small muted" style="margin-top: 0.5rem;">
+            <template x-if="Math.abs(manualScheduleTotalBTC() - (btcAmount || 0)) < 0.00000001">
+              <span style="color: #059669;">✓ Totals match perfectly!</span>
+            </template>
+            <template x-if="Math.abs(manualScheduleTotalBTC() - (btcAmount || 0)) >= 0.00000001">
+              <span style="color: #dc2626;">
+                Difference: <span x-text="(manualScheduleTotalBTC() - (btcAmount || 0)).toFixed(8)"></span> BTC
+              </span>
+            </template>
+          </p>
+        </article>
+      </template>
+      <!-- finish schedule -->
+      <template x-if="navigationState.currentStep==='finish_schedule'">
+        <article x-init="onFinishScheduleEnter()">
+          <h3>Plan ready</h3>
+          <p class="small muted">Review the totals before you continue.</p>
+
+          <div class="tbl-wrap" style="margin:.5rem 0 1rem;">
+            <table>
+              <tbody>
+                <tr>
+                  <th style="width:220px;">Your gift (today)</th>
+                  <td class="mono">
+                    <span x-text="(Number(btcAmount)||0).toFixed(8) + ' BTC'"></span>
+                    <span class="muted"> • </span>
+                    <span x-text="formatUSD((Number(btcAmount)||0) * (Number(priceManager.currentPrice)||0))"></span>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Number of release dates</th>
+                  <td class="mono" x-text="scheduleRows.length"></td>
+                </tr>
+                <tr>
+                  <th>Service fee</th>
+                  <td class="mono">
+                    <span x-text="(1000 + Math.max(0, scheduleRows.length - 1) * 250) + ' sats'"></span>
+                    <span class="muted"> • </span>
+                    <span x-text="formatUSD(serviceFeeUsd)"></span>
+                    <span class="small muted" x-show="scheduleRows.length > 1"> (1000 sats + 250 sats for each extra
+                      date)</span>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Estimated mining fees</th>
+                  <td class="mono">
+                    <span x-text="(500 + (scheduleRows.length * 250)) + ' sats'"></span>
+                    <span class="muted"> • </span>
+                    <span x-text="formatUSD(networkFeeUsd)"></span>
+                    <span class="small muted"> (~500 sats for the distribution tx + ~250 sats per release tx)</span><br>
+
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th>Total to deposit</th>
+                  <td class="mono">
+                    <span x-text="(Number(totalGiftWithFees)||0).toFixed(8) + ' BTC'"></span>
+                    <span class="muted"> • </span>
+                    <span x-text="formatUSD(totalGiftWithFeesUsd)"></span>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <p class="small muted">
+            Network fees are estimates and can change with mempool conditions. The exact amount is calculated when your
+            transactions are built.
+          </p>
+
+    </div>
+    </article>
+    </template>
+
+
+    <!-- unified Back/Continue for Group 1 -->
+    <div class="wizard-actions" x-show="navigationState.stepGroup===1">
+      <button class="btn-outline" @click="navigateBack()" :disabled="!canGoBack()">Back</button>
+      <span class="spacer"></span>
+      <button class="btn-primary" @click="navigateForward()" :disabled="!canContinue()"
+        x-text="getContinueText()"></button>
+    </div>
+    </div>
+
+    <!-- ==== STEP GROUP 2: RECOVERY WORDS ==== -->
+    <div class="card" x-show="navigationState.stepGroup===2" x-cloak>
+      <article>
+        <div class="callout small">
+          <strong>Privacy guarantee:</strong> These recovery words that control this address are generated and stored
+          only in your browser. They
+          never leave your device or get sent to our servers.
+        </div>
+
+        <p class="small muted">These are the words that protect your gift.</p>
+
+        <div class="actions">
+          <button type="button" @click="handleKeysNew()">Create recovery words</button>
+
+          <!--
+            <label class="small">…or enter your 12 or 24 words
+              <input type="text" x-model="userKey" placeholder="twelve correct words in order" />
+            </label>
+            <button class="btn-outline" @click="saveUserKey()" :disabled="!userKey">Use these words</button>
+          </div>-->
+
+          <div id="keyResult" class="muted small" style="margin-top:.75rem;">
+            <!-- server may show public info (sample address). Never show or store the words. -->
+          </div>
+      </article>
+
+      <!-- unified Back/Continue for Group 2 -->
+      <div class="wizard-actions" x-show="navigationState.stepGroup===2">
+        <button class="btn-outline" @click="navigateBack()">Back</button>
+        <span class="spacer"></span>
+        <button class="btn-primary" @click="navigateForward()" :disabled="!canContinue()">Continue</button>
+      </div>
+    </div>
+
+
+    <!-- ==== STEP GROUP 3: ADD FUNDS & ADDRESSES ==== -->
+    <div class="card" x-show="navigationState.stepGroup===3" x-cloak>
+      <article>
+        <div class="callout small">
+          <strong>Local processing:</strong>
+          All address generation and transaction signing happens in your browser using your recovery words.
+          No private keys are transmitted.
+        </div>
+
+        <section class="section">
+          <h4>Deposit and processing</h4>
+          <!--<p class="small muted">
+            Scan the QR code above or use the address below to send
+            <strong x-text="(Number(totalGiftWithFees)||0).toFixed(8) + ' BTC'"></strong>
+            for this gift.
+          </p>-->
+
+          <div class="funding-section">
+            <h5>Your funding address</h5>
+            <!-- Already rendered by handleDisplaySegwit -->
+            <div id="fundingAddress" class="address-display"></div>
+
+            <!-- Single action: manual check while we are still waiting or insufficient -->
+            <div class="actions" x-show="depositStage === 'waiting' || depositStage === 'insufficient'">
+              <button class="btn-outline" @click="checkDeposit(true)" :disabled="checkingDeposit">
+                <span x-show="!checkingDeposit">Check deposit now</span>
+                <span x-show="checkingDeposit">Checking…</span>
+              </button>
+            </div>
+
+            <!-- Auto check countdown -->
+            <div class="small muted" style="margin-top:.5rem;"
+              x-show="depositStage === 'waiting' || depositStage === 'insufficient'">
+              <span class="spinner" aria-hidden="true"></span>
+              <span x-show="checkingDeposit">Checking deposit…</span>
+              <span x-show="!checkingDeposit">
+                Checking for deposit in
+                <strong x-text="nextDepositCheckIn"></strong>
+                seconds
+              </span>
+            </div>
+
+            <!-- Stage: no UTXOs yet -->
+            <template x-if="depositStage === 'waiting'">
+              <p class="small muted" style="margin-top:.5rem;">
+                We have not detected any incoming Bitcoin yet. As soon as your transaction appears on the network
+                we will continue automatically. You can keep this page open while you send the funds.
+              </p>
+            </template>
+
+            <!-- Stage: some BTC but not enough -->
+            <template x-if="depositStage === 'insufficient'">
+              <div class="callout small" style="margin-top:.75rem;">
+                <p>
+                  We have detected
+                  <strong x-text="depositTotals.totalBtc.toFixed(8) + ' BTC'"></strong>
+                  so far.
+                </p>
+                <p class="small">
+                  Your gift requires
+                  <strong x-text="depositTotals.neededBtc.toFixed(8) + ' BTC'"></strong>.
+                  Please send at least
+                  <strong x-text="depositTotals.remainingBtc.toFixed(8) + ' BTC'"></strong>
+                  more to the <em>same</em> address above to continue.
+                </p>
+              </div>
+            </template>
+
+            <!-- Stage: enough BTC, starting pipeline -->
+            <template x-if="depositStage === 'ready'">
+              <div class="callout small" style="margin-top:.75rem;">
+                <p>
+                  Deposit received:
+                  <strong x-text="depositTotals.totalBtc.toFixed(8) + ' BTC'"></strong>.
+                  <span x-show="depositTotals.excessBtc > 0">
+                    The excess
+                    (<span x-text="depositTotals.excessBtc.toFixed(8)"></span> BTC)
+                    will be returned as change to your main address.
+                  </span>
+                </p>
+                <p class="small muted">
+                  Generating time-locked gift addresses and preparing your distribution transaction…
+                </p>
+              </div>
+            </template>
+
+            <!-- Stage: pipeline running -->
+            <template x-if="depositStage === 'processing'">
+              <div class="callout small" style="margin-top:.75rem;">
+                <p><strong>Transferring funds to gift addresses…</strong></p>
+                <p class="small muted">
+                  This happens entirely in your browser: we derive the gift addresses, build a transaction,
+                  and sign it with your recovery words. Only the final signed transaction is sent to bc1q21.com.
+                </p>
+              </div>
+            </template>
+
+            <!-- Stage: done -->
+            <template x-if="depositStage === 'done'">
+              <div class="callout small success" style="margin-top:.75rem;">
+                <p><strong>Your gift is ready.</strong></p>
+                <p class="small muted">
+                  The Bitcoin network may take a few minutes to fully confirm your deposit and the gift distribution,
+                  but your part is finished.
+                </p>
+              </div>
+            </template>
+
+            <!-- Stage: error -->
+            <template x-if="depositStage === 'error'">
+              <div class="callout callout-critical small" style="margin-top:.75rem;">
+                <p><strong>We could not complete this step.</strong></p>
+                <p class="small muted" x-text="depositError"></p>
+              </div>
+            </template>
+
+            <!-- Optional advanced view of addresses once they exist -->
+            <details x-show="cltvAddresses.length > 0" class="small" style="margin-top:.75rem;">
+              <summary>Show time-locked gift addresses (advanced)</summary>
+              <div class="mono small" style="margin-top:.5rem;">
+                <template x-for="(addrObj, index) in cltvAddresses" :key="index">
+                  <div class="address-row">
+                    <strong x-text="'Gift ' + (index + 1) + ' (' + addrObj.date + ')'"></strong><br>
+                    <code x-text="addrObj.address"></code><br>
+                    <small x-text="'Amount: ' + addrObj.btc + ' BTC'"></small>
+                  </div>
+                </template>
+              </div>
+            </details>
+          </div>
+        </section>
+      </article>
+
+      <!-- Back / Continue; Continue only enabled once distribution tx is posted -->
+      <div class="wizard-actions" x-show="navigationState.stepGroup===3">
+        <button class="btn-outline" @click="navigateBack()">Back</button>
+        <span class="spacer"></span>
+        <button class="btn-primary" @click="navigateForward()" :disabled="!distributionPosted">
+          Continue
+        </button>
+      </div>
+    </div>
+
+
+
+
+
+
+    <!-- ==== STEP GROUP 4: FINISH & SHARE ==== -->
+    <div class="card" x-show="navigationState.stepGroup===4" x-cloak x-effect="ensureGiftCardPdf()">
+      <article>
+        <div class="callout success">
+          <strong>Gift created:</strong> Your gift has been successfully created.
+        </div>
+
+        <div class="callout" x-show="recipientPageUrl()" x-effect="renderRecipientQr()">
+          <strong>Recipient page link</strong>
+          <p class="small muted">Share this link or QR so the recipient can check their gift status. They will need the
+            12 recovery words to redeem it.</p>
+          <p class="small muted">
+            We recommend that you share the 12 recovery words in person or via physical means for additional security.
+          </p>
+          <div class="mono small" x-text="recipientPageUrl()"></div>
+          <div x-ref="recipientQr" style="margin:1rem 0; display:flex; justify-content:center;"></div>
+          <div class="small" x-show="giftCardPdfUrl" x-cloak>
+            <p class="small muted">Download a printable gift card that includes the QR with this recipient link.</p>
+            <div style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; margin:0.5rem 0; height:420px;">
+              <iframe :src="giftCardPdfUrl" title="Gift Card" style="width:100%; height:100%;" frameborder="0"></iframe>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- unified Back/Continue for Group 4 -->
+      <div class="wizard-actions" x-show="navigationState.stepGroup===4">
+        <button class="btn-outline" @click="navigateBack()">Back</button>
+        <span class="spacer"></span>
+        <button class="btn-primary" @click="navigateForward()" x-text="getContinueText()"></button>
+      </div>
+    </div>
+  </main>
+
+  <script type="text/javascript" src="static/modules/noble-hashes.js"></script>
+  <script type="text/javascript" src="static/modules/qrcode.min.js"></script>
+  <script type="text/javascript" src="static/modules/btc-signer.js"></script>
+
+
+  <script type="module">
+    import { bip39 } from './static/modules/bip39.bundle.js';
+    import { HDKey } from './static/modules/bip32.bundle.js';
+    import { wordlist as english } from './static/modules/scure.wordlist.english.js';
+    import * as bech32 from './static/modules/bech32.js';
+    import { encryptShortHex, decryptShortHex } from "./AESHelper.js";
+
+    window.bip39 = bip39;
+    window.HDKey = HDKey;
+    window.english = english;
+    window.bech32 = bech32;
+    window.encryptShortHex = encryptShortHex;
+    window.decryptShortHex = decryptShortHex;
+
+  </script>
+  <script type="text/javascript" src="CryptoUtils.js"></script>
+  <script type="text/javascript" src="TransactionManager.js"></script>
+  <script type="text/javascript" src="PriceManager.js"></script>
+  <script type="text/javascript" src="BtcBackendClient.js"></script>
+  <script type="text/javascript" src="SchedulePlanner.js"></script>
+  <script type="text/javascript" src="NavigationManager.js"></script>
+  <script type="text/javascript" src="CryptoManager.js"></script>
+  <script type="text/javascript" src="UIRenderer.js"></script>
+  <script type="text/javascript" src="bc1q21.js"></script>
+</body>
+
+</html>

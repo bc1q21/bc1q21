@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Create Unsigned CLTV TX</title>
+
+  <!-- Coinbin dependencies -->
+  <script src="coinbin/js/crypto-min.js"></script>
+  <script src="coinbin/js/crypto-sha256.js"></script>
+  <script src="coinbin/js/crypto-sha256-hmac.js"></script>
+  <script src="coinbin/js/sha512.js"></script>
+  <script src="coinbin/js/ripemd160.js"></script>
+  <script src="coinbin/js/aes.js"></script>
+  <script src="coinbin/js/jsbn.js"></script>
+  <script src="coinbin/js/ellipticcurve.js"></script>
+  <script src="coinbin/js/coin.js"></script>
+
+  <script>
+    function createUnsignedCltvTx() {
+      try {
+        const redeemScript = document.getElementById('redeem').value.trim();
+        const txid = document.getElementById('txid').value.trim();
+        const txn = parseInt(document.getElementById('txn').value.trim(), 10) || 0;
+        const inputAmount = parseInt(document.getElementById('inputAmount').value.trim(), 10);
+        const destAddress = document.getElementById('destAddress').value.trim();
+        const destAmount = parseFloat(document.getElementById('destAmount').value.trim(), 10);
+
+        const tx = coinjs.transaction();
+        tx.lock_time = 1751479200; // a CLTV locktime, adjust as needed
+
+        // Add input (spending from CLTV UTXO)
+        tx.addinput(txid, txn, redeemScript, 0xffffffff - 2); // use nSequence = 0xfffffffe to enable CLTV
+
+        // Add output (sending to a P2WPKH address or P2PKH)
+        tx.addoutput(destAddress, destAmount);
+
+
+        const unsignedHex = tx.serialize();
+        document.getElementById('unsignedTx').value = unsignedHex;
+
+        console.log("Unsigned TX:", unsignedHex);
+      } catch (err) {
+        console.error("Error creating unsigned TX:", err);
+        document.getElementById('unsignedTx').value = "Error: " + err.message;
+      }
+    }
+  </script>
+</head>
+<body>
+  <h3>Redeem Script (Hex)</h3>
+  <input type="text" id="redeem" style="width:100%" value="04a0736568b1752103c31a6f54710b24b32c030ffed5af93ba7d5151c95febf9e0aad9fc069a7b070eac">
+
+  <h3>Input TXID</h3>
+  <input type="text" id="txid" style="width:100%" value="b0eb97730234f471c09cf2e94857ecfdab6865f1dcead524f5b5c04a33444d7e">
+
+  <h3>TX Index (N)</h3>
+  <input type="number" id="txn" style="width:100%" value="0">
+
+  <h3>Input Amount (BTC)</h3>
+  <input type="number" id="inputAmount" style="width:100%" value="0.00002500">
+
+  <h3>Destination Address</h3>
+  <input type="text" id="destAddress" style="width:100%" value="bc1q7ztwnzerqa48w66e5wc43adpaeymppx3p6qay0">
+
+  <h3>Destination Amount (BTC)</h3>
+  <input type="number" id="destAmount" style="width:100%" value="0.00002300">
+
+  <br><br>
+  <button onclick="createUnsignedCltvTx()">Create Unsigned TX</button>
+
+  <h3>Unsigned TX (Hex)</h3>
+  <textarea id="unsignedTx" rows="5" style="width:100%"></textarea>
+</body>
+</html>
