@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>bc1q21.com Offline</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #121212;
+      color: #ffff;
+      margin: 0;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+    #capture-area {
+      width: 90%;
+      max-width: 600px;
+      height: 200px;
+      background: #1e1e1e;
+      border: 2px dashed #555;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+    #progress-container {
+      width: 90%;
+      max-width: 600px;
+      margin-bottom: 1rem;
+    }
+    
+    progress {
+      width: 100%;
+      height: 20px;
+      -webkit-appearance: none;
+      appearance: none;
+      background-color: #2c2c2c;
+      border: none;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    progress::-webkit-progress-bar {
+      background-color: #2c2c2c;
+    }
+
+    progress::-webkit-progress-value {
+      background-color: #f7931a;
+    }
+
+    progress::-moz-progress-bar {
+      background-color: #f7931a;
+    }
+
+    .output {
+      word-wrap: break-word;
+      background: #222;
+      padding: 1rem;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      margin-top: 1rem;
+    }
+    
+    .capture-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .choice-section {
+      background: #232323;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      width: 90%;
+      max-width: 600px;
+      text-align: center;
+      border-left: 4px solid #f7931a;
+    }
+
+    .choice-btn {
+      margin: 1rem 0.5rem 0 0.5rem;
+      padding: 0.7rem 1.5rem;
+      font-size: 1.1rem;
+      background: #f7931a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .choice-btn:hover {
+      background: #e68200;
+    }
+
+    .hidden { 
+      display: none !important; 
+    }
+
+    .mnemonic-input-area textarea {
+      width: 100%;
+      min-height: 3.5em;
+      font-size: 1.1em;
+      background: #1a1a1a;
+      color: #fff;
+      border-radius: 4px;
+      border: 1px solid #444;
+      padding: 0.5em;
+      margin-bottom: 1em;
+      resize: vertical;
+      font-family: 'Courier New', monospace;
+    }
+
+    .mnemonic-input-area button {
+      background: #f7931a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .mnemonic-input-area button:hover {
+      background: #e68200;
+    }
+
+    .info-section {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #2a2a2a;
+      border-radius: 6px;
+      border-left: 4px solid #f7931a;
+    }
+
+    .info-section h3 {
+      margin: 0 0 0.5rem 0;
+      color: #f7931a;
+      font-size: 1.1rem;
+    }
+
+    .info-item {
+      margin: 0.5rem 0;
+    }
+
+    .info-label {
+      font-weight: bold;
+      color: #ccc;
+      display: inline-block;
+      min-width: 120px;
+    }
+
+    .info-value {
+      font-family: 'Courier New', monospace;
+      color: #fff;
+      word-break: break-all;
+      background: #1a1a1a;
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
+      display: inline-block;
+      margin-left: 0.5rem;
+    }
+
+    .mnemonic-display {
+      background: #1a4d1a;
+      border: 2px solid #2d7d2d;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      text-align: center;
+    }
+
+    .mnemonic-words {
+      font-family: 'Courier New', monospace;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #90ee90;
+      line-height: 1.5;
+    }
+
+    .instruction-box {
+      background: #4d2f1a;
+      border: 2px solid #7d4f2d;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      text-align: center;
+    }
+
+    .instruction-text {
+      font-family: 'Courier New', monospace;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #ffb366;
+      line-height: 1.5;
+    }
+
+    .warning-box {
+      background: #4d1a1a;
+      border: 2px solid #7d2d2d;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    .warning-text {
+      color: #ff9999;
+      font-weight: bold;
+    }
+
+    form label {
+      display: block;
+      margin: 0.5rem 0 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    form input {
+      width: 100%;
+      padding: 0.4rem;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 4px;
+      background: #1a1a1a;
+      color: white;
+    }
+
+    form input:read-only {
+      opacity: 0.6;
+    }
+
+    form button {
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      background-color: #f7931a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    form button:hover {
+      background-color: #e68200;
+    }
+
+    .tx-output {
+      background: #1a1a1a;
+      padding: 1rem;
+      border-radius: 6px;
+      margin: 1rem 0;
+      border: 1px solid #444;
+    }
+
+    .tx-output h4 {
+      margin: 0 0 0.5rem 0;
+      color: #f7931a;
+    }
+
+    .tx-hex {
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      word-break: break-all;
+      line-height: 1.4;
+      color: #ccc;
+    }
+
+    #qrcode {
+      padding: 10px;
+      background: #fff;
+      margin: auto;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <h1>bc1q21.com Offline</h1>
+  
+  <div id="initial-choice" class="choice-section">
+    <h2>Start</h2>
+    <p>Choose how you want to proceed:</p>
+    <button id="btn-enter-mnemonic" class="choice-btn">Enter Existing Mnemonic</button>
+    <button id="btn-generate-mnemonic" class="choice-btn">Generate New Mnemonic</button>
+  </div>
+
+  <div id="mnemonic-input-area" class="mnemonic-input-area choice-section hidden">
+    <h3>Enter Your BIP39 Seed Phrase</h3>
+    <textarea id="mnemonic-input" placeholder="Enter your 12 or 24 word mnemonic phrase here"></textarea>
+    <br>
+    <button id="btn-use-mnemonic">Continue</button>
+    <div id="mnemonic-input-error" style="color:#ff9999; margin-top:0.5em;"></div>
+  </div>
+
+  <div id="entropy-area" class="choice-section hidden">
+    <h3>Generate a New Mnemonic</h3>
+    <div id="capture-area">
+      <p>Move your mouse or finger here to generate randomness.</p>
+    </div>
+    <div id="progress-container">
+      <label for="progress">Entropy Collected:</label>
+      <progress id="progress" value="0" max="100"></progress>
+    </div>
+  </div>
+
+  <p id="unlock-date-row" class="hidden">Unlock Date: <input type="datetime-local" id="unlockDate"></p>
+  <div id="output" class="output hidden"></div>
+  <div id="tx-form-container" class="output hidden" style="margin-top: 70px;"></div>
+
+  <script type="text/javascript" src="modules/noble-hashes.js"></script>
+  <script type="text/javascript" src="modules/qrcode.min.js"></script>
+
+  <script src="coinbin/js/crypto-min.js"></script>
+  <script src="coinbin/js/crypto-sha256.js"></script>
+  <script src="coinbin/js/crypto-sha256-hmac.js"></script>
+  <script src="coinbin/js/sha512.js"></script>
+  <script src="coinbin/js/ripemd160.js"></script>
+  <script src="coinbin/js/aes.js"></script>
+  <script src="coinbin/js/jsbn.js"></script>
+  <script src="coinbin/js/ellipticcurve.js"></script>
+  <script type="text/javascript" src="coinbin/js/coin.js"></script>
+
+  <script type="module">
+    import { bip39 } from './modules/bip39.bundle.js';
+    import { HDKey } from './modules/bip32.bundle.js';
+    import { wordlist as english } from './scure.wordlist.english.js';
+    import * as bech32 from './modules/bech32.js';
+
+    // ============================================================================
+    // ENTROPY COLLECTION
+    // ============================================================================
+
+    /**
+     * Entropy collection system that captures mouse/touch movements to generate
+     * cryptographically secure randomness for seed generation.
+     */
+    class EntropyCollector {
+      constructor() {
+        this.entropyPool = '';
+        this.lastX = '';
+        this.lastY = '';
+        this.collected = 0;
+        this.maxEntropyBytes = 640;
+        this.seedGenerated = false;
+        this.startColor = [77, 77, 77];    // Bitcoin Gray #4d4d4d
+        this.endColor = [247, 147, 26];    // Bitcoin Orange #f7931a
+        
+        this.captureArea = document.getElementById('capture-area');
+        this.progressBar = document.getElementById('progress');
+        
+        this.bindEventHandlers();
+      }
+
+      /**
+       * Binds mouse and touch event handlers to the capture area
+       */
+      bindEventHandlers() {
+        this.captureArea.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.captureArea.addEventListener('touchmove', (e) => this.handleTouchMove(e));
+      }
+
+      /**
+       * Handles mouse movement events for entropy collection
+       */
+      handleMouseMove(e) {
+        this.captureEntropy(e.clientX, e.clientY, Date.now());
+      }
+
+      /**
+       * Handles touch movement events for entropy collection
+       */
+      handleTouchMove(e) {
+        const touch = e.touches[0];
+        if (touch) {
+          this.captureEntropy(touch.clientX, touch.clientY, Date.now());
+        }
+      }
+
+      /**
+       * Captures entropy from coordinate and timestamp data
+       * @param {number} x - X coordinate
+       * @param {number} y - Y coordinate  
+       * @param {number} timestamp - Current timestamp
+       */
+      captureEntropy(x, y, timestamp) {
+        if (this.seedGenerated) return;
+        if (this.lastX === x && this.lastY === y) return;
+        
+        this.lastX = x;
+        this.lastY = y;
+        this.entropyPool += `${x},${y},${timestamp};`;
+
+        this.createVisualDot(x, y);
+        this.collected += 1;
+        this.updateProgress();
+
+        if (this.collected >= this.maxEntropyBytes * 2 && !this.seedGenerated) {
+          this.generateSeed();
+        }
+      }
+
+      /**
+       * Creates a visual dot at the captured coordinates
+       */
+      createVisualDot(x, y) {
+        const rect = this.captureArea.getBoundingClientRect();
+        const relX = x - rect.left;
+        const relY = y - rect.top;
+
+        const dot = document.createElement('div');
+        dot.className = 'capture-dot';
+        dot.style.left = `${relX}px`;
+        dot.style.top = `${relY}px`;
+
+        const colorFactor = Math.min(this.collected / (this.maxEntropyBytes * 2), 1);
+        dot.style.backgroundColor = this.interpolateColor(this.startColor, this.endColor, colorFactor);
+
+        this.captureArea.appendChild(dot);
+      }
+
+      /**
+       * Updates the progress bar display
+       */
+      updateProgress() {
+        const percent = Math.min((this.collected / (this.maxEntropyBytes * 2)) * 100, 100);
+        this.progressBar.value = percent;
+      }
+
+      /**
+       * Interpolates between two RGB colors
+       */
+      interpolateColor(start, end, factor) {
+        const result = start.slice();
+        for (let i = 0; i < 3; i++) {
+          result[i] = Math.round(result[i] + factor * (end[i] - start[i]));
+        }
+        return `rgb(${result.join(',')})`;
+      }
+
+      /**
+       * Generates the final seed from collected entropy using SHA-512
+       */
+      async generateSeed() {
+        this.seedGenerated = true;
+        const buffer = new TextEncoder().encode(this.entropyPool);
+        const hash = await crypto.subtle.digest('SHA-512', buffer);
+        const hex = Array.from(new Uint8Array(hash))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+        
+        const entropyHex = hex.substring(0, 32); // 128 bits
+        const entropyBytes = hexToBytes(entropyHex);
+        const mnemonic = bip39.entropyToMnemonic(entropyBytes, english);
+        
+        // Hide entropy area and show main app
+        document.getElementById('entropy-area').classList.add('hidden');
+        document.getElementById('output').classList.remove('hidden');
+        document.getElementById('tx-form-container').classList.remove('hidden');
+        
+        // Display mnemonic with improved formatting
+        outputManager.displayMnemonic(mnemonic);
+        
+        // Remove event listeners after seed generation
+        this.captureArea.removeEventListener('mousemove', this.handleMouseMove);
+        this.captureArea.removeEventListener('touchmove', this.handleTouchMove);
+
+        await keyDerivation.deriveKeysFromMnemonic(mnemonic);
+        transactionManager.showTransactionForm();
+      }
+    }
+
+    // ============================================================================
+    // SEED GENERATION
+    // ============================================================================
+
+    /**
+     * Handles BIP39 mnemonic validation and seed generation
+     */
+    class SeedGenerator {
+      /**
+       * Validates a BIP39 mnemonic phrase
+       * @param {string} mnemonic - The mnemonic phrase to validate
+       * @returns {boolean} - True if valid, false otherwise
+       */
+      static validateMnemonic(mnemonic) {
+        return bip39.validateMnemonic(mnemonic, english);
+      }
+
+      /**
+       * Converts a mnemonic phrase to a seed buffer
+       * @param {string} mnemonic - The mnemonic phrase
+       * @returns {Promise<Uint8Array>} - The seed buffer
+       */
+      static async mnemonicToSeed(mnemonic) {
+        return await bip39.mnemonicToSeed(mnemonic);
+      }
+    }
+
+    // ============================================================================
+    // KEY DERIVATION
+    // ============================================================================
+
+    /**
+     * Handles Bitcoin key derivation using BIP32/BIP84 standards
+     */
+    class KeyDerivation {
+      constructor() {
+        this.bech32Address1 = '';
+        this.bech32Address2 = '';
+        this.publicKeyAddress2 = '';
+        this.wif = '';
+        this.extended = null;
+        this.publicKeyHex = '';
+      }
+
+      /**
+       * Derives Bitcoin keys from a BIP39 mnemonic phrase
+       * @param {string} mnemonic - The mnemonic phrase
+       */
+      async deriveKeysFromMnemonic(mnemonic) {
+        if (!SeedGenerator.validateMnemonic(mnemonic)) {
+          outputManager.displayError('Invalid mnemonic phrase');
+          return;
+        }
+
+        const seed = await SeedGenerator.mnemonicToSeed(mnemonic);
+        const root = HDKey.fromMasterSeed(seed);
+        const child = root.derive("m/44'/0'/0'/0/0");
+
+        if (!child.privateKey) {
+          outputManager.displayError('Failed to derive private key');
+          return;
+        }
+
+        // Create extended private key with version byte and compressed flag
+        this.extended = new Uint8Array(child.privateKey.length + 2);
+        this.extended[0] = 0x80; // version byte
+        this.extended.set(child.privateKey, 1);
+        this.extended[child.privateKey.length + 1] = 0x01; // compressed flag
+
+        this.wif = await base58CheckEncode(this.extended);
+        this.publicKeyHex = bytesToHex(child.publicKey);
+
+        // BIP84 derivation path for native segwit
+        const account = root.derive("m/84'/0'/0'");
+        
+        // First address (m/84'/0'/0'/0/0)
+        const firstAddressKey = account.deriveChild(0).deriveChild(0);
+        this.bech32Address1 = await this.createBech32Address(firstAddressKey.publicKey);
+
+        // Second address (m/84'/0'/0'/0/1)
+        const secondAddressKey = account.deriveChild(0).deriveChild(1);
+        this.bech32Address2 = await this.createBech32Address(secondAddressKey.publicKey);
+        this.publicKeyAddress2 = secondAddressKey.publicKey;
+
+        // Display key information
+        outputManager.displayKeyInformation({
+          publicKey: this.publicKeyHex,
+          wif: this.wif,
+          bech32Address1: this.bech32Address1,
+          bech32Address2: this.bech32Address2
+        });
+        
+        const dateStr = document.getElementById('unlockDate').value;
+        timelockScript.generateTimeLockedScript(this.publicKeyHex, dateStr);
+      }
+
+      /**
+       * Creates a Bech32 address from a public key
+       * @param {Uint8Array} pubkey - The public key bytes
+       * @returns {string} - The Bech32 address
+       */
+      async createBech32Address(pubkey) {
+        const pubkeyHash = sha256(pubkey);
+        const hash160 = ripemd160(pubkeyHash);
+        const words = bech32.bech32.toWords(hash160);
+        words.unshift(0x00); // witness version 0
+        return bech32.bech32.encode('bc', words);
+      }
+    }
+
+    // ============================================================================
+    // TIMELOCK SCRIPT
+    // ============================================================================
+
+    /**
+     * Handles creation of CLTV (CheckLockTimeVerify) Bitcoin scripts
+     */
+    class TimelockScript {
+      constructor() {
+        this.redeemScriptHex = '';
+        this.littleEndianUnlockTime = null;
+        this.timelockAddress = '';
+        this.unlockTimestamp = 0;
+      }
+
+      /**
+       * Generates a time-locked P2SH address with CLTV
+       * @param {string} pubkeyHex - Public key in hex format
+       * @param {string} dateStr - Date string in ISO format
+       */
+      async generateTimeLockedScript(pubkeyHex, dateStr) {
+        if (!/^[0-9a-fA-F]{66,130}$/.test(pubkeyHex)) {
+          outputManager.displayError('Invalid public key format');
+          return;
+        }
+
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) {
+          outputManager.displayError('Invalid date input');
+          return;
+        }
+
+        this.unlockTimestamp = Math.floor(date.getTime() / 1000);
+        if (this.unlockTimestamp < 50000) {
+          outputManager.displayError('Timestamp must be >= 50000 (for CLTV to treat as date)');
+          return;
+        }
+
+        const script = this.buildCLTVScript(this.unlockTimestamp, pubkeyHex);
+        this.timelockAddress = await this.createP2SHAddress(script);
+        this.redeemScriptHex = bytesToHex(script);
+        
+        // Display timelock information
+        outputManager.displayTimelockInformation({
+          address: this.timelockAddress,
+          redeemScript: this.redeemScriptHex,
+          unlockTimestamp: this.unlockTimestamp,
+          unlockDate: date.toUTCString()
+        });
+      }
+
+      /**
+       * Builds a CLTV redeem script
+       * @param {number} timestamp - Unix timestamp for lock time
+       * @param {string} pubkeyHex - Public key in hex format
+       * @returns {Uint8Array} - The script bytes
+       */
+      buildCLTVScript(timestamp, pubkeyHex) {
+        const script = [];
+        this.littleEndianUnlockTime = this.encodeScriptNumber(timestamp);
+        
+        script.push(this.littleEndianUnlockTime.length);    // Push length of timestamp
+        script.push(...this.littleEndianUnlockTime);        // Push timestamp value
+        script.push(0xb1);                                  // OP_CHECKLOCKTIMEVERIFY
+        script.push(0x75);                                  // OP_DROP
+
+        const pubkeyBytes = hexToBytes(pubkeyHex);
+        script.push(pubkeyBytes.length);                    // Push pubkey length
+        script.push(...pubkeyBytes);                        // Push pubkey
+        script.push(0xac);                                  // OP_CHECKSIG
+
+        return new Uint8Array(script);
+      }
+
+      /**
+       * Creates a P2SH address from a redeem script
+       * @param {Uint8Array} script - The redeem script
+       * @returns {string} - The P2SH address
+       */
+      async createP2SHAddress(script) {
+        const firstSha256 = await sha256(script);
+        const redeemHash = await ripemd160(firstSha256);
+        const version = 0x05; // P2SH version byte
+        const redeemWithVersion = new Uint8Array([version, ...redeemHash]);
+
+        const checksumFull = await sha256(await sha256(redeemWithVersion));
+        const checksum = new Uint8Array(checksumFull).slice(0, 4);
+
+        return base58Encode(new Uint8Array([...redeemWithVersion, ...checksum]));
+      }
+
+      /**
+       * Encodes a number as a Bitcoin script number (little-endian)
+       * @param {number} num - The number to encode
+       * @returns {Uint8Array} - The encoded script number
+       */
+      encodeScriptNumber(num) {
+        const result = [];
+        while (num > 0) {
+          result.push(num & 0xff);
+          num >>= 8;
+        }
+        if (result[result.length - 1] & 0x80) {
+          result.push(0);
+        }
+        return new Uint8Array(result);
+      }
+    }
+
+    // ============================================================================
+    // TRANSACTION CREATION
+    // ============================================================================
+
+    /**
+     * Handles Bitcoin transaction creation and signing
+     */
+    class TransactionManager {
+
+      /**
+       * Displays the transaction creation form
+       */
+      showTransactionForm() {
+        const formContainer = document.getElementById('tx-form-container');
+        formContainer.innerHTML = `
+        
+          <div class="instruction-box">
+            <h3>Unlock your Bitcoin</h3>
+            <div class="instruction-text">After depositing Bitcoin to the address above, enter the transaction details here to create an unlocking transaction.</div>
+          </div>
+
+          <div class="info-section">
+            <h3>Create Transaction</h3>
+            <form id="tx-form">
+              <label for="input-txid">Input Transaction ID</label>
+              <input type="text" id="input-txid" placeholder="Enter the TXID of the transaction to spend from"><br />
+
+              <label for="input-vout">Input Output Index (vout) * Leave as 0 unless you know what you're doing</label>
+              <input type="number" id="input-vout" value="0" min="0"><br />
+
+              <label for="input-amount">Input Amount (BTC)</label>
+              <input type="number" id="input-amount" step="0.00000001" placeholder="Amount in BTC"><br />
+
+              <label for="dest-address">Destination Address (The default address is controlled by the seed phrase used above)</label>
+              <input type="text" id="dest-address" value="${keyDerivation.bech32Address2}"><br />
+
+              <label for="fee-rate">Mining Fee Rate (sats/vbyte)</label>
+              <input type="number" id="fee-rate" value="1" step="1" min="1"><br />
+
+              <button type="button" id="generate-tx">Generate Transaction</button>
+            </form>
+          </div>
+          
+          <div id="tx-results"></div>
+        `;
+
+        this.bindFormHandlers();
+      }
+
+      /**
+       * Binds event handlers for the transaction form
+       */
+      bindFormHandlers() {
+
+        document.getElementById('generate-tx').addEventListener('click', async () => {
+          const txid = document.getElementById('input-txid').value.trim();
+          const vout = parseInt(document.getElementById('input-vout').value) || 0;
+          const inputAmount = parseFloat(document.getElementById('input-amount').value) || 0;
+          const feeRate = parseInt(document.getElementById('fee-rate').value) || 1;
+          const destAddress = document.getElementById('dest-address').value.trim();
+          
+          const dateStr = document.getElementById('unlockDate').value;
+          const date = new Date(dateStr);
+          const lockTime = Math.floor(date.getTime() / 1000);
+
+          if (!txid || inputAmount <= 0 || !destAddress) {
+            outputManager.displayError('Please fill in all required fields with valid values');
+            return;
+          }
+
+          try {
+            var unsignedTx = this.createUnsignedTransaction({
+              txid: txid,
+              vout: vout,
+              redeemScript: timelockScript.redeemScriptHex,
+              inputAmount: inputAmount,
+              destinationAddress: destAddress,
+              outputAmount: inputAmount, //first run, set fee to 0 to get an accurate tx size
+              lockTime: lockTime
+            });
+
+            var signedTx = await this.signCLTVTransaction({
+              unsignedTxHex: unsignedTx,
+              wif: keyDerivation.wif,
+              redeemScript: timelockScript.redeemScriptHex
+            });
+
+            const vSize = signedTx.length / 2;
+            const inputSats = inputAmount * 100000000;
+            const feeSats = vSize * feeRate;
+            const outputSats = inputSats - feeSats;
+            const outputAmount = (outputSats / 100000000).toFixed(8);
+
+            console.log("vsize",vSize);
+            console.log("fee",feeSats);
+            console.log("outputAmount",outputAmount);
+
+            var unsignedTx = this.createUnsignedTransaction({
+              txid: txid,
+              vout: vout,
+              redeemScript: timelockScript.redeemScriptHex,
+              inputAmount: inputAmount,
+              destinationAddress: destAddress,
+              outputAmount: outputAmount, //second run, applying the fee
+              lockTime: lockTime
+            });
+
+            var signedTx = await this.signCLTVTransaction({
+              unsignedTxHex: unsignedTx,
+              wif: keyDerivation.wif,
+              redeemScript: timelockScript.redeemScriptHex
+            });
+
+            this.displayTransactionResults(unsignedTx, signedTx, outputAmount);
+          } catch (error) {
+            outputManager.displayError(`Transaction creation failed: ${error.message}`);
+          }
+        });
+      }
+
+      /**
+       * Creates an unsigned Bitcoin transaction
+       * @param {Object} params - Transaction parameters
+       * @returns {string} - Unsigned transaction hex
+       */
+      createUnsignedTransaction({ txid, vout, redeemScript, inputAmount, destinationAddress, outputAmount, lockTime }) {
+
+        try {
+            const tx = coinjs.transaction();
+            tx.lock_time = lockTime;
+
+            // Add input (spending from CLTV UTXO)
+            tx.addinput(txid, vout, redeemScript, 0xffffffff - 2); // use nSequence = 0xfffffffe to enable CLTV
+            // Add output (sending to a P2WPKH address or P2PKH)
+            tx.addoutput(destinationAddress, outputAmount);
+
+            const unsignedHex = tx.serialize();
+            return unsignedHex;
+        } catch (err) {
+            console.error("Error creating unsigned TX:", err);
+            document.getElementById('unsignedTx').value = "Error: " + err.message;
+        }
+      }
+
+      /**
+       * Signs a CLTV transaction
+       * @param {Object} params - Signing parameters
+       * @returns {Promise<string>} - Signed transaction hex
+       */
+      async signCLTVTransaction({ unsignedTxHex, redeemScript, wif }) {
+        try {
+            const tx = coinjs.transaction();
+            const txUnserialized = tx.deserialize(unsignedTxHex);
+            
+            if (!txUnserialized || !txUnserialized.ins || txUnserialized.ins.length === 0) {
+            throw new Error("Invalid or empty transaction inputs.");
+            }
+
+            const signedTx = txUnserialized.signhodl(0, wif, 1);
+            const output = txUnserialized.serialize();
+            return output;
+        } catch (err) {
+            console.error("Error signing CLTV transaction:", err);
+            return "Error: " + err.message;
+        }
+      }
+
+      /**
+       * Displays transaction results in formatted HTML
+       */
+      displayTransactionResults(unsignedTx, signedTx, outputAmount) {
+        const resultsContainer = document.getElementById('tx-results');
+        resultsContainer.innerHTML = `
+          <!--<div class="tx-output">
+            <h4>Unsigned Transaction</h4>
+            <div class="tx-hex">${unsignedTx}</div>
+          </div>-->
+          
+          <div class="tx-output">
+            <h4>Signed Transaction</h4>
+            <div class="tx-hex">${signedTx}</div>
+          </div>
+          
+          <div class="info-section">
+            <h3>Transaction Summary</h3>
+            <div class="info-item">
+              <span class="info-label">Size:</span>
+              <span class="info-value">${signedTx.length / 2} bytes</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Unlock Date:</span>
+              <span class="info-value">${new Date(timelockScript.unlockTimestamp * 1000).toUTCString()} (${timelockScript.unlockTimestamp})</span>
+            </div>
+
+            <div class="info-item">
+              <span class="info-label">Output Amount:</span>
+              <span class="info-value">${outputAmount} BTC</span>
+            </div>
+          </div>
+        `;
+      }
+
+    }
+
+    // ============================================================================
+    // UI BINDINGS
+    // ============================================================================
+
+    /**
+     * Handles UI initialization and date picker setup
+     */
+    class UIManager {
+      /**
+       * Sets default date/time to 24 hours from now
+       */
+      static setDefaultDateTime() {
+        const now = new Date();
+        now.setHours(now.getHours() + 24);
+
+        const yyyy = now.getFullYear();
+        const mm = UIManager.padNumber(now.getMonth() + 1);
+        const dd = UIManager.padNumber(now.getDate());
+        const hh = UIManager.padNumber(now.getHours());
+        const min = UIManager.padNumber(now.getMinutes());
+
+        const localDatetime = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+        document.getElementById('unlockDate').value = localDatetime;
+      }
+
+      /**
+       * Pads a number with leading zero if needed
+       * @param {number} n - Number to pad
+       * @returns {string} - Padded number string
+       */
+      static padNumber(n) {
+        return n < 10 ? '0' + n : n;
+      }
+    }
+
+    /**
+     * Manages formatted HTML output display
+     */
+    class OutputManager {
+      constructor() {
+        this.outputContainer = document.getElementById('output');
+      }
+
+      /**
+       * Displays the mnemonic phrase with proper formatting
+       * @param {string} mnemonic - The BIP39 mnemonic phrase
+       */
+      displayMnemonic(mnemonic) {
+        this.outputContainer.innerHTML = `
+          <div class="mnemonic-display">
+            <h3>Your Seed Phrase</h3>
+            <div class="mnemonic-words">${mnemonic}</div>
+          </div>
+          
+          <div class="warning-box">
+            <div class="warning-text">SECURITY WARNING</div>
+            <p>Write down this seed phrase and store it securely offline. Anyone with access to this phrase can control your Bitcoin. Never share it or store it digitally.</p>
+          </div>
+        `;
+      }
+
+      /**
+       * Displays key derivation information
+       * @param {Object} keyInfo - Key information object
+       */
+      displayKeyInformation(keyInfo) {
+        const keySection = `
+          <div class="info-section">
+            <h3>Derived Keys & Addresses</h3>
+            
+            <div class="info-item">
+              <span class="info-label">Public Key:</span>
+              <div class="info-value">${keyInfo.publicKey}</div>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">WIF Private Key:</span>
+              <div class="info-value">${keyInfo.wif}</div>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Address 1:</span>
+              <div class="info-value">${keyInfo.bech32Address1}</div>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Address 2:</span>
+              <div class="info-value">${keyInfo.bech32Address2}</div>
+            </div>
+          </div>
+        `;
+        
+        this.outputContainer.innerHTML += keySection;
+      }
+
+      /**
+       * Displays timelock script information
+       * @param {Object} timelockInfo - Timelock information object
+       */
+      displayTimelockInformation(timelockInfo) {
+        const timelockSection = `
+        
+          <div class="instruction-box" style="margin-top: 70px;">
+            <h3>Send Bitcoin to this address</h3>
+            <div class="instruction-text">Your Bitcoin will be locked until the unlock date.</div>
+          </div>
+
+          <div class="info-section">
+            <h3>Time-Locked Address</h3>
+
+            <div class="info-item">
+              <span class="info-label">QR Code:</span>
+              <div class="info-value"><div id="qrcode"></div></div>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">P2SH Address:</span>
+              <div class="info-value">${timelockInfo.address}</div>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Redeem Script:</span>
+              <div class="info-value">${timelockInfo.redeemScript}</div>
+            </div>
+            
+            <!--<div class="info-item">
+              <span class="info-label">Unlock Timestamp:</span>
+              <div class="info-value">${timelockInfo.unlockTimestamp}</div>
+            </div>-->
+            
+            <div class="info-item">
+              <span class="info-label">Unlock Date:</span>
+              <div class="info-value">${timelockInfo.unlockDate}</div>
+            </div>
+          </div>
+        `;
+        
+        this.outputContainer.innerHTML += timelockSection;
+        
+        this.generateQr(timelockInfo.address);
+      }
+
+      
+      /**
+       * creates the QR code for the time-locked address
+       */
+      generateQr(address) {
+        var qrcode = new QRCode("qrcode");
+        qrcode.makeCode(address);
+      }
+
+      /**
+       * Displays error messages
+       * @param {string} message - Error message to display
+       */
+      displayError(message) {
+        const errorSection = `
+          <div class="warning-box">
+            <div class="warning-text">Error</div>
+            <p>${message}</p>
+          </div>
+        `;
+        
+        this.outputContainer.innerHTML += errorSection;
+      }
+    }
+
+    // ============================================================================
+    // UTILITIES
+    // ============================================================================
+
+    const { sha256, ripemd160 } = nobleHashes;
+
+    /**
+     * Creates a hash160 (SHA256 + RIPEMD160) of input data
+     * @param {Uint8Array} data - Input data to hash
+     * @returns {Uint8Array} - Hash160 result
+     */
+    const hash160 = (data) => ripemd160(sha256(data));
+
+    /**
+     * Base58 alphabet for Bitcoin addresses
+     */
+    const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+    /**
+     * Encodes a buffer to Base58
+     * @param {Uint8Array} buffer - Buffer to encode
+     * @returns {string} - Base58 encoded string
+     */
+    function base58Encode(buffer) {
+      let digits = [0];
+      for (const byte of buffer) {
+        let carry = byte;
+        for (let j = 0; j < digits.length; ++j) {
+          carry += digits[j] << 8;
+          digits[j] = carry % 58;
+          carry = (carry / 58) | 0;
+        }
+        while (carry) {
+          digits.push(carry % 58);
+          carry = (carry / 58) | 0;
+        }
+      }
+      let result = '';
+      for (const byte of buffer) {
+        if (byte === 0) result += '1';
+        else break;
+      }
+      return result + digits.reverse().map(d => BASE58_ALPHABET[d]).join('');
+    }
+
+    /**
+     * Encodes payload with Base58Check (includes checksum)
+     * @param {Uint8Array} payload - Payload to encode
+     * @returns {Promise<string>} - Base58Check encoded string
+     */
+    async function base58CheckEncode(payload) {
+      const checksum = await sha256(await sha256(payload));
+      const full = new Uint8Array(payload.length + 4);
+      full.set(payload);
+      full.set(checksum.subarray(0, 4), payload.length);
+      return base58Encode(full);
+    }
+
+    /**
+     * Converts hex string to byte array
+     * @param {string} hex - Hex string to convert
+     * @returns {Uint8Array} - Byte array
+     */
+    function hexToBytes(hex) {
+      if (hex.length % 2 !== 0) throw new Error("Invalid hex");
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+      }
+      return bytes;
+    }
+
+    /**
+     * Converts byte array to hex string
+     * @param {Uint8Array} bytes - Byte array to convert
+     * @returns {string} - Hex string
+     */
+    function bytesToHex(bytes) {
+      return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // ============================================================================
+    // APPLICATION INITIALIZATION
+    // ============================================================================
+
+    /**
+     * Main application initialization function
+     */
+    function initializeApplication() {
+      // Set default unlock date
+      UIManager.setDefaultDateTime();
+      
+      // Initialize all managers
+      window.keyDerivation = new KeyDerivation();
+      window.timelockScript = new TimelockScript();
+      window.transactionManager = new TransactionManager();
+      window.outputManager = new OutputManager();
+
+      // Handle initial choice buttons
+      document.getElementById('btn-enter-mnemonic').onclick = () => {
+        document.getElementById('initial-choice').classList.add('hidden');
+        document.getElementById('mnemonic-input-area').classList.remove('hidden');
+        document.getElementById('entropy-area').classList.add('hidden');
+        document.getElementById('unlock-date-row').classList.remove('hidden');
+      };
+
+      document.getElementById('btn-generate-mnemonic').onclick = () => {
+        document.getElementById('initial-choice').classList.add('hidden');
+        document.getElementById('mnemonic-input-area').classList.add('hidden');
+        document.getElementById('entropy-area').classList.remove('hidden');
+        document.getElementById('unlock-date-row').classList.remove('hidden');
+        // Start entropy collection
+        window.entropyCollector = new EntropyCollector();
+      };
+
+      // Handle mnemonic input
+      document.getElementById('btn-use-mnemonic').onclick = async () => {
+        const mnemonic = document.getElementById('mnemonic-input').value.trim().toLowerCase().replace(/\s+/g, ' ');
+        const errorDiv = document.getElementById('mnemonic-input-error');
+        
+        if (!bip39.validateMnemonic(mnemonic, english)) {
+          errorDiv.textContent = 'Invalid BIP39 mnemonic phrase. Please check your words and try again.';
+          return;
+        }
+        
+        errorDiv.textContent = '';
+        document.getElementById('mnemonic-input-area').classList.add('hidden');
+        document.getElementById('output').classList.remove('hidden');
+        document.getElementById('tx-form-container').classList.remove('hidden');
+        
+        // Display the entered mnemonic (for consistency with generated flow)
+        outputManager.displayMnemonic(mnemonic);
+        
+        // Proceed with key derivation and rest of app
+        await keyDerivation.deriveKeysFromMnemonic(mnemonic);
+        transactionManager.showTransactionForm();
+      };
+    }
+
+    // Initialize application when DOM is loaded
+    window.addEventListener('DOMContentLoaded', initializeApplication);
+
+    // Create global instances for cross-component communication
+    const keyDerivation = new KeyDerivation();
+    const timelockScript = new TimelockScript();
+    const transactionManager = new TransactionManager();
+    const outputManager = new OutputManager();
+
+  </script>
+</body>
+</html>

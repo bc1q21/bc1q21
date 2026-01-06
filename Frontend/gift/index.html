@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bc1q21 - Gift Details</title>
+
+  <!-- Same stack as the gifting wizard -->
+  <script src="../static/collapse.min.js" defer></script>
+  <script src="../static/alpine.js" defer></script>
+  <link rel="stylesheet" href="../static/pico.min.css" />
+  <link rel="stylesheet" href="../static/style.css" />
+
+  <style>
+    /* Minor recipient-specific tweaks */
+    .status-dot {
+      width: .6rem;
+      height: .6rem;
+      border-radius: 999px;
+      display: inline-block;
+      margin-right: .4rem
+    }
+
+    .dot-ready {
+      background: #10b981
+    }
+
+    /* green */
+    .dot-pending {
+      background: #f59e0b
+    }
+
+    /* amber */
+    .dot-spent {
+      background: #4444ef
+    }
+
+    /* red */
+    .tbl-wrap table td:nth-child(1) {
+      white-space: nowrap
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container" x-data="recipientPage()">
+
+    <header class="brand">
+      <img src="../static/img/bc1q21-logo.png" alt="bc1q21 logo" onerror="this.style.display='none'">
+      <div>
+        <h1 style="text-align: right">Your Gift Details</h1>
+        <small class="muted">For recipients: review the status of your time-locked BTC gift</small>
+      </div>
+    </header>
+
+    <!-- SECTION HEADER BAR -->
+    <div class="section-bar">
+      <h2>Your Gift Overview</h2>
+      <a :href="helpUrl" target="_blank" rel="noopener" class="help-link" title="Open help video">Help</a>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem" x-cloak>
+      <article class="callout" style="background:#101828;color:#fff;text-align:center">
+        <div class="small" style="color:rgba(255,255,255,.8);letter-spacing:.08em;text-transform:uppercase">Your Total Gift
+          Value</div>
+        <div style="font-size:2.25rem;font-weight:700;margin:.2rem 0" class="mono"
+          x-text="totalBTC.toFixed(8) + ' BTC'"></div>
+        <div class="small" style="color:rgba(255,255,255,.8)">
+          ≈ <span class="mono" x-text="formatUSD(totalUSDAtCreation)"></span> at creation <!-- ≈
+          <span class="mono" x-text="formatUSD(totalUSDAtRelease)"></span> latest -->
+        </div>
+      </article>
+    </div>
+
+    <div class="card" x-cloak>
+      <article>
+        <div class="callout small">
+          <strong>Security pledge:</strong> Your recovery words never leave this browser. We can't change the amount,
+          the date, or the destination of your gift.
+        </div>
+        <div class="grid-2">
+          <div>
+
+            <div class="callout small" style="margin-top:1rem">
+              <strong>Unlock your gift:</strong>
+              <ul class="small" style="margin:.5rem 0 0 1rem;">
+                Enter the 12 recovery words below to unlock this gift:
+              </ul>
+              <label class="small" style="margin-top:.75rem">12 recovery words (separated by spaces)</label>
+              <textarea class="mono" rows="3" placeholder="twelve words separated by spaces" x-model="mnemonic"
+                @input.debounce.300ms="onMnemonicChanged()"></textarea>
+
+              <div style="margin-top:.5rem;align-items:center">
+                <template x-if="!unlocked">
+                  <button :disabled="loading || !canTryUnlock" @click="unlockGift()">
+                    Validate recovery words
+                  </button>
+                </template>
+                <template x-if="unlocked">
+                  <div class="success" style="font-weight:600;color:#10b981">
+                    ✅ Recovery words validated
+                  </div>
+                </template>
+
+                <div x-show="unlocked" style="display:flex;flex-direction:column;gap:.25rem">
+                  <div style="font-size:.9rem;font-weight:600"><span style="font-size:1.5rem" x-text="readyCount"></span> Payment(s) ready for release</div>
+                  
+                  <div x-show="readyCount == 0" class="small muted" style="margin-top:.5rem">
+                    Your gift is safely locked. Your payments will unlock on their scheduled dates.
+                  </div><br />
+
+                  <div x-show="readyCount > 0" class="small muted" style="margin-top:.5rem">
+                    Destination address: <span class="mono" x-text="releaseAddress || '-'"
+                      style="font-weight: 600;"></span><br>
+                    This address is controlled by the same 12 words you entered and it can be used from any Bitcoin wallet
+                    app you choose.
+                    <br>We recommend <a href="https://bluewallet.io/" target="_blank">BlueWallet</a>,
+                    which is an open source app available for iOS and Android.
+                  </div><br />
+
+                  <button class="secondary" :disabled="loading" x-show="readyCount > 0" @click="releaseReady()"
+                    style="background:#10b981;border-color:#10b981;color:#fff">
+                    Release payments
+                  </button>
+                </div>
+
+                <!--
+              <button
+              class="secondary"
+              :disabled="loading"
+              @click="refreshSpentStatuses()"
+              >
+              Refresh status
+            </button>-->
+              </div>
+
+              <small x-show="error" style="color:#ef4444" x-text="error"></small>
+
+
+            </div>
+
+          </div>
+          <div>
+            <div class="result-line">
+              <div>
+                <div class="small muted">Recorded at Block</div>
+                <div class="mono" x-text="createdAtBlock || '-'"></div>
+              </div>
+              <span class="spacer"></span>
+              <div>
+                <div class="small muted">Created at (UTC)</div>
+                <strong x-text="formatDate(createdAt)"></strong>
+              </div>
+            </div>
+            <div class="result-line" style="margin-top:.5rem">
+              <div>
+                <div class="small muted">Price of Bitcoin at creation</div>
+                <strong x-text="formatUSD(prices.creation)"></strong>
+              </div>
+              <span class="spacer"></span>
+              <div>
+                <div class="small muted">Gift outputs</div>
+                <strong x-text="giftOutputs.length"></strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h4 style="margin-top:1rem">Gift release schedule</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Status</th>
+                <th>Release date</th>
+                <th>Amount (BTC)</th>
+                <th>At creation (USD)</th>
+                <th>Price @ release</th>
+                <th>Time-Locked Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(o,i) in rows" :key="i">
+                <tr>
+                  <td x-text="i+1"></td>
+                  <td>
+                    <span
+                      :class="['status-dot', o.spent ? 'dot-spent' : (o.pending ? 'dot-pending' : (o.ready ? 'dot-ready' : 'dot-pending'))]"></span>
+                    <span
+                      x-text="o.spent ? 'Claimed' : (o.pending ? 'Pending...' : (o.ready ? 'Ready' : 'Locked'))"></span>
+                  </td>
+                  <td x-text="o.releaseDate"></td>
+                  <td class="mono" x-text="o.btc.toFixed(8)"></td>
+                  <td class="mono" x-text="formatUSD(o.usdAtCreation)"></td>
+                  <td class="mono" x-text="formatUSD(o.usdAtRelease)"></td>
+                  <td class="mono">
+                    <a :href="`https://mempool.space/address/${o.address}`" target="_blank" rel="noopener"
+                      x-text="o.address"></a>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">Totals</td>
+                <td></td>
+                <td class="mono" x-text="totalBTC.toFixed(8)"></td>
+                <td class="mono" x-text="formatUSD(totalUSDAtCreation)"></td>
+                <td class="mono" x-text="formatUSD(totalUSDAtRelease)"></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+
+      </article>
+    </div>
+  </main>
+
+
+  <script type="text/javascript" src="../static/modules/noble-hashes.js"></script>
+  <script src="../static/coinbin/js/crypto-min.js"></script>
+  <script src="../static/coinbin/js/crypto-sha256.js"></script>
+  <script src="../static/coinbin/js/crypto-sha256-hmac.js"></script>
+  <script src="../static/coinbin/js/sha512.js"></script>
+  <script src="../static/coinbin/js/ripemd160.js"></script>
+  <script src="../static/coinbin/js/aes.js"></script>
+  <script src="../static/coinbin/js/jsbn.js"></script>
+  <script src="../static/coinbin/js/ellipticcurve.js"></script>
+  <script type="text/javascript" src="../static/coinbin/js/coin.js"></script>
+  <script type="module">
+    import { bip39 } from '../static/modules/bip39.bundle.js';
+    import { HDKey } from '../static/modules/bip32.bundle.js';
+    import { wordlist as english } from '../static/modules/scure.wordlist.english.js';
+    import * as bech32 from '../static/modules/bech32.js';
+
+    window.bip39 = bip39;
+    window.HDKey = HDKey;
+    window.english = english;
+    window.bech32 = bech32;
+
+  </script>
+  <script type="module">
+    import { encryptShortHex, decryptShortHex } from '../AESHelper.js';
+    window.__encryptShortHex = encryptShortHex;
+    window.__decryptShortHex = decryptShortHex;
+  </script>
+  <script src="../CryptoManager.js"></script>
+  <script src="../BtcBackendClient.js"></script>
+
+  <script>
+    function recipientPage() {
+      return {
+        // ---- Config ----
+        helpUrl: 'https://youtu.be/your-help-video',
+        baseApi: '/bitcoin',
+        //baseApi: 'http://127.0.0.1:8000/bitcoin',
+
+        // interval: default month; override via ?interval=year
+        interval: 'month',
+
+        // ---- UI State ----
+        loading: false,
+        error: '',
+        notice: '',
+
+        // ---- Gift identity ----
+        fundingAddress: '',
+        txs: [],
+        giftTx: null,
+
+        // ---- From chain ----
+        createdAt: null,
+        createdAtBlock: null,
+        opReturnCipherHex: '',
+
+        timelockedOutputs: [], // [{address, sats, voutN}]
+        rows: [],
+        totalBTC: 0,
+        creationPriceUSD: null,
+        creationPriceTime: null,
+        priceHistory: [],
+
+        // ---- Unlock / keys ----
+        mnemonic: '',
+        canTryUnlock: false,
+        unlocked: false,
+        releaseAddress: '',
+        aesKeyAddress: '',
+        firstReleaseDateISO: '',
+        cryptoManager: null,
+        readyCount: 0,
+        releaseTxHex: '',
+        utxoCache: new Map(),
+
+        async init() {
+          try {
+            // address from:
+            // - /gift/<address>  (recommended)
+            // - or ?a=<address>
+            const parts = window.location.pathname.split('/').filter(Boolean);
+            const last = parts[parts.length - 1] || '';
+            const qs = new URLSearchParams(window.location.search);
+
+            this.fundingAddress = (qs.get('a') || qs.get('address') || last || '').trim();
+            if (!this.fundingAddress) {
+              this.error = 'Missing funding address in URL. Use /gift/<address> or ?a=<address>.';
+              return;
+            }
+
+            this.interval = (qs.get('interval') || 'month').toLowerCase() === 'year' ? 'year' : 'month';
+
+            await this.loadGiftFromAddressTxs();
+          } catch (e) {
+            this.error = e?.message || String(e);
+          }
+        },
+
+        async loadGiftFromAddressTxs() {
+          this.loading = true;
+          this.error = '';
+          this.notice = '';
+
+          try {
+            const url = `${this.baseApi}/address/${this.fundingAddress}/txs`;
+            const txs = await fetch(url).then(r => r.json());
+            this.txs = Array.isArray(txs) ? txs : [];
+
+            // pick the first tx that looks like the "gift creation tx":
+            // - has OP_RETURN output
+            // - has at least 1 P2SH output where address starts with "3"
+            const giftTx = this.txs.find(tx => {
+              const vout = tx?.vout || [];
+              const hasOpReturn = vout.some(o => o?.scriptpubkey_type === 'op_return');
+              const hasP2sh3 = vout.some(o => (o?.scriptpubkey_address || '').startsWith('3'));
+              return hasOpReturn && hasP2sh3;
+            });
+
+            if (!giftTx) {
+              this.error = 'Could not find a gift transaction.';
+              return;
+            }
+
+            this.giftTx = giftTx;
+
+            // created at
+            const st = giftTx.status || {};
+            this.createdAt = st.block_time ? new Date(st.block_time * 1000) : new Date();
+            this.createdAtBlock = st.block_height || null;
+
+            const priceList = Array.isArray(st.price) ? st.price : [];
+            const firstPrice = priceList.find(p => typeof p?.USD === 'number');
+            const parsedPrice = firstPrice ? Number(firstPrice.USD) : NaN;
+            console.log("st", st);
+            this.creationPriceUSD = Number.isFinite(parsedPrice) ? parsedPrice : null;
+            this.creationPriceTime = typeof firstPrice?.time === 'number' ? firstPrice.time : null;
+            this.priceHistory = priceList;
+
+            // extract timelocked outputs (addresses starting with "3")
+            const vouts = giftTx.vout || [];
+            const timeLocked = vouts
+              .filter(o => (o?.scriptpubkey_address || '').startsWith('3'))
+              .map(o => ({
+                address: o.scriptpubkey_address,
+                sats: Number(o.value) || 0,
+                voutN: Number(o.n),
+                scriptPubKey: o.scriptpubkey || '',
+                spent: Boolean(o.spent)
+              }));
+
+            if (!timeLocked.length) {
+              this.error = 'No timelocked (3...) outputs found in the gift transaction.';
+              return;
+            }
+
+            this.timelockedOutputs = timeLocked;
+
+            // extract OP_RETURN encrypted hex (strip "6a" script wrapper)
+            const op = vouts.find(o => o?.scriptpubkey_type === 'op_return');
+            const asm = op?.scriptpubkey_asm || '';
+            // expected "OP_RETURN OP_PUSHBYTES_64 <hex>"
+            const asmParts = asm.split(' ').map(s => s.trim()).filter(Boolean);
+            const lastToken = asmParts[asmParts.length - 1] || '';
+            this.opReturnCipherHex = lastToken;
+
+            if (!/^[0-9a-fA-F]+$/.test(this.opReturnCipherHex)) {
+              this.error = 'OP_RETURN payload is missing or not hex.';
+              return;
+            }
+
+            // Build rows WITHOUT dates yet (locked until mnemonic)
+            this.buildRowsWithoutSchedule();
+
+            // Spend status
+            //this can be a heavy operation, let's hold it for now
+            //await this.refreshSpentStatuses();
+
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        buildRowsWithoutSchedule() {
+          const now = new Date();
+          this.rows = this.timelockedOutputs.map((o, i) => {
+            const btc = o.sats / 1e8;
+            const creationPrice = Number.isFinite(this.creationPriceUSD) ? this.creationPriceUSD : null;
+            const usdAtCreation = creationPrice !== null ? btc * creationPrice : NaN;
+            return {
+              index: i + 1,
+              address: o.address,
+              sats: o.sats,
+              btc,
+              scriptPubKey: o.scriptPubKey || '',
+              releaseDate: '',
+              ready: false,
+              pending: false,
+              spent: Boolean(o.spent),
+              checkedSpent: false,
+              usdAtCreation,
+              usdAtRelease: NaN
+            };
+          });
+
+          this.totalBTC = this.rows.reduce((s, r) => s + r.btc, 0);
+        },
+
+        onMnemonicChanged() {
+          this.mnemonic = this.sanitizeMnemonic(this.mnemonic);
+          const words = (this.mnemonic || '').split(' ').filter(Boolean);
+          this.canTryUnlock = words.length === 12;
+          this.error = '';
+          this.notice = '';
+        },
+
+        async unlockGift() {
+          this.loading = true;
+          this.error = '';
+          this.notice = '';
+
+          try {
+            // 1) derive keys from mnemonic
+            const cm = new CryptoManager();
+            const sanitizedMnemonic = this.sanitizeMnemonic(this.mnemonic.trim());
+            const res = await cm.importMnemonic(sanitizedMnemonic);
+            if (!res?.success) throw new Error(res?.error || 'Mnemonic import failed');
+
+            this.cryptoManager = cm;
+
+            if (this.fundingAddress != cm.fundingAddress) {
+              throw new Error('The 12 words you provided do not match the current gift address.');
+              return;
+              this.fundingAddress = cm.fundingAddress;
+              loadGiftFromAddressTxs();
+            }
+
+            this.releaseAddress = cm.releaseAddress || '';
+            this.aesKeyAddress = cm.aesKeyAddress || '';
+
+            if (!this.aesKeyAddress) throw new Error('AES key address (m/84/0/0/0/2) not derived.');
+
+            // 2) decrypt OP_RETURN to get first release date
+            console.log("opReturnCipherHex", this.opReturnCipherHex);
+            if (!window.__decryptShortHex) throw new Error('AESHelper decryptShortHex not loaded.');
+            let firstDate = await window.__decryptShortHex(this.opReturnCipherHex, this.aesKeyAddress); 
+
+            console.log("firstDate", firstDate);
+
+            // If decrypt returns hex (like 3230...), convert hex -> UTF-8 text
+            if (/^[0-9a-fA-F]+$/.test(firstDate) && firstDate.length % 2 === 0) {
+              try {
+                const bytes = new Uint8Array(firstDate.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+                firstDate = new TextDecoder().decode(bytes).trim();
+              } catch (_) {
+                // ignore and fall through
+              }
+            }
+
+            // expect YYYY-MM-DD
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(firstDate)) {
+              throw new Error(`Decrypted value is not YYYY-MM-DD: ${firstDate}`);
+            }
+
+            this.firstReleaseDateISO = firstDate;
+
+            // 3) validate first CLTV address and discover interval (month vs year)
+            const derivedFirst = await this.computeCltvForDate(firstDate, cm);
+
+            const outputAddresses = new Set(this.timelockedOutputs.map(o => o.address));
+            if (!outputAddresses.has(derivedFirst.address)) {
+              throw new Error('Derived first release address does not match any gift output.');
+            }
+
+            const resolvedInterval = await this.detectIntervalFromOutputs(firstDate, cm);
+            this.interval = resolvedInterval;
+
+            const scheduleResult = await this.countScheduleMatches(firstDate, resolvedInterval, cm);
+            const { schedule, computed } = scheduleResult;
+            const addrMap = new Map(computed.map(c => [c.address, c]));
+            const nowUtc = new Date();
+
+            this.rows = this.rows.map((r, idx) => {
+              const derived = addrMap.get(r.address);
+              const releaseDate = derived?.date || schedule[idx] || '';
+              const ready = releaseDate ? this.isReadyForRelease(releaseDate) : false;
+              return {
+                ...r,
+                releaseDate,
+                ready,
+                validation: derived ? 'match' : 'mismatch',
+                redeemScript: derived?.redeemScript || r.redeemScript,
+                locktime: derived?.locktime || r.locktime
+              };
+            });
+
+            const mismatches = this.rows.filter(r => r.validation === 'mismatch').length;
+            this.notice = mismatches
+              ? `Unlocked, but ${mismatches} output(s) did not match derived addresses.`
+              : `Your gift key has been validated.`;
+
+            this.unlocked = true;
+            this.updateReadyCount();
+
+            await this.refreshSpentStatuses();
+          } catch (e) {
+            console.log(e);
+            this.error = e?.message || String(e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        buildSchedule(startISO, count, interval) {
+          const [y, m, d] = startISO.split('-').map(Number);
+          let dt = new Date(Date.UTC(y, m - 1, d));
+          const out = [];
+
+          for (let i = 0; i < count; i++) {
+            out.push(dt.toISOString().slice(0, 10));
+            if (interval === 'year') {
+              dt = new Date(Date.UTC(dt.getUTCFullYear() + 1, dt.getUTCMonth(), dt.getUTCDate()));
+            } else {
+              // month
+              dt = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate()));
+            }
+          }
+          return out;
+        },
+
+        sanitizeMnemonic(input) {
+          return (input || '')
+            .replace(/[^a-zA-Z ]+/g, ' ') // strip non letters except spaces
+            .replace(/\s+/g, ' '); // collapse whitespace
+            //.trim();
+        },
+
+        addIntervalToDate(startISO, interval) {
+          const [y, m, d] = startISO.split('-').map(Number);
+          const base = new Date(Date.UTC(y, m - 1, d));
+          const next = interval === 'year'
+            ? new Date(Date.UTC(base.getUTCFullYear() + 1, base.getUTCMonth(), base.getUTCDate()))
+            : new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate()));
+          return next.toISOString().slice(0, 10);
+        },
+
+        async computeCltvForDate(dateISO, cm) {
+          const locktime = Math.floor(new Date(dateISO + 'T00:00:00Z').getTime() / 1000);
+          const script = cm.buildCLTVScript(locktime, cm.publicKeyHex);
+          const address = await cm.createP2SHAddress(script);
+          const redeemScript = cm.bytesToHex ? cm.bytesToHex(script) : '';
+          return { address, locktime, date: dateISO, redeemScript };
+        },
+
+        async detectIntervalFromOutputs(firstDate, cm) {
+          if (this.timelockedOutputs.length < 2) return this.interval;
+
+          const targetSecond = this.timelockedOutputs[1]?.address || '';
+          const monthDate = this.addIntervalToDate(firstDate, 'month');
+          const monthSecond = await this.computeCltvForDate(monthDate, cm);
+          if (monthSecond.address === targetSecond) return 'month';
+
+          const yearDate = this.addIntervalToDate(firstDate, 'year');
+          const yearSecond = await this.computeCltvForDate(yearDate, cm);
+          if (yearSecond.address === targetSecond) return 'year';
+
+          const monthMatches = await this.countScheduleMatches(firstDate, 'month', cm);
+          const yearMatches = await this.countScheduleMatches(firstDate, 'year', cm);
+          return yearMatches.matches > monthMatches.matches ? 'year' : 'month';
+        },
+
+        async countScheduleMatches(firstDate, interval, cm) {
+          const schedule = this.buildSchedule(firstDate, this.timelockedOutputs.length, interval);
+          const computed = [];
+          for (const d of schedule) {
+            computed.push(await this.computeCltvForDate(d, cm));
+          }
+
+          const addrSet = new Set(this.timelockedOutputs.map(o => o.address));
+          const matches = computed.filter(c => addrSet.has(c.address)).length;
+
+          return { matches, schedule, computed };
+        },
+
+        isReadyForRelease(releaseDateISO) {
+          // Consider GMT-1 cutoff to align with CLTV median time past buffer
+          const now = new Date();
+          const cutoff = new Date(Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            now.getUTCDate(),
+            now.getUTCHours() - 1
+          ));
+          const rd = new Date(releaseDateISO + 'T00:00:00Z');
+          return rd <= cutoff;
+        },
+
+        updateReadyCount() {
+          let count = 0;
+          this.rows = this.rows.map(r => {
+            const readyNow = !r.pending && !r.spent && this.isReadyForRelease(r.releaseDate || '');
+            if (readyNow && !r.spent) count++;
+            return { ...r, ready: readyNow };
+          });
+          this.readyCount = count;
+        },
+
+        async fetchRawTxHex(txid) {
+          const url = `${this.baseApi}/tx/${txid}/hex`;
+          const res = await fetch(url).then(r => r.json());
+          if (res?.hex) return res.hex.trim();
+          throw new Error(res?.error || `Failed to fetch raw tx for ${txid}`);
+        },
+
+        async ensureNonWitnessUtxo(utxos) {
+          const missing = utxos.filter(u => !u.nonWitnessUtxo);
+          if (!missing.length) return utxos;
+          const uniqTxids = Array.from(new Set(missing.map(u => u.txid)));
+          const fetched = new Map();
+          for (const txid of uniqTxids) {
+            const hex = await this.fetchRawTxHex(txid);
+            fetched.set(txid, hex);
+          }
+          return utxos.map(u => {
+            if (u.nonWitnessUtxo) return u;
+            const hex = fetched.get(u.txid);
+            return hex ? { ...u, nonWitnessUtxo: hex } : u;
+          });
+        },
+
+        buildUnsignedReleaseTx({ utxos, destinationAddress, outputSats, lockTime }) {
+          if (!window.coinjs) throw new Error('coin.js not loaded.');
+          if (!Array.isArray(utxos) || !utxos.length) throw new Error('No inputs provided.');
+          if (!destinationAddress) throw new Error('Missing destination address.');
+
+          const sendValue = Math.trunc(Number(outputSats) || 0);
+          if (sendValue <= 0) throw new Error('Output amount must be positive.');
+
+          const tx = coinjs.transaction();
+          tx.lock_time = typeof lockTime === 'number' ? lockTime : 0;
+
+          utxos.forEach((u) => {
+            const seq = typeof u.sequence === 'number' ? u.sequence : 0xfffffffe;
+            tx.addinput(u.txid, Number(u.vout), u.redeemScript, seq);
+          });
+
+          const valueBtc = sendValue / 1e8;
+          tx.addoutput(destinationAddress, valueBtc);
+
+          return tx.serialize();
+        },
+
+        async signCltvReleaseTx({ unsignedTxHex, wif }) {
+          if (!window.coinjs) throw new Error('coin.js not loaded.');
+          if (!wif) throw new Error('Missing WIF for signing.');
+
+          const tx = coinjs.transaction();
+          const txUnserialized = tx.deserialize(unsignedTxHex);
+
+          if (!txUnserialized || !txUnserialized.ins || !txUnserialized.ins.length) {
+            throw new Error('Invalid or empty transaction inputs.');
+          }
+
+          for (let i = 0; i < txUnserialized.ins.length; i++) {
+            txUnserialized.signhodl(i, wif, 1);
+          }
+
+          const signedHex = txUnserialized.serialize();
+          return {
+            hex: signedHex,
+            vsize: Math.ceil(signedHex.length / 2),
+            txid: this.computeTxidFromHex(signedHex)
+          };
+        },
+
+        computeTxidFromHex(rawHex) {
+          try {
+            if (!window.Crypto || !Crypto.util || !rawHex) return '';
+            const first = Crypto.SHA256(Crypto.util.hexToBytes(rawHex), { asBytes: true });
+            const second = Crypto.SHA256(first, { asBytes: true });
+            return Crypto.util.bytesToHex(second.reverse());
+          } catch (err) {
+            console.error('Failed to compute txid', err);
+            return '';
+          }
+        },
+
+        async releaseReady() {
+          if (!this.unlocked) {
+            this.error = 'Unlock the gift first.';
+            return;
+          }
+          const readyRows = this.rows.filter(r => r.ready && !r.spent);
+          if (!readyRows.length) {
+            this.notice = 'No payments are ready to release.';
+            return;
+          }
+          if (!window.coinjs) {
+            this.error = 'Transaction builder not available (coin.js missing).';
+            return;
+          }
+          try {
+            this.loading = true;
+            this.error = '';
+            this.notice = '';
+
+            // Collect UTXOs for ready addresses
+            const utxos = [];
+            const readyAddresses = new Set(readyRows.map(r => r.address));
+
+            // Preferred: use cached utxos gathered from RPC (includes vout)
+            for (const r of readyRows) {
+              const cached = this.utxoCache.get(r.address) || [];
+              cached.forEach(u => {
+                utxos.push({
+                  txid: u.txid || u.tx_hash || '',
+                  vout: typeof u.vout !== 'undefined' ? u.vout : (typeof u.txout_n !== 'undefined' ? u.txout_n : (typeof u.n !== 'undefined' ? u.n : 0)),
+                  value: Number(u.value) || 0,
+                  redeemScript: r.redeemScript || '',
+                  locktime: r.locktime
+                });
+              });
+            }
+
+            // Fallback: derive from known txs if cache missing
+            if (!utxos.length) {
+              for (const tx of this.txs || []) {
+                const txid = tx?.txid;
+                const vouts = tx?.vout || [];
+                for (const o of vouts) {
+                  const addr = o?.scriptpubkey_address || '';
+                  if (readyAddresses.has(addr)) {
+                    const matchedRow = readyRows.find(x => x.address === addr);
+                    utxos.push({
+                      txid,
+                      vout: typeof o.n !== 'undefined' ? o.n : (typeof o.vout !== 'undefined' ? o.vout : 0),
+                      value: Number(o.value) || 0,
+                      redeemScript: matchedRow?.redeemScript || '',
+                      locktime: matchedRow?.locktime
+                    });
+                  }
+                }
+              }
+            }
+
+            if (!utxos.length) {
+              throw new Error('No UTXOs found for ready outputs.');
+            }
+
+            if (utxos.some(u => !u.txid || typeof u.vout === 'undefined')) {
+              throw new Error('Missing txid or vout for one or more ready outputs.');
+            }
+
+            if (utxos.some(u => !u.redeemScript)) {
+              throw new Error('Missing redeem script for one or more ready outputs.');
+            }
+
+            if (!this.releaseAddress) {
+              throw new Error('Missing destination address.');
+            }
+
+            const totalValue = utxos.reduce((s, u) => s + (u.value || 0), 0);
+            const feeRate = 2; // sats/vbyte (conservative above min relay)
+            const txLockTime = utxos.reduce((m, u) => Math.max(m, Number(u.locktime) || 0), 0);
+
+            // First pass to estimate size and fee
+            const unsignedEstimate = this.buildUnsignedReleaseTx({
+              utxos,
+              destinationAddress: this.releaseAddress,
+              outputSats: totalValue,
+              lockTime: txLockTime
+            });
+
+            const signedEstimate = await this.signCltvReleaseTx({
+              unsignedTxHex: unsignedEstimate,
+              wif: this.cryptoManager.cltvWif || this.cryptoManager.wif
+            });
+
+            const estFee = Math.ceil((signedEstimate.vsize || 0) * feeRate);
+            const sendValue = totalValue - estFee;
+            if (sendValue <= 0) {
+              throw new Error('Not enough funds to cover fee.');
+            }
+
+            // Build with fee deducted
+            const unsignedFinal = this.buildUnsignedReleaseTx({
+              utxos,
+              destinationAddress: this.releaseAddress,
+              outputSats: sendValue,
+              lockTime: txLockTime
+            });
+
+            const signedFinal = await this.signCltvReleaseTx({
+              unsignedTxHex: unsignedFinal,
+              wif: this.cryptoManager.cltvWif || this.cryptoManager.wif
+            });
+
+            const finalFee = totalValue - sendValue;
+            this.releaseTxHex = signedFinal.hex;
+            this.notice = `Release transaction ready. TXID (pre-broadcast): ${signedFinal.txid || 'n/a'} (fee ~${finalFee} sats)`;
+
+            // Try broadcast via backend
+            try {
+              const client = new BtcBackendClient({ baseUrl: this.baseApi.replace(/\/bitcoin$/, '/') });
+              const res = await client.broadcastRawTx(signedFinal.hex);
+              if (res?.success && res.txid) {
+                this.notice = `Release transaction broadcast. TXID: ${res.txid}`;
+                const readySet = new Set(readyRows.map(r => r.address));
+                this.rows = this.rows.map(r => readySet.has(r.address) ? { ...r, pending: true, ready: false } : r);
+                this.updateReadyCount();
+              } else if (res?.error) {
+                this.error = `Broadcast failed: ${res.error}`;
+              } else {
+                this.error = 'Broadcast response unknown.';
+              }
+            } catch (err) {
+              this.error = `Broadcast error: ${err?.message || err}`;
+            }
+          } catch (e) {
+            this.error = e?.message || String(e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async refreshSpentStatuses() {
+          // Marks "spent" if tx history shows outputs redeemed; caches utxos otherwise
+          try {
+            const now = new Date();
+            const tomorrowUtc = new Date(Date.UTC(
+              now.getUTCFullYear(),
+              now.getUTCMonth(),
+              now.getUTCDate() + 1
+            ));
+
+            const dueRows = this.rows.filter(r => {
+              if (!r.releaseDate) return false;
+              const rd = new Date(r.releaseDate + 'T00:00:00Z');
+              return rd <= tomorrowUtc;
+            });
+
+            console.log("refreshSpentStatuses dueRows", dueRows);
+            const checks = dueRows.map(async (r) => {
+              const url = `${this.baseApi}/address/${r.address}/txs`;
+              const data = await fetch(url).then(resp => resp.json());
+              const txs = Array.isArray(data) ? data : [];
+
+              let spendingTx = null;
+              let candidateOutput = null;
+
+              for (const tx of txs) {
+                const vouts = tx?.vout || [];
+                vouts.forEach((out, idx) => {
+                  if ((out?.scriptpubkey_address || '') === r.address) {
+                    candidateOutput = {
+                      txid: tx.txid,
+                      vout: typeof out.n !== 'undefined' ? out.n : idx,
+                      value: Number(out.value) || 0,
+                      scriptpubkey: out.scriptpubkey || ''
+                    };
+                  }
+                });
+
+                if (!spendingTx) {
+                  const vins = tx?.vin || [];
+                  const spentHere = vins.some(v => (v?.prevout?.scriptpubkey_address || '') === r.address);
+                  if (spentHere) spendingTx = tx;
+                }
+              }
+
+              if (!spendingTx && candidateOutput) {
+                this.utxoCache.set(r.address, [{
+                  txid: candidateOutput.txid,
+                  vout: candidateOutput.vout,
+                  value: candidateOutput.value,
+                  scriptpubkey: candidateOutput.scriptpubkey,
+                  nonWitnessUtxo: ''
+                }]);
+              } else {
+                this.utxoCache.delete(r.address);
+              }
+
+              const priceUsd = spendingTx ? this.extractPriceUsd(spendingTx?.status) : NaN;
+              const usdAtRelease = Number.isFinite(priceUsd) ? (r.btc * priceUsd) : NaN;
+
+              return { address: r.address, spent: Boolean(spendingTx), usdAtRelease };
+            });
+
+            const results = await Promise.all(checks);
+            const map = new Map(results.map(x => [x.address, x]));
+
+            this.rows = this.rows.map(r => {
+              if (!map.has(r.address)) return r;
+              const { spent, usdAtRelease } = map.get(r.address);
+              return {
+                ...r,
+                spent,
+                pending: spent ? false : r.pending,
+                checkedSpent: true,
+                usdAtRelease: Number.isFinite(usdAtRelease) ? usdAtRelease : r.usdAtRelease
+              };
+            });
+          } catch (e) {
+            // non-fatal
+            this.error = `Status refresh failed: ${e?.message || e}`;
+          }
+          this.updateReadyCount();
+        },
+
+        extractPriceUsd(status) {
+          const list = Array.isArray(status?.price) ? status.price : [];
+          const entry = list.find(p => typeof p?.USD === 'number');
+          const value = entry ? Number(entry.USD) : NaN;
+          return Number.isFinite(value) ? value : NaN;
+        },
+
+        // --- helpers used by your existing template ---
+        formatUSD(v) {
+          if (isNaN(v)) return '-';
+          return new Intl.NumberFormat(undefined, {
+            style: 'currency', currency: 'USD', maximumFractionDigits: 2
+          }).format(v);
+        },
+        formatDate(d) {
+          if (!d) return '-';
+          return new Intl.DateTimeFormat(undefined, {
+            year: 'numeric', month: 'short', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
+          }).format(d) + ' UTC';
+        },
+
+        // keep your existing bindings alive
+        get createdAtForTemplate() { return this.createdAt; },
+        get giftOutputs() { return this.timelockedOutputs; },
+        get prices() {
+          return {
+            creation: Number.isFinite(this.creationPriceUSD) ? this.creationPriceUSD : NaN,
+            time: this.creationPriceTime,
+            history: this.priceHistory
+          };
+        },
+        get totalUSDAtCreation() {
+          if (!Number.isFinite(this.creationPriceUSD)) return NaN;
+          return this.rows.reduce((sum, row) => {
+            const value = Number(row.usdAtCreation);
+            return sum + (Number.isFinite(value) ? value : 0);
+          }, 0);
+        },
+        get totalUSDAtRelease() {
+          let hasValue = false;
+          const total = this.rows.reduce((sum, row) => {
+            const value = Number(row.usdAtRelease);
+            if (Number.isFinite(value)) {
+              hasValue = true;
+              return sum + value;
+            }
+            return sum;
+          }, 0);
+          return hasValue ? total : NaN;
+        },
+      };
+    }
+  </script>
+</body>
+
+</html>

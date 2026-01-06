@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+psycopg2-binary
+python-bitcoinrpc
+httpx
+pydantic
+PyPDF2
+reportlab
+qrcode[pil]
+python-dotenv
