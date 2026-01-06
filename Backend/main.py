@@ -57,7 +57,7 @@ GIFT_CARD_QR = {
 
 @app.get("/")
 def read_root():
-    return {"message": "Future home of www.bc1q21.com"}
+    return {"message": "Home of www.bc1q21.com"}
 
 
 @app.get("/bitcoin/getblockchaininfo")
