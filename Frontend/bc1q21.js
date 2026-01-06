@@ -12,7 +12,7 @@ const HELP_VIDEOS = {
     // Per-step links
     start: 'https://youtu.be/bEgwt-rQo1g',
     welcome: 'https://youtu.be/1RJarLZ9Ol0',
-    gift_type: 'https://www.youtube.com/watch?v=PZJMalUj_6g',
+    gift_type: 'https://youtu.be/k5VFMU5UfZs',
     one_time_claim_date: 'https://www.youtube.com/watch?v=H9nYgutWsp8',
     schedule_duration: 'https://www.youtube.com/watch?v=M8CihApXPgk',
     equal_payouts: 'https://www.youtube.com/watch?v=LcdK9Q3TTrM',
