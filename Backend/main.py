@@ -15,6 +15,9 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
 from dotenv import load_dotenv
+import smtplib
+import ssl
+from email.message import EmailMessage
 
 load_dotenv()
 required_env = ["BITCOIN_RPC_URL", "RPC_USER", "RPC_PASSWORD"]
@@ -673,3 +676,62 @@ async def get_address_txs(address: str, response: Response):
 
         # No cache to fall back on
         raise HTTPException(status_code=502, detail=f"TX fetch failed: {str(e)}")
+
+
+@app.post("/contact")
+async def contact_form(request: Request):
+    form = await request.form()
+    name = (form.get("name") or "Anonymous").strip()
+    email_raw = (form.get("email") or "").strip()
+    message = (form.get("field") or "").strip()
+    email_display = email_raw or "No email provided"
+
+    try:
+        await run_in_threadpool(_send_contact_email, name, email_display, message)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Unable to send email: {exc}")
+
+    return {"status": "success", "message": "Thank you for contacting us!"}
+
+
+
+def _send_contact_email(name: str, email: str, message: str) -> None:
+    smtp_host = os.environ.get("SMTP_HOST", "mail.privateemail.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", "465"))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    contact_to = os.environ.get("CONTACT_TO") or smtp_user
+
+    if not smtp_user or not smtp_password or not contact_to:
+        raise RuntimeError("SMTP_USER, SMTP_PASSWORD, and CONTACT_TO (or SMTP_USER) must be set.")
+
+    subject = f"New contact form submission from {name}"
+    body = (
+        f"Name: {name}\n"
+        f"Email: {email}\n\n"
+        f"Message:\n{message}\n"
+    )
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = smtp_user
+    msg["To"] = contact_to
+    if email and "@" in email:
+        msg["Reply-To"] = email
+    msg.set_content(body)
+
+    use_ssl_env = os.environ.get("SMTP_USE_SSL", "").strip().lower()
+    use_ssl = (use_ssl_env in {"1", "true", "yes", "on"}) if use_ssl_env else smtp_port == 465
+
+    context = ssl.create_default_context()
+    if use_ssl:
+        with smtplib.SMTP_SSL(smtp_host, smtp_port, context=context) as server:
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+    else:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
