@@ -14,7 +14,7 @@ const HELP_VIDEOS = {
     welcome: 'https://youtu.be/bEgwt-rQo1g',
     gift_type: 'https://youtu.be/k5VFMU5UfZs',
     one_time_claim_date: 'https://youtu.be/QVOl9JIbS1s',
-    schedule_duration: 'https://youtu.be/QBcEHQck2NE',
+    schedule_duration: 'https://youtu.be/zS2yiO69ZBw',
     equal_payouts: 'https://youtu.be/zS2yiO69ZBw',
     prefilled_equal_table: 'https://youtu.be/S4vWG-cdQVY',
     schedule_or_manual: 'https://youtu.be/VmKv92i279k',
