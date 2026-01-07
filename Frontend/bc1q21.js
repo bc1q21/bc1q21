@@ -10,8 +10,8 @@
 // ---- Step Help Video Links (easy to edit in one place) ----
 const HELP_VIDEOS = {
     // Per-step links
-    start: 'https://youtu.be/bEgwt-rQo1g',
-    welcome: 'https://youtu.be/1RJarLZ9Ol0',
+    start: 'https://youtu.be/1RJarLZ9Ol0',
+    welcome: 'https://youtu.be/bEgwt-rQo1g',
     gift_type: 'https://youtu.be/k5VFMU5UfZs',
     one_time_claim_date: 'https://youtu.be/QVOl9JIbS1s',
     schedule_duration: 'https://youtu.be/QBcEHQck2NE',
