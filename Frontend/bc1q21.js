@@ -20,7 +20,7 @@ const HELP_VIDEOS = {
     schedule_or_manual: 'https://youtu.be/zkMnEv0PjLY',
     btc_value_projection: 'https://youtu.be/jfsRDUc5sT0',
     projected_table: 'https://youtu.be/tgCVSQb9W-U',
-    manual_entry: 'https://youtu.be/jfsRDUc5sT0',
+    manual_entry: 'https://youtu.be/tgCVSQb9W-U',
     finish_schedule: 'https://youtu.be/zS2yiO69ZBw',
     recovery_words: 'https://youtu.be/nmLwOlxFFhI',
     add_funds: 'https://youtu.be/Fb0rmrw0zak',
