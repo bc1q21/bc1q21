@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import os
 import httpx
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.concurrency import run_in_threadpool
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -691,7 +691,29 @@ async def contact_form(request: Request):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Unable to send email: {exc}")
 
-    return {"status": "success", "message": "Thank you for contacting us!"}
+    html = """
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Message Sent</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.5; }
+          .wrap { max-width: 600px; margin: 0 auto; }
+          a { color: #0b57d0; }
+        </style>
+      </head>
+      <body>
+        <div class="wrap">
+          <h1>Thank you!</h1>
+          <p>Your message has been sent. We'll get back to you shortly.</p>
+          <p><a href="/">Return to homepage</a></p>
+        </div>
+      </body>
+    </html>
+    """
+    return HTMLResponse(content=html, status_code=200)
 
 
 
