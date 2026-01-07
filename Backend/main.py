@@ -678,7 +678,7 @@ async def get_address_txs(address: str, response: Response):
         raise HTTPException(status_code=502, detail=f"TX fetch failed: {str(e)}")
 
 
-@app.post("/contact")
+@app.post("/bitcoin/contact")
 async def contact_form(request: Request):
     form = await request.form()
     name = (form.get("name") or "Anonymous").strip()
