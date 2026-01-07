@@ -17,7 +17,7 @@ const HELP_VIDEOS = {
     schedule_duration: 'https://youtu.be/QBcEHQck2NE',
     equal_payouts: 'https://youtu.be/S4vWG-cdQVY',
     prefilled_equal_table: 'https://youtu.be/zkMnEv0PjLY',
-    schedule_or_manual: 'https://youtu.be/VmKv92i279k',
+    schedule_or_manual: 'https://youtu.be/zkMnEv0PjLY',
     btc_value_projection: 'https://youtu.be/jfsRDUc5sT0',
     projected_table: 'https://youtu.be/KKvNp9wArPA',
     manual_entry: 'https://youtu.be/tgCVSQb9W-U',
