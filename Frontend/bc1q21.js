@@ -24,7 +24,7 @@ const HELP_VIDEOS = {
     finish_schedule: 'https://youtu.be/zS2yiO69ZBw',
     recovery_words: 'https://youtu.be/nmLwOlxFFhI',
     add_funds: 'https://youtu.be/Fb0rmrw0zak',
-    finish_share: 'https://youtu.be/-UXBPt4MPds',
+    finish_share: 'https://youtu.be/XQGlT9WoVPA',
     
     // Optional fallbacks per group (used when a step isn’t listed above)
     group_1: 'https://youtu.be/your-plan-overview',
