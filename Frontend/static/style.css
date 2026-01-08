@@ -340,7 +340,7 @@
 
     .option-card.selected {
       border: 5px solid var(--bc1q-blue);
-      background-color: var(--bc1q-blue);
+      /*background-color: var(--bc1q-blue);*/
       box-shadow: 0 0 0 2px rgba(55, 91, 110, .15) inset;
     }
 
