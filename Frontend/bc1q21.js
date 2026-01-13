@@ -221,7 +221,12 @@ function giftWizard() {
         },
         
         getContinueText() {
+            if (this.navigationManager.currentStep === 'finish_share') return 'Create a New Gift';
             return this.navigationManager.stepGroup < 4 ? 'Continue' : 'Finish';
+        },
+
+        createNewGift() {
+            window.location.reload();
         },
         
         // ====
