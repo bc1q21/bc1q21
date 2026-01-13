@@ -708,9 +708,7 @@
 
       <!-- unified Back/Continue for Group 4 -->
       <div class="wizard-actions" x-show="navigationState.stepGroup===4">
-        <button class="btn-outline" @click="navigateBack()">Back</button>
-        <span class="spacer"></span>
-        <button class="btn-primary" @click="navigateForward()" x-text="getContinueText()"></button>
+        <button class="btn-primary" @click="createNewGift()" x-text="getContinueText()"></button>
       </div>
     </div>
   </main>

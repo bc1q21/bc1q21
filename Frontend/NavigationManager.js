@@ -133,9 +133,9 @@ class NavigationManager {
             // Step Group 4: Finish & Share
             'finish_share': {
                 group: 4,
-                canGoBack: true,
+                canGoBack: false,
                 validate: () => true,
-                getNextStep: () => 'welcome'
+                getNextStep: () => null
             }
         };
     }
