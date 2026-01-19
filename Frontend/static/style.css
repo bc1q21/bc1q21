@@ -635,3 +635,14 @@ a.help-link .help-icon {
   font-weight: 900 !important;
   font-size: 18px !important;
 }
+/* Gentle pulse animation for Help button on page load */
+@keyframes helpPulse {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(31, 90, 165, 0.6); }
+  50%  { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(31, 90, 165, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(31, 90, 165, 0); }
+}
+
+/* Apply pulse only on initial load */
+a.help-link {
+  animation: helpPulse 0.9s ease-in-out 4;
+}
