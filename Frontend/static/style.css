@@ -582,29 +582,42 @@
 
 /* hide Alpine.js components until the page is done loading */
 [x-cloak] { display: none }
-/* Force custom Help button style over Pico defaults */
-a.help-link {
-  text-decoration: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
+/* Final Help Button Styling */
 
-a.help-link .help-btn {
-  display: flex !important;
+a.help-link {
+  margin-left: auto !important;
+
+  display: inline-flex !important;
   align-items: center !important;
   gap: 12px !important;
 
   background: #ffffff !important;
-  border: 3px solid #1f5aa5 !important;
   color: #1f5aa5 !important;
 
-  font-weight: 800 !important;
-  padding: 10px 18px !important;
+  border: 3px solid #1f5aa5 !important;
   border-radius: 14px !important;
+
+  padding: 10px 18px !important;
+
+  text-decoration: none !important;
+  font-weight: 800 !important;
   letter-spacing: 0.06em !important;
   font-size: 15px !important;
 
-  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+a.help-link .help-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+
+  color: inherit !important;
 }
 
 a.help-link .help-icon {
@@ -615,7 +628,7 @@ a.help-link .help-icon {
   background: #1f5aa5 !important;
   color: #ffffff !important;
 
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
 
