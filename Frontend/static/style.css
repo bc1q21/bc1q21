@@ -582,34 +582,43 @@
 
 /* hide Alpine.js components until the page is done loading */
 [x-cloak] { display: none }
-/* Custom Help Button Style */
-.help-link {
-  text-decoration: none;
+/* Force custom Help button style over Pico defaults */
+a.help-link {
+  text-decoration: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
-.help-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #ffffff;
-  border: 2px solid #1f5aa5;
-  color: #1f5aa5;
-  font-weight: 700;
-  padding: 8px 14px;
-  border-radius: 10px;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  font-size: 14px;
+a.help-link .help-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+
+  background: #ffffff !important;
+  border: 3px solid #1f5aa5 !important;
+  color: #1f5aa5 !important;
+
+  font-weight: 800 !important;
+  padding: 10px 18px !important;
+  border-radius: 14px !important;
+  letter-spacing: 0.06em !important;
+  font-size: 15px !important;
+
+  cursor: pointer !important;
 }
 
-.help-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #1f5aa5;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
+a.help-link .help-icon {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+
+  background: #1f5aa5 !important;
+  color: #ffffff !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  font-weight: 900 !important;
+  font-size: 18px !important;
 }
