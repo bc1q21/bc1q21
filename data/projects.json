@@ -1,0 +1,27 @@
+{
+  "projects": [
+    {
+      "id": "example-family-2026-02-12",
+      "title": "Emergency Support — Family #1",
+      "category": "family",
+      "status": "active",
+      "created_at": "2026-02-12",
+      "goal_sats": 1200000,
+      "btc_address": "bc1qreplace_this_with_a_real_address",
+      "summary": "Short, plain-language summary of what this project is and who it helps.",
+      "story": "Longer story. Keep it human. Explain what the funds are for and what happens once the goal is reached.",
+      "proof_links": [
+        {
+          "label": "Reference link (X post, article, etc.)",
+          "url": "https://example.com"
+        }
+      ],
+      "updates": [
+        {
+          "date": "2026-02-12",
+          "text": "Project created. Donations now open."
+        }
+      ]
+    }
+  ]
+}
