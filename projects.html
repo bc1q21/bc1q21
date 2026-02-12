@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Active Projects — bc1q21</title>
+  <style>
+    :root { --max: 980px; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #0b0b0c; color: #f2f2f2; }
+    a { color: #7dd3fc; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header { padding: 22px 16px; border-bottom: 1px solid #222; background: #0f0f10; }
+    .wrap { max-width: var(--max); margin: 0 auto; }
+    .toprow { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .brand { font-weight: 700; letter-spacing: .2px; }
+    .btn { display: inline-block; padding: 10px 12px; border: 1px solid #2a2a2a; border-radius: 10px; background: #151518; }
+    .btn:hover { border-color: #3a3a3a; }
+    main { padding: 18px 16px 40px; }
+    h1 { margin: 0 0 10px; font-size: 22px; }
+    .note { background: #121216; border: 1px solid #25252a; border-radius: 14px; padding: 14px; margin: 14px 0 18px; line-height: 1.45; }
+    .warn { border-left: 4px solid #f59e0b; }
+    .disclose { border-left: 4px solid #60a5fa; }
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+    select { padding: 10px 12px; border-radius: 10px; border: 1px solid #2a2a2a; background: #0f0f10; color: #f2f2f2; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .card { border: 1px solid #25252a; border-radius: 16px; padding: 14px; background: #101013; }
+    .card h2 { margin: 0 0 6px; font-size: 18px; }
+    .meta { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; opacity: .95; margin-bottom: 10px; }
+    .pill { padding: 4px 8px; border-radius: 999px; border: 1px solid #2a2a2a; background: #0f0f10; }
+    .pill.active { border-color: #22c55e; }
+    .pill.funded { border-color: #f59e0b; }
+    .pill.completed { border-color: #60a5fa; }
+    .addr { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12.5px; word-break: break-all; background: #0b0b0c; border: 1px solid #25252a; padding: 10px; border-radius: 12px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+    .small { font-size: 13px; opacity: .9; line-height: 1.45; }
+    .links { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .hr { height: 1px; background: #222; margin: 12px 0; }
+    footer { padding: 18px 16px; border-top: 1px solid #222; background: #0f0f10; font-size: 13px; opacity: .9; }
+    .error { padding: 12px; border: 1px solid #ef4444; border-radius: 12px; background: rgba(239,68,68,.08); }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap toprow">
+      <div class="brand">bc1q21</div>
+      <div class="row">
+        <a class="btn" href="index.html">Home</a>
+        <a class="btn" href="projects.html">Active Projects</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Active Projects</h1>
+
+    <div class="note warn">
+      <strong>Scam warning:</strong> Only donate using addresses shown on this page at <strong>bc1q21.com</strong>.
+      Scammers copy projects and swap addresses. If you didn’t get the address from this page, don’t trust it.
+    </div>
+
+    <div class="note disclose">
+      <strong>Custody disclosure (read this):</strong>
+      Donations to these projects go to a project-specific Bitcoin address controlled by bc1q21 (custodial).
+      Once a project reaches its stated goal, bc1q21 will convert the pooled funds into a time-locked Bitcoin gift (on-chain)
+      for the intended beneficiary, and will publish proof links and updates on this page.
+      If a project is closed, the address will not be reused.
+    </div>
+
+    <div class="filters">
+      <label>
+        Status:
+        <select id="statusFilter">
+          <option value="all">All</option>
+          <option value="active" selected>Active</option>
+          <option value="funded">Funded</option>
+          <option value="completed">Completed</option>
+        </select>
+      </label>
+
+      <label>
+        Category:
+        <select id="categoryFilter">
+          <option value="all" selected>All</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="list" class="grid"></div>
+    <div id="err" style="display:none" class="error"></div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      bc1q21 is native Bitcoin only. No database. This page loads projects from a public JSON file stored in GitHub.
+    </div>
+  </footer>
+
+  <script>
+    const listEl = document.getElementById("list");
+    const errEl = document.getElementById("err");
+    const statusFilterEl = document.getElementById("statusFilter");
+    const categoryFilterEl = document.getElementById("categoryFilter");
+
+    function formatSats(n) {
+      try { return Number(n).toLocaleString("en-US"); }
+      catch { return String(n); }
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function render(projects) {
+      // Sort newest first by created_at (YYYY-MM-DD)
+      projects.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+
+      // Build category dropdown
+      const categories = Array.from(new Set(projects.map(p => p.category).filter(Boolean))).sort();
+      categoryFilterEl.innerHTML = `<option value="all" selected>All</option>` + categories
+        .map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)
+        .join("");
+
+      function applyFilters() {
+        const statusVal = statusFilterEl.value;
+        const catVal = categoryFilterEl.value;
+
+        const filtered = projects.filter(p => {
+          const statusOk = (statusVal === "all") || (p.status === statusVal);
+          const catOk = (catVal === "all") || (p.category === catVal);
+          return statusOk && catOk;
+        });
+
+        if (!filtered.length) {
+          listEl.innerHTML = `<div class="note">No projects match your filters.</div>`;
+          return;
+        }
+
+        listEl.innerHTML = filtered.map(p => {
+          const title = escapeHtml(p.title);
+          const summary = escapeHtml(p.summary);
+          const story = escapeHtml(p.story).replaceAll("\n", "<br/>");
+          const status = escapeHtml(p.status);
+          const category = escapeHtml(p.category);
+          const created = escapeHtml(p.created_at);
+          const goal = formatSats(p.goal_sats);
+          const addr = escapeHtml(p.btc_address);
+
+          const statusClass = (p.status === "active") ? "active" :
+                              (p.status === "funded") ? "funded" :
+                              (p.status === "completed") ? "completed" : "";
+
+          const proofLinks = (p.proof_links || []).map(l =>
+            `<a class="btn" target="_blank" rel="noopener" href="${escapeHtml(l.url)}">${escapeHtml(l.label)}</a>`
+          ).join("");
+
+          const updates = (p.updates || []).slice().sort((a,b) => (b.date||"").localeCompare(a.date||""))
+            .map(u => `<div class="small"><strong>${escapeHtml(u.date)}:</strong> ${escapeHtml(u.text)}</div>`)
+            .join("");
+
+          // BIP21 URI (native on-chain only)
+          const bip21 = `bitcoin:${p.btc_address}`;
+
+          return `
+            <section class="card" id="${escapeHtml(p.id)}">
+              <h2>${title}</h2>
+
+              <div class="meta">
+                <span class="pill ${statusClass}">status: ${status}</span>
+                <span class="pill">category: ${category}</span>
+                <span class="pill">posted: ${created}</span>
+                <span class="pill">goal: ${goal} sats</span>
+              </div>
+
+              <div class="small"><strong>${summary}</strong></div>
+              <div class="hr"></div>
+              <div class="small">${story}</div>
+
+              <div class="hr"></div>
+              <div class="small"><strong>Donation address (on-chain):</strong></div>
+              <div class="addr">${addr}</div>
+
+              <div class="row">
+                <a class="btn" href="${bip21}">Open in wallet</a>
+                <a class="btn" href="#top" onclick="navigator.clipboard.writeText('${addr}'); return false;">Copy address</a>
+              </div>
+
+              ${(proofLinks || updates) ? `<div class="hr"></div>` : ""}
+
+              ${proofLinks ? `<div class="small"><strong>Proof links:</strong></div><div class="links">${proofLinks}</div>` : ""}
+
+              ${updates ? `<div class="hr"></div><div class="small"><strong>Updates:</strong></div>${updates}` : ""}
+
+            </section>
+          `;
+        }).join("");
+      }
+
+      statusFilterEl.addEventListener("change", applyFilters);
+      categoryFilterEl.addEventListener("change", applyFilters);
+      applyFilters();
+    }
+
+    async function main() {
+      try {
+        const res = await fetch("data/projects.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("Could not load data/projects.json");
+        const data = await res.json();
+        if (!data.projects || !Array.isArray(data.projects)) throw new Error("projects.json must contain { \"projects\": [...] }");
+        render(data.projects);
+      } catch (e) {
+        errEl.style.display = "block";
+        errEl.textContent = "Error: " + (e && e.message ? e.message : String(e));
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
