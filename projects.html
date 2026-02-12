@@ -208,7 +208,7 @@
 
     async function main() {
       try {
-        const res = await fetch("data/projects.json", { cache: "no-store" });
+        const res = await fetch("https://raw.githubusercontent.com/bc1q21/bc1q21/projects-draft/data/projects.json", { cache: "no-store" });
         if (!res.ok) throw new Error("Could not load data/projects.json");
         const data = await res.json();
         if (!data.projects || !Array.isArray(data.projects)) throw new Error("projects.json must contain { \"projects\": [...] }");
