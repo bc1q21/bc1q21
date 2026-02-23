@@ -1,6 +1,82 @@
 <!DOCTYPE html><!--  This site was created in Webflow. https://webflow.com  --><!--  Last Published: Wed Dec 24 2025 03:50:10 GMT+0000 (Coordinated Universal Time)  -->
 <html data-wf-page="686e9378494e607ddff5fb0c" data-wf-site="686e9378494e607ddff5fab9" lang="en">
-<head>
+<style>
+  /* Active Projects (V1) — local styles */
+  #projects-container{
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 20px;
+  }
+
+  .project-card{
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 24px;
+    padding: 24px;
+    margin: 0 0 24px 0;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    background: rgba(0,0,0,0.15);
+  }
+
+  .project-image{
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    display: block;
+  }
+
+  .project-title{
+    margin: 0 0 10px 0;
+  }
+
+  .project-desc{
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+  }
+
+  .project-metrics{
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin: 0 0 16px 0;
+    opacity: 0.95;
+  }
+
+  .project-address{
+    margin: 0 0 12px 0;
+  }
+
+  .project-address .addr{
+    display: block;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    overflow-wrap: anywhere;
+  }
+
+  .project-qr{
+    width: 180px;
+    height: 180px;
+    padding: 10px;
+    border-radius: 12px;
+    background: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Mobile */
+  @media (max-width: 820px){
+    .project-card{
+      grid-template-columns: 1fr;
+    }
+    .project-qr{
+      margin-top: 10px;
+    }
+  }
+</style>
+  <head>
   
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-PM9JGBHGZ1"></script>
