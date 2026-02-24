@@ -15,8 +15,13 @@
       const title = p.title || "Untitled Project";
       const description = p.description || "";
       const image = p.image || "";
-      const goal = p.goal || "";
-      const raised = p.raised || "";
+const goalSats = Number(p.goal_sats ?? 0);
+const raisedSats = Number(p.raised_sats ?? 0);
+
+const goalBTC = (goalSats / 100000000).toFixed(3);
+const raisedBTC = (raisedSats / 100000000).toFixed(3);
+
+const percent = goalSats > 0 ? Math.min((raisedSats / goalSats) * 100, 100) : 0;
       const address = p.address || "";
 
       const card = document.createElement("section");
@@ -32,9 +37,9 @@
           <p class="project-desc">${description}</p>
 
           <div class="project-metrics">
-            <div><strong>Goal:</strong> ${goal} BTC</div>
-            <div><strong>Raised:</strong> ${raised} BTC</div>
-          </div>
+  <div><strong>Goal:</strong> ${goalBTC} BTC</div>
+  <div><strong>Raised:</strong> ${raisedBTC} BTC</div>
+</div>
 
           <div class="project-address">
             <div class="addr-label"><strong>BTC address:</strong></div>
