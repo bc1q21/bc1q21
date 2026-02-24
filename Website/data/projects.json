@@ -3,9 +3,11 @@
     "title": "Sample Project",
     "description": "This is a placeholder description for V1. Replace with your real story later.",
     "image": "images/sample.jpg",
-    "goal": "0.25",
-    "raised": "0.03",
-    "address": "bc1qexampleexampleexampleexampleexampleexample"
+    "status": "active",
+    "category": "sample",
+    "posted": "2026-04-22",
+    "goal_sats": 25000000,
+    "raised_sats": 3000000,
+    "address": "bc1qexampleexampleexampleexampleexampleexampleexampleex"
   }
 ]
-
