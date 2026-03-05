@@ -1487,7 +1487,7 @@ li {
 }
 
 .hero-image {
-  width: 30rem;
+  /*width: 30rem;*/
   max-width: 100%;
   max-height: none;
 }
