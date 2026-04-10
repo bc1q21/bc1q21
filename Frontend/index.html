@@ -2,32 +2,29 @@
 <html lang="en" data-theme="light">
 
 <head>  
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PM9JGBHGZ1"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-PM9JGBHGZ1');
-  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>bc1q21 • Gifting Wizard</title>
 
   <!-- UI libs -->
-  <script src="static/collapse.min.js" defer></script>
-  <script src="static/alpine.min.js" defer></script>
-  <link rel="stylesheet" href="static/pico.min.css" />
+  <script src="static/collapse.min.js" integrity="sha384-OI7J071C5UbEZNkN/pwwvuyVCJfaEUcOdHW3pGMaUQzeMod0WnkHcT5RfjonN4rH" crossorigin="anonymous" defer></script>
+  <script src="static/alpine.min.js" integrity="sha384-nvcVwwZ0SGLBuKyNGsePDIKtVY6YrcmSgUNazSk+pXQ+bQwDItnwO6/lbvMOo4KN" crossorigin="anonymous" defer></script>
+  <link rel="stylesheet" href="static/pico.min.css" integrity="sha384-Igjx5rLo1oJuDlq1Ls6uECey1nXahm4j4GoF8ixTon9zxdse6QkdsFelFYk8j7rI" crossorigin="anonymous" />
+  <link rel="stylesheet" href="static/style.css" integrity="sha384-joQKvIcAspm0sdbWnaOrv+0Xw8Sn3V1SpbXBYuPzVRNEbPJC/7Lr4wt5ogcKeTjf" crossorigin="anonymous" />
 
-  <link rel="stylesheet" href="static/style.css" />
+  <!-- ES module preloads for SRI verification -->
+  <link rel="modulepreload" href="./static/modules/bip39.bundle.js" integrity="sha384-CAHYVNKv7mkslmk45aKwFkTO/P/cagWfx/YFqjjDIs8zsV+11steoT4jSnegfO4B" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./static/modules/bip32.bundle.js" integrity="sha384-GJIiWCnZ1n5GA9fKuMgtnX7ke9+eBfsdWEQIs331bL6JMxpFATOPB9hpFWaBJDm9" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./static/modules/scure.wordlist.english.js" integrity="sha384-EoYxlZ0fpeGXftIbACdNcTqyQNMOyPJanUI1QH7345n4aidaoEBia1PEvDo/3pfn" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./static/modules/bech32.js" integrity="sha384-YyJtkO/wTI3b7nslOsz0v8CuaOM7U9wdmZd6Y6SCeNpr9w+Nd9RFrjcXDKW3r3FB" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./AESHelper.js" integrity="sha384-ZCeBuuQZUbBv2eojhHrsdoQSzn3X1e2wS0VX8Z3Jbw1AoTNKMUN0A1U0cJ7x2ZNi" crossorigin="anonymous" />
 </head>
 
 <body>
   <main class="container" x-data="giftWizard()">
     <header class="brand">
-      <img src="static/img/bc1q21-logo.png" alt="bc1q21 logo" onerror="this.style.display='none'"><br>
+      <img src="static/img/bc1q21-logo.png" alt="bc1q21 logo"><br>
       <div>
         <h1>Gifting Wizard</h1>
         <!-- <small class="muted">Simple, time-locked Bitcoin gifts</small> -->
@@ -75,7 +72,7 @@
         of 4)</strong>
 
       <!-- New: context help link (opens in new tab) -->
-      <a x-show="getHelpUrl()" :href="getHelpUrl()" target="_blank" rel="noopener" class="help-link"
+      <a x-show="getHelpUrl()" :href="getHelpUrl()" target="_blank" rel="noopener noreferrer" class="help-link"
         title="Open help video for this step" style="margin-left:auto;"<span class="help-btn"><span class="help-icon">?</span>I CAN GUIDE YOU</span></a>
 
     </div>
@@ -106,7 +103,7 @@
           <label class="small muted" style="display:flex; gap:.5rem; align-items:center; margin-top:.5rem;">
             <input type="checkbox" x-model="disclaimerAccepted" style="min-width: 20px;">
             <span>I confirm that I have read, understand, and accept the <a
-                href="https://www.bc1q21.com/doc/bc1q21_disclaimers.pdf" target="_blank" rel="noopener">Liability
+                href="https://www.bc1q21.com/doc/bc1q21_disclaimers.pdf" target="_blank" rel="noopener noreferrer">Liability
                 Disclaimer</a>, and I assume all risks associated with using this application.</span>
           </label>
         </article>
@@ -713,9 +710,9 @@
     </div>
   </main>
 
-  <script type="text/javascript" src="static/modules/noble-hashes.js"></script>
-  <script type="text/javascript" src="static/modules/qrcode.min.js"></script>
-  <script type="text/javascript" src="static/modules/btc-signer.js"></script>
+  <script type="text/javascript" src="static/modules/noble-hashes.js" integrity="sha384-B5GdS4UcqRdZ1p/p6kMi10QwhyVAqpnc4Mb2Hw0nJdZxC6M83FLcm+2USK0hvB3W" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="static/modules/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="static/modules/btc-signer.js" integrity="sha384-KFimYHvul/uFaGlxxS8xQA2GnwkK5DnWr9bS7rhF3w3OkA82MGvM7XvLtPiNTby6" crossorigin="anonymous"></script>
 
 
   <script type="module">
@@ -733,15 +730,17 @@
     window.decryptShortHex = decryptShortHex;
 
   </script>
-  <script type="text/javascript" src="CryptoUtils.js"></script>
-  <script type="text/javascript" src="TransactionManager.js"></script>
-  <script type="text/javascript" src="PriceManager.js"></script>
-  <script type="text/javascript" src="BtcBackendClient.js"></script>
-  <script type="text/javascript" src="SchedulePlanner.js"></script>
-  <script type="text/javascript" src="NavigationManager.js"></script>
-  <script type="text/javascript" src="CryptoManager.js"></script>
-  <script type="text/javascript" src="UIRenderer.js"></script>
-  <script type="text/javascript" src="bc1q21.js"></script>
+  <!-- Content config: no integrity — client updates this file freely -->
+  <script src="content-config.js"></script>
+  <script type="text/javascript" src="CryptoUtils.js" integrity="sha384-R9ZPeK+mOIviCcuthqRe+yIrIAv71l7nyM0doCd9wZP78Fig3/knv+rSsU87zE5r" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="TransactionManager.js" integrity="sha384-Ft2mEz5ybv6IpWKd9mNZ15fB2cFx7lwNbMJV+vK2KNWEXKyqsvneG4F/pzye5rUF" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="PriceManager.js" integrity="sha384-ZPEfiKEMr8j5P69LOaugqJiwBl78aN3srmVAcEp1aFDU3496oSZMPdUpg2emzFbd" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="BtcBackendClient.js" integrity="sha384-N698izJDZSQYOP9YA5/H9M00nmAcU0dRKqzALlLGX/aBHR6Uc5aOWpYYfwmq5jEh" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="SchedulePlanner.js" integrity="sha384-G7cK61hkgn8Bq10QYxFGHnFHKJZSPnrK/RdIAUOA9GTkKvqS+S/g6JAxKA3ol3dx" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="NavigationManager.js" integrity="sha384-gJZHjA0Y8U3Jl8IssYI88mZsn9HzIwvev8BCN+NQqpFGtmqEXbkDlbNtm+e2PA07" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="CryptoManager.js" integrity="sha384-j0Q+Z3r+ir3dbpsCvRAQODFGBnsZEZRIuaTKm/EdOjeOoTWFfG8Pom/KoXtBYase" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="UIRenderer.js" integrity="sha384-jQQpsCfLynqzPUOgCxZ9PlVMJGfpGFLqU3mMTt0a8xt+YJaGfCeuQnAp6G9yw6dI" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="bc1q21.js" integrity="sha384-46weJKFRO+Ou6FVU6tAHYVmVRvYIg41t5HQVgsl+PDdH46TQkkswN9XFmRrU/1Jf" crossorigin="anonymous"></script>
 </body>
 
 </html>

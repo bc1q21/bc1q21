@@ -14,23 +14,41 @@ class UIRenderer {
     renderRecoveryWords(mnemonic, targetElementId) {
         const element = document.getElementById(targetElementId);
         if (!element) return;
-        
+
         const words = mnemonic.trim().split(/\s+/).filter(Boolean);
-        
-        element.innerHTML = `
-            <div class="callout-critical" role="alert" aria-live="assertive">
-                <div class="callout-title">Recovery words - Write these down</div>
-                <p>
-                    These ${words.length} words are the keys to your Bitcoin gift. 
-                    <strong>Do not screenshot or store them online</strong>. 
-                    Write them down, verify, seal, and deliver them to the recipient. 
-                    We cannot recover these words and we will never ask for them.
-                </p>
-                <ol class="seed-list">
-                    ${words.map((word, i) => `<li><b>${i + 1}</b>${this.escapeHTML(word)}</li>`).join('')}
-                </ol>
-            </div>
-        `;
+
+        const container = document.createElement('div');
+        container.className = 'callout-critical';
+        container.setAttribute('role', 'alert');
+        container.setAttribute('aria-live', 'assertive');
+
+        const title = document.createElement('div');
+        title.className = 'callout-title';
+        title.textContent = 'Recovery words - Write these down';
+        container.appendChild(title);
+
+        const p = document.createElement('p');
+        p.textContent = `These ${words.length} words are the keys to your Bitcoin gift. `;
+        const strong = document.createElement('strong');
+        strong.textContent = 'Do not screenshot or store them online';
+        p.appendChild(strong);
+        p.appendChild(document.createTextNode('. Write them down, verify, seal, and deliver them to the recipient. We cannot recover these words and we will never ask for them.'));
+        container.appendChild(p);
+
+        const ol = document.createElement('ol');
+        ol.className = 'seed-list';
+        words.forEach((word, i) => {
+            const li = document.createElement('li');
+            const b = document.createElement('b');
+            b.textContent = String(i + 1);
+            li.appendChild(b);
+            li.appendChild(document.createTextNode(word));
+            ol.appendChild(li);
+        });
+        container.appendChild(ol);
+
+        element.textContent = '';
+        element.appendChild(container);
     }
     
     /**
@@ -39,31 +57,40 @@ class UIRenderer {
     renderFundingAddress(address, amount, targetElementId) {
         const element = document.getElementById(targetElementId);
         if (!element) return;
-        
-        const bitcoinUri = `bitcoin:${address}${amount ? `?amount=${amount}` : ''}`;
-        
-        element.innerHTML = `
-            <div class="callout">
-                <strong>Funding Address:</strong><br>
-                <div class="mono" style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin: 0.5rem 0;">
-                    ${address}
-                </div>
-                <div id="qr-${targetElementId}" style="margin: 1rem 0;"></div>
-                <small class="muted">Send the total gift amount to this address (${Number(amount).toFixed(8)} BTC).
-                </small>
-            </div>
-        `;
-        
-        // Generate QR code if QRCode library is available
+
+        const safeAmount = Number(amount) || 0;
+        const bitcoinUri = `bitcoin:${address}${safeAmount ? `?amount=${safeAmount.toFixed(8)}` : ''}`;
+        const qrId = `qr-${targetElementId}`;
+
+        const container = document.createElement('div');
+        container.className = 'callout';
+
+        const label = document.createElement('strong');
+        label.textContent = 'Funding Address:';
+        container.appendChild(label);
+        container.appendChild(document.createElement('br'));
+
+        const addressBox = document.createElement('div');
+        addressBox.className = 'mono';
+        addressBox.style.cssText = 'background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin: 0.5rem 0;';
+        addressBox.textContent = address;
+        container.appendChild(addressBox);
+
+        const qrDiv = document.createElement('div');
+        qrDiv.id = qrId;
+        qrDiv.style.margin = '1rem 0';
+        container.appendChild(qrDiv);
+
+        const small = document.createElement('small');
+        small.className = 'muted';
+        small.textContent = `Send the total gift amount to this address (${safeAmount.toFixed(8)} BTC).`;
+        container.appendChild(small);
+
+        element.textContent = '';
+        element.appendChild(container);
+
         if (window.QRCode) {
-            const qrElement = document.getElementById(`qr-${targetElementId}`);
-            if (qrElement) {
-                new QRCode(qrElement, {
-                    text: bitcoinUri,
-                    width: 200,
-                    height: 200
-                });
-            }
+            new QRCode(qrDiv, { text: bitcoinUri, width: 200, height: 200 });
         }
     }
     /**
@@ -72,23 +99,25 @@ class UIRenderer {
     renderError(message, targetElementId) {
         const element = document.getElementById(targetElementId);
         if (!element) return;
-        
-        element.innerHTML = `<span style="color: red;">${this.escapeHTML(message)}</span>`;
+
+        const span = document.createElement('span');
+        span.style.color = 'red';
+        span.textContent = message;
+        element.textContent = '';
+        element.appendChild(span);
     }
-    
+
     /**
     * Render success message
     */
     renderSuccess(message, targetElementId) {
         const element = document.getElementById(targetElementId);
         if (!element) return;
-        
-        element.innerHTML = `<div class="pill">${this.escapeHTML(message)}</div>`;
-    }
-    
-    escapeHTML(str) {
+
         const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+        div.className = 'pill';
+        div.textContent = message;
+        element.textContent = '';
+        element.appendChild(div);
     }
 }

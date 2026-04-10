@@ -32,6 +32,15 @@ class RawTx(BaseModel):
 
 app = FastAPI()
 
+
+@app.middleware("http")
+async def strip_server_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.pop("server", None)
+    response.headers.pop("x-powered-by", None)
+    return response
+
+
 origins = [
     "http://localhost",
     "http://localhost:80",
