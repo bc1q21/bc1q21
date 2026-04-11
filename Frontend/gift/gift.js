@@ -240,17 +240,12 @@
               throw new Error('Derived first release address does not match any gift output.');
             }
 
-            const resolvedInterval = await this.detectIntervalFromOutputs(firstDate, cm);
+            const { interval: resolvedInterval, addrMap } = await this.detectIntervalFromOutputs(firstDate, cm);
             this.interval = resolvedInterval;
 
-            const scheduleResult = await this.countScheduleMatches(firstDate, resolvedInterval, cm);
-            const { schedule, computed } = scheduleResult;
-            const addrMap = new Map(computed.map(c => [c.address, c]));
-            const nowUtc = new Date();
-
-            this.rows = this.rows.map((r, idx) => {
+            this.rows = this.rows.map((r) => {
               const derived = addrMap.get(r.address);
-              const releaseDate = derived?.date || schedule[idx] || '';
+              const releaseDate = derived?.date || '';
               const ready = releaseDate ? this.isReadyForRelease(releaseDate) : false;
               return {
                 ...r,
@@ -408,7 +403,18 @@
           }
           const yearCount = intervals.filter(x => x === 'year').length;
           const monthCount = intervals.filter(x => x === 'month').length;
-          return yearCount > monthCount ? 'year' : monthCount > 0 ? 'month' : this.interval;
+          const dominantInterval = yearCount > monthCount ? 'year' : monthCount > 0 ? 'month' : this.interval;
+
+          // Build addrMap from resolved dates so the caller can skip countScheduleMatches
+          const addrMap = new Map();
+          for (let i = 0; i < outputAddrs.length; i++) {
+            if (resolvedDates[i]) {
+              const cltv = await this.computeCltvForDate(resolvedDates[i], cm);
+              addrMap.set(outputAddrs[i], cltv);
+            }
+          }
+
+          return { interval: dominantInterval, addrMap };
         },
 
         async countScheduleMatches(firstDate, interval, cm) {
