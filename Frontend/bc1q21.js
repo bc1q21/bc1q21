@@ -515,7 +515,7 @@ function giftWizard() {
         },
         
         async handleDeriveCltv() {
-            console.log("handleDeriveCltv");
+            //console.log("handleDeriveCltv");
             this.isGeneratingAddresses = true;
             
             try {
@@ -524,7 +524,7 @@ function giftWizard() {
                 if (result.success) {
                     this.cltvAddresses = [...result.addresses];
                     console.log('result:', result.addresses);
-                    console.log('Copied to Alpine cltvAddresses:', this.cltvAddresses);
+                    //console.log('Copied to Alpine cltvAddresses:', this.cltvAddresses);
                 } else {
                     console.error('Generation failed:', result.error);
                 }
@@ -536,8 +536,8 @@ function giftWizard() {
         },
         
         handleDisplaySegwit() {
-            console.log("handleDisplaySegwit this.cryptoManager", this.cryptoManager);
-            console.log("handleDisplaySegwit this.cryptoManager.fundingAddress", this.cryptoManager.fundingAddress);
+            //console.log("handleDisplaySegwit this.cryptoManager", this.cryptoManager);
+            //console.log("handleDisplaySegwit this.cryptoManager.fundingAddress", this.cryptoManager.fundingAddress);
             const totalAmount = this.totalGiftWithFees;
             this.uiRenderer.renderFundingAddress(this.cryptoManager.fundingAddress, totalAmount, 'fundingAddress');
             return true;

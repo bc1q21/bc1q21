@@ -29,7 +29,7 @@ class CryptoManager {
                 throw new Error('Invalid mnemonic phrase');
             }
             
-            console.log("mnemonic:", mnemonic);
+            //console.log("mnemonic:", mnemonic);
             // Generate master key and seed
             const seed = await window.bip39.mnemonicToSeed(mnemonic);
             this.masterKey = window.HDKey.fromMasterSeed(seed);
@@ -165,8 +165,8 @@ class CryptoManager {
     */
     async generateCltvAddresses(schedule) {
         try {
-            console.log("generateCltvAddresses this.masterKey", this.masterKey);
-            console.log("generateCltvAddresses schedule", schedule);
+            //console.log("generateCltvAddresses this.masterKey", this.masterKey);
+            //console.log("generateCltvAddresses schedule", schedule);
             
             if (!this.masterKey || !schedule?.length) {
                 throw new Error('Missing master key or schedule');

@@ -126,9 +126,10 @@ class SchedulePlanner {
                 });
             }
         }
+        schedule.sort((a, b) => a.date.localeCompare(b.date));
         return schedule;
     }
-    
+
     /**
     * Calculate totals for a schedule
     */

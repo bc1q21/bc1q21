@@ -323,18 +323,92 @@
         async detectIntervalFromOutputs(firstDate, cm) {
           if (this.timelockedOutputs.length < 2) return this.interval;
 
-          const targetSecond = this.timelockedOutputs[1]?.address || '';
-          const monthDate = this.addIntervalToDate(firstDate, 'month');
-          const monthSecond = await this.computeCltvForDate(monthDate, cm);
-          if (monthSecond.address === targetSecond) return 'month';
+          const outputAddrs = this.timelockedOutputs.map(o => o.address || '');
+          // resolvedDates[i] = ISO date string for output i, or null if unknown
+          const resolvedDates = new Array(outputAddrs.length).fill(null);
+          resolvedDates[0] = firstDate;
 
-          const yearDate = this.addIntervalToDate(firstDate, 'year');
-          const yearSecond = await this.computeCltvForDate(yearDate, cm);
-          if (yearSecond.address === targetSecond) return 'year';
+          // Try an interval: walk from firstDate using interval, match addresses
+          const applyInterval = async (interval) => {
+            let date = firstDate;
+            for (let i = 1; i < outputAddrs.length; i++) {
+              date = this.addIntervalToDate(date, interval);
+              const cltv = await this.computeCltvForDate(date, cm);
+              if (cltv.address === outputAddrs[i]) {
+                resolvedDates[i] = date;
+              }
+            }
+          };
 
-          const monthMatches = await this.countScheduleMatches(firstDate, 'month', cm);
-          const yearMatches = await this.countScheduleMatches(firstDate, 'year', cm);
-          return yearMatches.matches > monthMatches.matches ? 'year' : 'month';
+          // Step 1: try monthly — check 2nd output first as a fast gate
+          const monthSecond = await this.computeCltvForDate(
+            this.addIntervalToDate(firstDate, 'month'), cm
+          );
+          if (monthSecond.address === outputAddrs[1]) {
+            await applyInterval('month');
+          }
+
+          // Step 2: for any still-unresolved outputs, try yearly
+          const unresolvedAfterMonth = resolvedDates.some((d, i) => i > 0 && d === null);
+          if (unresolvedAfterMonth) {
+            const yearSecond = await this.computeCltvForDate(
+              this.addIntervalToDate(firstDate, 'year'), cm
+            );
+            if (yearSecond.address === outputAddrs[1] || resolvedDates[1] === null) {
+              // Walk yearly from firstDate for any slot still null
+              let date = firstDate;
+              for (let i = 1; i < outputAddrs.length; i++) {
+                date = this.addIntervalToDate(date, 'year');
+                if (resolvedDates[i] === null) {
+                  const cltv = await this.computeCltvForDate(date, cm);
+                  if (cltv.address === outputAddrs[i]) {
+                    resolvedDates[i] = date;
+                  }
+                }
+              }
+            }
+          }
+
+          // Step 3: for any remaining unknowns, walk day-by-day from the last known date
+          for (let i = 1; i < outputAddrs.length; i++) {
+            if (resolvedDates[i] !== null) continue;
+
+            // Find the most recent resolved date before i
+            let searchFrom = resolvedDates[i - 1];
+            for (let j = i - 1; j >= 0 && searchFrom === null; j--) {
+              searchFrom = resolvedDates[j];
+            }
+            if (!searchFrom) continue;
+
+            // Walk forward one day at a time until address matches
+            const [y, m, d] = searchFrom.split('-').map(Number);
+            let cursor = new Date(Date.UTC(y, m - 1, d));
+            const MAX_DAYS = 366 * 10; // safety cap: 10 years
+            for (let step = 0; step < MAX_DAYS; step++) {
+              cursor = new Date(cursor.getTime() + 86400000);
+              const dateISO = cursor.toISOString().slice(0, 10);
+              const cltv = await this.computeCltvForDate(dateISO, cm);
+              if (cltv.address === outputAddrs[i]) {
+                resolvedDates[i] = dateISO;
+                break;
+              }
+            }
+          }
+
+          // Derive interval from resolved dates for caller convenience
+          // (returns the dominant interval: month/year, or falls back to this.interval)
+          const intervals = [];
+          for (let i = 1; i < resolvedDates.length; i++) {
+            if (resolvedDates[i - 1] && resolvedDates[i]) {
+              const prev = new Date(resolvedDates[i - 1] + 'T00:00:00Z');
+              const curr = new Date(resolvedDates[i] + 'T00:00:00Z');
+              const days = Math.round((curr - prev) / 86400000);
+              intervals.push(days >= 300 ? 'year' : 'month');
+            }
+          }
+          const yearCount = intervals.filter(x => x === 'year').length;
+          const monthCount = intervals.filter(x => x === 'month').length;
+          return yearCount > monthCount ? 'year' : monthCount > 0 ? 'month' : this.interval;
         },
 
         async countScheduleMatches(firstDate, interval, cm) {
