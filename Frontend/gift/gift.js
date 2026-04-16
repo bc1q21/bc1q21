@@ -316,7 +316,11 @@
         },
 
         async detectIntervalFromOutputs(firstDate, cm) {
-          if (this.timelockedOutputs.length < 2) return this.interval;
+          if (this.timelockedOutputs.length < 2) {
+            const cltv = await this.computeCltvForDate(firstDate, cm);
+            const addrMap = new Map([[this.timelockedOutputs[0].address, cltv]]);
+            return { interval: this.interval, addrMap };
+          }
 
           const outputAddrs = this.timelockedOutputs.map(o => o.address || '');
           // resolvedDates[i] = ISO date string for output i, or null if unknown
