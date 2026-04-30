@@ -19,7 +19,7 @@ window.BC1Q21_CONFIG = {
     helpVideos: {
         // Per-step links (key = navigationState.currentStep value)
         start:                 'https://youtu.be/1RJarLZ9Ol0',
-        welcome:               'https://youtu.be/78kwx8sf-hM',
+        welcome:               'https://youtu.be/nE1rnAJ3_8A',
         gift_type:             'https://youtu.be/k5VFMU5UfZs',
         one_time_claim_date:   'https://youtu.be/QVOl9JIbS1s',
         schedule_duration:     'https://youtu.be/QBcEHQck2NE',
