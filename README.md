@@ -44,7 +44,7 @@ This project is open source. Anyone is free to review, use, or build upon this c
 
 ## Credits
 
-Created by Dale Wells  
+Concept, design, and product direction by Dale Wells  
 Developed by Edgar Borja  
 
 Project: https://www.bc1q21.com
