@@ -16,13 +16,23 @@ Once a gift is created, the Bitcoin is secured and enforced by the Bitcoin netwo
 
 ## How to think about bc1q21
 
-Think of bc1q21 like a billboard on the side of the road.
+Think of bc1q21 like a simple webpage with a button — nothing more.
 
-It helps you create a Bitcoin time-locked transaction — but once that transaction is created, everything is enforced by the Bitcoin blockchain.
+When you visit, you’re not creating an account, and you’re not sending us any information.
 
-We do not hold funds.  
-We do not control access.  
-We do not store user data.  
+When you click “Create Gift”, your browser (your own computer) does all the work. We simply deliver the instructions (JavaScript) to your browser, and from that point forward, everything happens on your device.
+
+You enter the details.  
+You create the transaction.  
+You send it to the Bitcoin network.  
+
+We are not involved in that process.
+
+We never see who you are.  
+We never receive your data.  
+We never control your Bitcoin.  
+
+Once the transaction is created and sent, it is enforced entirely by the Bitcoin blockchain — not by us, not by any server, and not by any third party.
 
 ---
 
