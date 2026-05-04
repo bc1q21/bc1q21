@@ -30,7 +30,7 @@ We do not store user data.
 
 - Non-custodial (we never hold your Bitcoin)
 - Bitcoin Layer-1 only (no altcoins, no sidechains)
-- Privacy-first (no personal data stored)
+- Privacy-first (no personal data collected or stored)
 - Open-source and transparent
 - User responsibility and sovereignty
 
