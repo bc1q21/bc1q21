@@ -248,22 +248,32 @@ def _create_giftcard_overlay(page_width: float, page_height: float, recipient_ur
     )
     qr_img.add_data(recipient_url)
     qr_img.make(fit=True)
+
     qr_pil = qr_img.make_image(fill_color="black", back_color="white")
+
     qr_buffer = io.BytesIO()
     qr_pil.save(qr_buffer, format="PNG")
     qr_buffer.seek(0)
 
     overlay_buffer = io.BytesIO()
     c = canvas.Canvas(overlay_buffer, pagesize=(page_width, page_height))
-    qr_size = GIFT_CARD_QR["size"]
+
+    qr_size = GIFT_CARD_QR.get("size", 130)
+
+    # Coordinates are from bottom-left corner.
+    # For the blank square in the visible portrait layout:
+    qr_x = 86
+    qr_y = 438
+
     c.drawImage(
         ImageReader(qr_buffer),
-        221,
-        93,
-        width=130,
-        height=130,
+        qr_x,
+        qr_y,
+        width=qr_size,
+        height=qr_size,
         mask="auto"
     )
+
     c.save()
     overlay_buffer.seek(0)
     return PdfReader(overlay_buffer)
@@ -275,7 +285,7 @@ def _build_giftcard_pdf_bytes(recipient_url: str) -> io.BytesIO:
     if not recipient_url.startswith(("http://", "https://")):
         raise ValueError("recipientUrl must be an absolute URL.")
     if not GIFT_CARD_TEMPLATE.exists():
-        raise FileNotFoundError("Gift card template is missing on the server. ")
+        raise FileNotFoundError("Gift card template is missing on the server.")
 
     with GIFT_CARD_TEMPLATE.open("rb") as template_file:
         template_reader = PdfReader(template_file)
@@ -285,13 +295,21 @@ def _build_giftcard_pdf_bytes(recipient_url: str) -> io.BytesIO:
             raise ValueError("Gift card template contains no pages.")
 
         first_page = template_reader.pages[0]
+
+        # Important: normalize rotated PDFs before calculating coordinates
+        if first_page.rotation:
+            first_page.transfer_rotation_to_content()
+
         width = float(first_page.mediabox.width)
         height = float(first_page.mediabox.height)
+
         overlay_reader = _create_giftcard_overlay(width, height, recipient_url)
         first_page.merge_page(overlay_reader.pages[0])
         writer.add_page(first_page)
 
         for page in template_reader.pages[1:]:
+            if page.rotation:
+                page.transfer_rotation_to_content()
             writer.add_page(page)
 
         output = io.BytesIO()
