@@ -64,7 +64,7 @@ GIFT_CARD_TEMPLATE = BACKEND_DIR / "giftcard.pdf"
 GIFT_CARD_QR = {
     "size": 130,       # points ~= 2.36"
     "offset_x": 92,   # from left-bottom origin
-    "offset_y": 442
+    "offset_y": 442 
 }
 
 
