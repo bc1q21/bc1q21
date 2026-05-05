@@ -62,9 +62,9 @@ app.add_middleware(
 BACKEND_DIR  = Path(__file__).resolve().parent
 GIFT_CARD_TEMPLATE = BACKEND_DIR / "giftcard.pdf"
 GIFT_CARD_QR = {
-    "size": 170,       # points ~= 2.36"
-    "offset_x": 365,   # from left-bottom origin
-    "offset_y": 140
+    "size": 130,       # points ~= 2.36"
+    "offset_x": 92,   # from left-bottom origin
+    "offset_y": 442
 }
 
 
@@ -258,12 +258,12 @@ def _create_giftcard_overlay(page_width: float, page_height: float, recipient_ur
     overlay_buffer = io.BytesIO()
     c = canvas.Canvas(overlay_buffer, pagesize=(page_width, page_height))
 
-    qr_size = GIFT_CARD_QR.get("size", 130)
+    qr_size = GIFT_CARD_QR.get("size", 100)
 
     # Coordinates are from bottom-left corner.
     # For the blank square in the visible portrait layout:
-    qr_x = 86
-    qr_y = 438
+    qr_x = GIFT_CARD_QR.get("offset_x", 88)
+    qr_y = GIFT_CARD_QR.get("offset_y", 442)
 
     c.drawImage(
         ImageReader(qr_buffer),
