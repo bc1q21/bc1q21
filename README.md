@@ -54,8 +54,11 @@ This project is open source. Anyone is free to review, use, or build upon this c
 
 ## Credits
 
-Concept, design, and product direction by Dale Wells  
-Developed by Edgar Borja  
+Project created and directed by Dale Wells
+
+Software architecture and development by Edgar Borja
+
+bc1q21 was built through close collaboration between product direction, Bitcoin time-lock concepts, and technical implementation.
 
 Project: https://www.bc1q21.com
 
