@@ -153,4 +153,11 @@ class SchedulePlanner {
     estimateNetworkFees(scheduleLength) {
         return 500 + (scheduleLength * 250); // sats
     }
+
+    /**
+    * Minimum-priority fee floor (~1 sat/vbyte) for fee-spike fallback
+    */
+    estimateNetworkFeesLowPriority(scheduleLength) {
+        return 300 + (scheduleLength * 100); // sats
+    }
 }

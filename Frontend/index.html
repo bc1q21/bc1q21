@@ -553,7 +553,7 @@
             <div id="fundingAddress" class="address-display"></div>
 
             <!-- Single action: manual check while we are still waiting or insufficient -->
-            <div class="actions" x-show="depositStage === 'waiting' || depositStage === 'insufficient'">
+            <div class="actions" x-show="depositStage === 'waiting' || depositStage === 'insufficient' || depositStage === 'fee_spike'">
               <button class="btn-outline" @click="checkDeposit(true)" :disabled="checkingDeposit">
                 <span x-show="!checkingDeposit">Check deposit now</span>
                 <span x-show="checkingDeposit">Checking…</span>
@@ -562,7 +562,7 @@
 
             <!-- Auto check countdown -->
             <div class="small muted" style="margin-top:.5rem;"
-              x-show="depositStage === 'waiting' || depositStage === 'insufficient'">
+              x-show="depositStage === 'waiting' || depositStage === 'insufficient' || depositStage === 'fee_spike'">
               <span class="spinner" aria-hidden="true"></span>
               <span x-show="checkingDeposit">Checking deposit…</span>
               <span x-show="!checkingDeposit">
@@ -594,6 +594,30 @@
                   Please send at least
                   <strong x-text="depositTotals.remainingBtc.toFixed(8) + ' BTC'"></strong>
                   more to the <em>same</em> address above to continue.
+                </p>
+              </div>
+            </template>
+
+            <!-- Stage: deposit covers gift but not the original fee estimate (mempool fee spike) -->
+            <template x-if="depositStage === 'fee_spike'">
+              <div class="callout small" style="margin-top:.75rem;">
+                <p>
+                  Deposit received:
+                  <strong x-text="depositTotals.totalBtc.toFixed(8) + ' BTC'"></strong>.
+                </p>
+                <p class="small">
+                  Network fees have risen since you started. Your deposit is enough to proceed, but
+                  the transaction may take a little longer to confirm than usual.
+                </p>
+                <div class="actions" style="margin-top:.75rem;">
+                  <button class="btn-primary" @click="proceedWithLowPriorityFee()">
+                    Proceed with low-priority transaction
+                  </button>
+                </div>
+                <p class="small muted" style="margin-top:.5rem;">
+                  Alternatively, send
+                  <strong x-text="(depositTotals.neededBtc - depositTotals.totalBtc).toFixed(8) + ' BTC'"></strong>
+                  more to the same address to proceed at normal priority.
                 </p>
               </div>
             </template>
@@ -695,7 +719,7 @@
           <div class="mono small" x-text="recipientPageUrl()"></div>
           <div x-ref="recipientQr" style="margin:1rem 0; display:flex; justify-content:center;"></div>
           <div class="small" x-show="giftCardPdfUrl" x-cloak>
-            <p class="small muted">Download a printable gift card that includes the QR with this recipient link. <a :href="giftCardPdfUrl" download="giftcard.pdf" target="_blank" rel="noopener noreferrer">Download Gift Card</a></p>
+            <p class="small muted">Download a printable gift card that includes the QR with this recipient link. <a :href="giftCardPdfUrl" download="giftcard.pdf" target="_blank" rel="noopener noreferrer" @click="markProcessComplete()">Download Gift Card</a></p>
             <div style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; margin:0.5rem 0; height:420px;">
               <iframe :src="giftCardPdfUrl" title="Gift Card" style="width:100%; height:100%;" frameborder="0"></iframe>
             </div>
@@ -736,11 +760,11 @@
   <script type="text/javascript" src="TransactionManager.js" integrity="sha384-Ft2mEz5ybv6IpWKd9mNZ15fB2cFx7lwNbMJV+vK2KNWEXKyqsvneG4F/pzye5rUF" crossorigin="anonymous"></script>
   <script type="text/javascript" src="PriceManager.js" integrity="sha384-ZPEfiKEMr8j5P69LOaugqJiwBl78aN3srmVAcEp1aFDU3496oSZMPdUpg2emzFbd" crossorigin="anonymous"></script>
   <script type="text/javascript" src="BtcBackendClient.js" integrity="sha384-N698izJDZSQYOP9YA5/H9M00nmAcU0dRKqzALlLGX/aBHR6Uc5aOWpYYfwmq5jEh" crossorigin="anonymous"></script>
-  <script type="text/javascript" src="SchedulePlanner.js" integrity="sha384-Hl8aYhnv32YC08lWUuM693fniixj1tvGus8CnPD+1vEPQGkMyht3xX5VyvR8iQZm" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="SchedulePlanner.js" integrity="sha384-C2Yw1fFWoIa+Sbg8+ZWIqXcX/N2+hZIrDQSwgRp9x8crZNKfxXVIzRJY/mYNMKYF" crossorigin="anonymous"></script>
   <script type="text/javascript" src="NavigationManager.js" integrity="sha384-gJZHjA0Y8U3Jl8IssYI88mZsn9HzIwvev8BCN+NQqpFGtmqEXbkDlbNtm+e2PA07" crossorigin="anonymous"></script>
   <script type="text/javascript" src="CryptoManager.js" integrity="sha384-/WOS+KrHSQEd1hEsTM2ni107IKZ7XXGLbzEXKT2rFTyMYQgXX3xBVO0D9NkIIfS4" crossorigin="anonymous"></script>
   <script type="text/javascript" src="UIRenderer.js" integrity="sha384-jQQpsCfLynqzPUOgCxZ9PlVMJGfpGFLqU3mMTt0a8xt+YJaGfCeuQnAp6G9yw6dI" crossorigin="anonymous"></script>
-  <script type="text/javascript" src="bc1q21.js" integrity="sha384-XssatcBu8MFMp2ACaSDAtWlUxFUEs6RN4uc136kss6lWgZkG2++fVQBcPFvl9De4" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="bc1q21.js" integrity="sha384-x7akpwS2EZTprWIT+arZDFw1ceRQw65Xf/8b4rbSZ6O2g3q62cMDfv4UGdqrC3v/" crossorigin="anonymous"></script>
 </body>
 
 </html>

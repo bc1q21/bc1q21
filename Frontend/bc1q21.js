@@ -77,6 +77,10 @@ function giftWizard() {
         isGeneratingAddresses: false,
         giftCardPdfUrl: '',
         giftCardPdfRecipient: '',
+        mnemonicGenerated: false,
+        processComplete: false,
+        _beforeUnloadHandler: null,
+        networkFeeLowPriority: null,
         
         
         // Deposit monitoring and pipeline state
@@ -116,9 +120,17 @@ function giftWizard() {
             this.backendClient = new BtcBackendClient({
                 baseUrl: backendBaseUrl
             });
-            
+
             // Load initial Bitcoin price
             await this.priceManager.loadPrice({ silent: true });
+
+            this._beforeUnloadHandler = (e) => {
+                if (this.mnemonicGenerated && !this.processComplete) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            };
+            window.addEventListener('beforeunload', this._beforeUnloadHandler);
         },
         
         // Pick backend URL based on where the UI is served from
@@ -200,7 +212,16 @@ function giftWizard() {
         },
 
         createNewGift() {
+            this.markProcessComplete();
             window.location.reload();
+        },
+
+        markProcessComplete() {
+            this.processComplete = true;
+            if (this._beforeUnloadHandler) {
+                window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+                this._beforeUnloadHandler = null;
+            }
         },
         
         // ====
@@ -330,7 +351,12 @@ function giftWizard() {
                 if (!this.depositDetected) {
                     this.depositStage = 'waiting';
                 } else if (total + 1e-8 < needed) {
-                    this.depositStage = 'insufficient';
+                    const neededLowPriority = (this.btcAmount * 1e8 + this.serviceFee + (this.networkFeeLowPriority || 0)) / 1e8;
+                    if (this.networkFeeLowPriority && total + 1e-8 >= neededLowPriority) {
+                        this.depositStage = 'fee_spike';
+                    } else {
+                        this.depositStage = 'insufficient';
+                    }
                 } else {
                     // Deposit is enough or more
                     this.depositStage = 'ready';
@@ -456,6 +482,24 @@ function giftWizard() {
             }
         },
         
+        proceedWithLowPriorityFee() {
+            this.networkFee = this.networkFeeLowPriority;
+            const newNeeded = Math.round(this.btcAmount * 1e8 + this.serviceFee + this.networkFee) / 1e8;
+            this.totalGiftWithFees = newNeeded;
+            this.depositTotals = {
+                ...this.depositTotals,
+                neededBtc: newNeeded,
+                remainingBtc: 0,
+                excessBtc: Math.max(0, this.depositTotals.totalBtc - newNeeded)
+            };
+            this.depositPollingActive = false;
+            if (!this.pipelineStarted) {
+                this.pipelineStarted = true;
+                this.depositStage = 'ready';
+                this.startDistributionPipeline();
+            }
+        },
+
         // ====
         // CALCULATION METHODS
         // ====
@@ -490,9 +534,19 @@ function giftWizard() {
         },
         
         async handleKeysNew() {
+            if (this.mnemonicGenerated) {
+                const confirmed = confirm(
+                    'You already have recovery words.\n\n' +
+                    'Generating new ones will change your Bitcoin address — any funds already sent to the current address will require manual recovery.\n\n' +
+                    'Are you sure you want to generate new recovery words?'
+                );
+                if (!confirmed) return false;
+            }
+
             const result = await this.cryptoManager.generateNewMnemonic();
-            
+
             if (result.success) {
+                this.mnemonicGenerated = true;
                 this.uiRenderer.renderRecoveryWords(result.mnemonic, 'keyResult');
                 return true;
             } else {
@@ -551,8 +605,9 @@ function giftWizard() {
         onFinishScheduleEnter() {
             this.serviceFee = this.schedulePlanner.calculateServiceFee(this.scheduleRows.length);
             this.networkFee = this.schedulePlanner.estimateNetworkFees(this.scheduleRows.length);
-            
-            this.serviceFeeUsd = this.serviceFee * this.priceManager.currentPrice / 100000000; 
+            this.networkFeeLowPriority = this.schedulePlanner.estimateNetworkFeesLowPriority(this.scheduleRows.length);
+
+            this.serviceFeeUsd = this.serviceFee * this.priceManager.currentPrice / 100000000;
             this.networkFeeUsd = this.networkFee * this.priceManager.currentPrice / 100000000;
             
             this.totalGiftWithFees = Math.round(this.btcAmount * 100000000 + this.serviceFee + this.networkFee) / 100000000
