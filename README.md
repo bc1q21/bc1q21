@@ -1,8 +1,9 @@
 # bc1q21
 
-Smart Contract Giving, powered by bc1q21.com
+Smart Contract Giving, powered by bc1q21.com 
 
 A Bitcoin-native gifting platform that enables users to create non-custodial time-locked Bitcoin gifts.
+
 ---
 
 ## What is this?
