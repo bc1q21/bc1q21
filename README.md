@@ -2,8 +2,7 @@
 
 Smart Contract Giving, powered by bc1q21.com
 
-A Bitcoin-native, non-custodial system for creating time-locked gifts directly on the Bitcoin blockchain.
-
+A Bitcoin-native gifting platform that enables users to create non-custodial time-locked Bitcoin gifts.
 ---
 
 ## What is this?
