@@ -712,23 +712,24 @@
         <div x-ref="giftShareBox" class="callout" x-show="recipientPageUrl()" x-effect="renderRecipientQr()"
      style="border:4px solid #004b87; border-radius:8px; padding:1.5rem; text-align:center;">          
 
-<p style="font-style:italic; font-weight:bold; color:#004b87; margin-bottom:1.5rem;">
-IMPORTANT: Your recipient will need the information below to view and eventually claim their gift. You may email this information or download the personalized gift card below and send it separately.
+<p style="font-style:italic; font-weight:bold; color:#004b87; margin-bottom:1.75rem;">
+IMPORTANT: You may email the information below to your recipient or send the printable gift card separately.
 </p>
 
-<strong>YOUR RECIPIENT WILL NEED THIS LINK OR QR CODE TO VIEW AND EVENTUALLY CLAIM THEIR GIFT</strong>
+<strong style="display:block; margin-bottom:1rem;">A BITCOIN GIFT HAS BEEN CREATED FOR YOU</strong>
 
-<p class="small muted">Send this link or QR code to your recipient. It allows them to view the gift and monitor its release schedule. The 12 recovery words will be required later to claim the gift.</p>
+<p class="small muted">Use the link or QR code below to view your gift and monitor its release schedule. The 12 recovery words will be required later to claim the gift.</p>
 
-<p class="small muted">
-            For additional security, we recommend sharing the 12 recovery words separately and preferably in person or by physical means. The link or QR code alone does not allow anyone to spend the Bitcoin.
+<p class="small muted" style="margin-bottom:1.75rem;">
+            For additional security, the 12 recovery words should be shared separately and preferably in person or by physical means. The link or QR code alone does not allow anyone to spend the Bitcoin.
           </p>
 
-          <div class="mono small"
+<div class="mono small"
      x-text="recipientPageUrl()"
-     style="background:#e8f5ff; padding:.5rem; margin:1rem auto; display:inline-block;">
+     style="background:#e8f5ff; padding:.5rem; margin:1.75rem auto 1.5rem auto; display:inline-block;">
 </div>
-          <div x-ref="recipientQr" style="margin:1rem 0; display:flex; justify-content:center;"></div>
+          
+<div x-ref="recipientQr" style="margin:1.5rem 0 1.75rem 0; display:flex; justify-content:center;"></div>
           <div class="small" x-show="giftCardPdfUrl" x-cloak>
             <p class="small muted" style="text-align:center;">
 Download a printable gift card that includes the QR with this recipient link.
