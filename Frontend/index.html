@@ -774,17 +774,29 @@ Download a printable gift card that includes the QR with this recipient link.
   </script>
 
 <script>
-async function copyGiftShareBox(box) {
+function copyGiftShareBox(box) {
   try {
-    const text = box.innerText;
-    await navigator.clipboard.writeText(text);
-    alert('Gift recipient text copied. Now paste it into an email or Word.');
+    const range = document.createRange();
+    range.selectNodeContents(box);
+
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const successful = document.execCommand('copy');
+
+    selection.removeAllRanges();
+
+    if (successful) {
+      alert('Gift recipient box copied. You can now paste it into an email.');
+    } else {
+      alert('Copy failed. Please highlight the box manually and copy it.');
+    }
   } catch (err) {
     alert('Copy failed: ' + err.message);
   }
 }
-</script>
-  
+</script>  
   <!-- Content config: no integrity — client updates this file freely -->
   <script src="content-config.js"></script>
   <script type="text/javascript" src="CryptoUtils.js" integrity="sha384-R9ZPeK+mOIviCcuthqRe+yIrIAv71l7nyM0doCd9wZP78Fig3/knv+rSsU87zE5r" crossorigin="anonymous"></script>
