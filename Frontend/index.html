@@ -772,36 +772,19 @@ Download a printable gift card that includes the QR with this recipient link.
     window.decryptShortHex = decryptShortHex;
 
   </script>
+
 <script>
 async function copyGiftShareBox(box) {
   try {
-    const clone = box.cloneNode(true);
-
-    clone.querySelectorAll('canvas').forEach((canvas) => {
-      const img = document.createElement('img');
-      img.src = canvas.toDataURL('image/png');
-      img.style.maxWidth = '220px';
-      img.style.display = 'block';
-      img.style.margin = '1rem auto';
-      canvas.replaceWith(img);
-    });
-
-    const html = clone.outerHTML;
-    const text = clone.innerText;
-
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([text], { type: 'text/plain' })
-      })
-    ]);
-
-    alert('Gift recipient box copied. You can now paste it into an email.');
+    const text = box.innerText;
+    await navigator.clipboard.writeText(text);
+    alert('Gift recipient text copied. Now paste it into an email or Word.');
   } catch (err) {
-    alert('Copy failed. Please highlight the box manually and copy it.');
+    alert('Copy failed: ' + err.message);
   }
 }
-</script>  
+</script>
+  
   <!-- Content config: no integrity — client updates this file freely -->
   <script src="content-config.js"></script>
   <script type="text/javascript" src="CryptoUtils.js" integrity="sha384-R9ZPeK+mOIviCcuthqRe+yIrIAv71l7nyM0doCd9wZP78Fig3/knv+rSsU87zE5r" crossorigin="anonymous"></script>
