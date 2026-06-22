@@ -711,9 +711,12 @@
 
         <div x-ref="giftShareBox" class="callout" x-show="recipientPageUrl()" x-effect="renderRecipientQr()"
      style="border:4px solid #004b87; border-radius:8px; padding:1.5rem; text-align:center;">          
-          <p style="font-style:italic; font-weight:bold; text-decoration:underline; color:#004b87; margin-bottom:1.5rem;">
+
+         <p @click="copyGiftShareBox($refs.giftShareBox)"
+   style="font-style:italic; font-weight:bold; text-decoration:underline; color:#004b87; margin-bottom:1.5rem; cursor:pointer;">
 CLICK HERE to Copy / Paste this info box into the body of the email you can send your Gift Recipient.
 </p>
+
           <strong>SAVE THIS LINK and QR CODE - REQUIRED TO CLAIM THE GIFT!</strong>
           <p class="small muted">Share this link or QR so the recipient can check their gift status. They will need the
             12 recovery words to redeem it.</p>
@@ -768,6 +771,36 @@ Download a printable gift card that includes the QR with this recipient link.
     window.decryptShortHex = decryptShortHex;
 
   </script>
+<script>
+async function copyGiftShareBox(box) {
+  try {
+    const clone = box.cloneNode(true);
+
+    clone.querySelectorAll('canvas').forEach((canvas) => {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.style.maxWidth = '220px';
+      img.style.display = 'block';
+      img.style.margin = '1rem auto';
+      canvas.replaceWith(img);
+    });
+
+    const html = clone.outerHTML;
+    const text = clone.innerText;
+
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([text], { type: 'text/plain' })
+      })
+    ]);
+
+    alert('Gift recipient box copied. You can now paste it into an email.');
+  } catch (err) {
+    alert('Copy failed. Please highlight the box manually and copy it.');
+  }
+}
+</script>  
   <!-- Content config: no integrity — client updates this file freely -->
   <script src="content-config.js"></script>
   <script type="text/javascript" src="CryptoUtils.js" integrity="sha384-R9ZPeK+mOIviCcuthqRe+yIrIAv71l7nyM0doCd9wZP78Fig3/knv+rSsU87zE5r" crossorigin="anonymous"></script>
