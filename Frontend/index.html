@@ -709,17 +709,28 @@
           <strong>Gift created:</strong> Your gift has been successfully created.
         </div>
 
-        <div class="callout" x-show="recipientPageUrl()" x-effect="renderRecipientQr()">
+        <div class="callout" x-show="recipientPageUrl()" x-effect="renderRecipientQr()"
+     style="border:4px solid #004b87; border-radius:8px; padding:1.5rem; text-align:center;">
           <strong>SAVE THIS LINK and QR CODE - REQUIRED TO CLAIM THE GIFT!</strong>
           <p class="small muted">Share this link or QR so the recipient can check their gift status. They will need the
             12 recovery words to redeem it.</p>
           <p class="small muted">
             We recommend that you share the 12 recovery words in person or via physical means for additional security.
           </p>
-          <div class="mono small" x-text="recipientPageUrl()"></div>
+          <div class="mono small"
+     x-text="recipientPageUrl()"
+     style="background:#e8f5ff; padding:.5rem; margin:1rem auto; display:inline-block;">
+</div>
           <div x-ref="recipientQr" style="margin:1rem 0; display:flex; justify-content:center;"></div>
           <div class="small" x-show="giftCardPdfUrl" x-cloak>
-            <p class="small muted">Download a printable gift card that includes the QR with this recipient link. <a :href="giftCardPdfUrl" download="giftcard.pdf" target="_blank" rel="noopener noreferrer" @click="markProcessComplete()">Download Gift Card</a></p>
+            <p class="small muted" style="text-align:center;">
+Download a printable gift card that includes the QR with this recipient link.
+<a :href="giftCardPdfUrl"
+   download="giftcard.pdf"
+   target="_blank"
+   rel="noopener noreferrer"
+   @click="markProcessComplete()">Download Gift Card</a>
+</p>
             <div style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; margin:0.5rem 0; height:420px;">
               <iframe :src="giftCardPdfUrl" title="Gift Card" style="width:100%; height:100%;" frameborder="0"></iframe>
             </div>
