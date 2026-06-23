@@ -709,13 +709,15 @@
           <strong>Gift created:</strong> Your gift has been successfully created.
         </div>
 
-        <div x-ref="giftShareBox" class="callout" x-show="recipientPageUrl()" x-effect="renderRecipientQr()"
-     style="border:4px solid #004b87; border-radius:8px; padding:1.5rem; text-align:center;">          
-
+<div x-ref="giftShareBox" class="callout" x-show="recipientPageUrl()" x-effect="renderRecipientQr()"
+     style="padding:1.5rem; text-align:center;">
+  
 <p style="font-style:italic; font-weight:bold; color:#004b87; margin-bottom:1.75rem;">
 IMPORTANT: You may email the information below to your Gift Recipient or send the printable gift card separately.
 </p>
 
+<div style="border:4px solid #004b87; border-radius:8px; padding:1.5rem; text-align:center;">
+  
 <strong style="display:block; margin-bottom:1rem;">A BITCOIN GIFT HAS BEEN CREATED FOR YOU</strong>
 
 <p class="small muted">Use the link or QR code below to view your gift and monitor its release schedule. The 12 recovery words will be required later to claim the gift.</p>
@@ -730,7 +732,8 @@ IMPORTANT: You may email the information below to your Gift Recipient or send th
 </div>
           
 <div x-ref="recipientQr" style="margin:1.5rem 0 1.75rem 0; display:flex; justify-content:center;"></div>
-          <div class="small" x-show="giftCardPdfUrl" x-cloak>
+</div>
+  <div class="small" x-show="giftCardPdfUrl" x-cloak>
             <p class="small muted" style="text-align:center;">
 Download a printable gift card that includes the QR with this recipient link.
 <a :href="giftCardPdfUrl"
