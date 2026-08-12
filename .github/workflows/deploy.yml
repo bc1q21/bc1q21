@@ -17,7 +17,7 @@ jobs:
 
       - name: Block LOCAL SHIM code
         run: |
-          if grep -Rni --exclude-dir=.git "LOCAL SHIM" .; then
+          if grep -Rni --exclude-dir=.git --exclude-dir=.github "LOCAL SHIM" .; then
             echo "::error::Deployment blocked: LOCAL SHIM was found in the repository."
             exit 1
           fi
