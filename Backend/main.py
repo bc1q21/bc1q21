@@ -612,33 +612,6 @@ async def _fetch_mempool_address_txs(address: str) -> List[Dict[str, Any]]:
                 raise ValueError("Unexpected response shape (expected a list)")
             
             
-            # ---- BEGIN LOCAL SHIM (easy to remove) ----
-            # ---- BEGIN LOCAL SHIM (easy to remove) ----
-            # ---- BEGIN LOCAL SHIM (easy to remove) ----
-            TARGET_TXID = "99d4df65654d262c1e1230f1088684584496370b6ca466a450a49cd3e4126359"
-
-            OP_RETURN_VOUT = {
-                "scriptpubkey": (
-                    "6a4053616c7465645f5f8d96c753cb757dd510c0fe694e7174bd53ca7668bd63"
-                    "8873e00cb81cd2ed8adc205a90610743561319af6e707f4d419a041b1b2977cb882f"
-                ),
-                "scriptpubkey_asm": (
-                    "OP_RETURN OP_PUSHBYTES_64 "
-                    "53616c7465645f5f8d96c753cb757dd510c0fe694e7174bd53ca7668bd63"
-                    "8873e00cb81cd2ed8adc205a90610743561319af6e707f4d419a041b1b2977cb882f"
-                ),   
-                "scriptpubkey_type": "op_return",
-                "value": 0,
-            }        
-
-            for tx in data:
-                if tx.get("txid") == TARGET_TXID:
-                    vout = tx.setdefault("vout", [])
-                    vout.append(OP_RETURN_VOUT)
-                    break
-            # ---- END LOCAL SHIM ----
-            # ---- END LOCAL SHIM ----
-            # ---- END LOCAL SHIM ----
 
 
             target_tx: Dict[str, Any] = {}
