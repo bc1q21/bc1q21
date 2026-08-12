@@ -79,6 +79,13 @@
 
     <!-- ==== STEP GROUP 1: PLAN ==== -->
     <div class="card" x-show="navigationState.stepGroup===1" x-cloak>
+      <div class="callout callout-critical small" style="margin-bottom:1rem;">
+  <strong>Important Temporary Date Limit:</strong>
+  bc1q21 is currently limiting Bitcoin time-lock dates to
+  <strong>January 18, 2038 or earlier</strong> while we complete an update
+  to our long-term date-handling code.
+  Please do not create a gift with any release date after January 18, 2038.
+</div>
       <!-- STEP 0: Welcome -->
       <template x-if="navigationState.currentStep==='welcome'">
         <article>
@@ -181,7 +188,9 @@
         <article>
           <label>
             First day they can claim
-            <input type="date" x-model="claimDate" required>
+            
+            <input type="date" x-model="claimDate" max="2038-01-18" required>
+            
           </label>
           <p class="small muted">Before this date, the gift can't move. On or after this date, it can be claimed.</p>
         </article>
@@ -203,7 +212,9 @@
           </div>
           <label>
             First date
-            <input type="date" x-model="firstPayment" required>
+            
+            <input type="date" x-model="firstPayment" max="2038-01-18" required>
+            
           </label>
         </article>
       </template>
