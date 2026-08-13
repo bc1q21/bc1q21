@@ -209,31 +209,49 @@ class CryptoManager {
     * SECURITY CRITICAL: Build CLTV script
     * Creates the time-lock script for each gift
     */
-    buildCLTVScript(locktime, pubkey) {
-        // CLTV script: <locktime> OP_CHECKLOCKTIMEVERIFY OP_DROP <pubkey> OP_CHECKSIG
-        const script = [];
-        
-        // Push locktime as little-endian bytes
-        const locktimeBytes = this.numberToLittleEndian(locktime, 4);
-        script.push(locktimeBytes.length);
-        script.push(...locktimeBytes);
-        
-        // OP_CHECKLOCKTIMEVERIFY
-        script.push(0xb1);
-        
-        // OP_DROP
-        script.push(0x75);
-        
-        const pubkeyBytes = this.hexToBytes(pubkey);
-        script.push(pubkeyBytes.length);                    // Push pubkey length
-        script.push(...pubkeyBytes);
-        
-        // OP_CHECKSIG
-        script.push(0xac);
-        
-        return new Uint8Array(script);
+buildCLTVScript(locktime, pubkey) {
+    // CLTV script: <locktime> OP_CHECKLOCKTIMEVERIFY OP_DROP <pubkey> OP_CHECKSIG
+    const script = [];
+
+    // Encode locktime as a minimally encoded Bitcoin Script number.
+    // Unix timestamps from 2038-01-19 onward require a fifth byte
+    // so the timestamp is not interpreted as a negative Script number.
+    const locktimeBytes = [];
+    let value = locktime;
+
+    while (value > 0) {
+        locktimeBytes.push(value % 256);
+        value = Math.floor(value / 256);
     }
-    
+
+    if (locktimeBytes.length === 0) {
+        locktimeBytes.push(0);
+    }
+
+    // Bitcoin Script numbers use the high bit of the final byte as the sign bit.
+    // Append 0x00 when necessary to keep the locktime positive.
+    if (locktimeBytes[locktimeBytes.length - 1] & 0x80) {
+        locktimeBytes.push(0x00);
+    }
+
+    script.push(locktimeBytes.length);
+    script.push(...locktimeBytes);
+
+    // OP_CHECKLOCKTIMEVERIFY
+    script.push(0xb1);
+
+    // OP_DROP
+    script.push(0x75);
+
+    const pubkeyBytes = this.hexToBytes(pubkey);
+    script.push(pubkeyBytes.length);              // Push pubkey length
+    script.push(...pubkeyBytes);
+
+    // OP_CHECKSIG
+    script.push(0xac);
+
+    return new Uint8Array(script);
+}    
     /**
     * Create P2WPKH address from public key
     */
