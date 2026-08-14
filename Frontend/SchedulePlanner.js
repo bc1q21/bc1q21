@@ -6,26 +6,74 @@ class SchedulePlanner {
     constructor(priceManager) {
         this.priceManager = priceManager;
     }
-    
+        /**
+    * Permanent bc1q21 release-date ceiling.
+    * Kept below Bitcoin's absolute 2106 timestamp limit.
+    */
+    get maxReleaseDate() {
+        return '2105-12-31';
+    }
+
     /**
-    * Generate date sequence based on start date, count, and period type
+    * Validate a date in strict YYYY-MM-DD format and enforce
+    * the permanent bc1q21 maximum release date.
+    */
+    isValidReleaseDate(dateStr) {
+        if (typeof dateStr !== 'string') return false;
+
+        const value = dateStr.trim();
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            return false;
+        }
+
+        const parsed = new Date(value + 'T00:00:00Z');
+
+        if (Number.isNaN(parsed.getTime())) {
+            return false;
+        }
+
+        if (parsed.toISOString().slice(0, 10) !== value) {
+            return false;
+        }
+
+        return value <= this.maxReleaseDate;
+    }
+
+    /**
+    * Generate date sequence based on start date, count, and period type.
+    * Rejects any schedule that contains an invalid date or a release date
+    * later than December 31, 2105.
     */
     generateDateSequence(startDate, count, periodType) {
-        const dates = [];
-        const start = new Date(startDate + 'T00:00:00');
-        
-        for (let i = 0; i < count; i++) {
-            const date = new Date(start);
-            if (periodType === 'monthly') {
-                date.setMonth(start.getMonth() + i);
-            } else {
-                date.setFullYear(start.getFullYear() + i);
-            }
-            dates.push(date.toISOString().slice(0, 10));
-        }
-        return dates;
+    const dates = [];
+
+    if (!this.isValidReleaseDate(startDate)) {
+        return [];
     }
-    
+
+    const start = new Date(startDate + 'T00:00:00');
+
+    for (let i = 0; i < count; i++) {
+        const date = new Date(start);
+
+        if (periodType === 'monthly') {
+            date.setMonth(start.getMonth() + i);
+        } else {
+            date.setFullYear(start.getFullYear() + i);
+        }
+
+        const dateString = date.toISOString().slice(0, 10);
+
+        if (!this.isValidReleaseDate(dateString)) {
+            return [];
+        }
+
+        dates.push(dateString);
+    }
+
+    return dates;
+}    
     
     /**
     * Create equal BTC amount schedule
@@ -105,31 +153,46 @@ class SchedulePlanner {
     
     
     /**
-    * Parse manual schedule input
+    * Parse manual schedule input.
+    * Every line must contain a valid YYYY-MM-DD release date
+    * no later than December 31, 2105, followed by a positive BTC amount.
     */
     parseManualSchedule(manualScheduleText) {
-        const lines = manualScheduleText.split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-        
-        const schedule = [];
-        for (const line of lines) {
-            const [dateStr, btcStr] = line.split(',').map(part => part.trim());
-            const btc = Number(btcStr);
-            
-            if (dateStr && !isNaN(btc) && btc > 0) {
-                schedule.push({
-                    date: dateStr,
-                    btc,
-                    price: this.priceManager.currentPrice,
-                    usd: btc * this.priceManager.currentPrice
-                });
-            }
+        if (typeof manualScheduleText !== 'string') {
+            return [];
         }
+
+        const lines = manualScheduleText.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+
+        const schedule = [];
+
+        for (const line of lines) {
+            const parts = line.split(',').map(part => part.trim());
+
+            if (parts.length !== 2) {
+                return [];
+            }
+
+            const [dateStr, btcStr] = parts;
+            const btc = Number(btcStr);
+
+            if (!this.isValidReleaseDate(dateStr) || !Number.isFinite(btc) || btc <= 0) {
+                return [];
+            }
+
+            schedule.push({
+                date: dateStr,
+                btc,
+                price: this.priceManager.currentPrice,
+                usd: btc * this.priceManager.currentPrice
+            });
+        }
+
         schedule.sort((a, b) => a.date.localeCompare(b.date));
         return schedule;
     }
-
     /**
     * Calculate totals for a schedule
     */
