@@ -36,7 +36,7 @@ class NavigationManager {
             'one_time_claim_date': {
                 group: 1,
                 canGoBack: true,
-                validate: (context) => !!context.claimDate,
+                validate: (context) => context.schedulePlanner.isValidReleaseDate(context.claimDate),
                 getNextStep: () => {
                     this.owner.finishOneTime();
                     return 'finish_schedule';
@@ -45,7 +45,17 @@ class NavigationManager {
             'schedule_duration': {
                 group: 1,
                 canGoBack: true,
-                validate: (context) => !!context.periodCount && !!context.periodType && !!context.firstPayment,
+                validate: (context) => {
+    if (!context.periodCount || !context.periodType || !context.firstPayment) return false;
+
+    const dates = context.schedulePlanner.generateDateSequence(
+        context.firstPayment,
+        context.periodCount,
+        context.periodType
+    );
+
+    return dates.length === Number(context.periodCount);
+},
                 getNextStep: () => 'equal_payouts'
             },
             'equal_payouts': {
@@ -97,6 +107,7 @@ class NavigationManager {
                 validate: (context) => {
                     if (!context.manualSchedule?.trim()) return false;
                     const schedule = context.schedulePlanner.parseManualSchedule(context.manualSchedule);
+                    if (schedule.length === 0) return false;
                     const totals = context.schedulePlanner.calculateScheduleTotals(schedule);
                     const difference = Math.abs(totals.totalBtc - (context.btcAmount || 0));
                     return difference < 0.00001;
