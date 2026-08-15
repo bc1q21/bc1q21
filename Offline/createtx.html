@@ -33,10 +33,11 @@
         const inputAmount = parseInt(document.getElementById('inputAmount').value.trim(), 10);
         const destAddress = document.getElementById('destAddress').value.trim();
         const destAmount = parseFloat(document.getElementById('destAmount').value.trim(), 10);
+        const lockTime = parseInt(document.getElementById('lockTime').value.trim(), 10);
 
         const tx = coinjs.transaction();
-        tx.lock_time = 1751479200; // a CLTV locktime, adjust as needed
-
+        tx.lock_time = lockTime; // user-supplied CLTV locktime
+        
         // Add input (spending from CLTV UTXO)
         tx.addinput(txid, txn, redeemScript, 0xffffffff - 2); // use nSequence = 0xfffffffe to enable CLTV
 
@@ -57,23 +58,25 @@
 </head>
 <body>
   <h3>Redeem Script (Hex)</h3>
-  <input type="text" id="redeem" style="width:100%" value="***REMOVED***">
+  <input type="text" id="redeem" style="width:100%" value="ENTER_REDEEM_SCRIPT_HEX_HERE">
 
   <h3>Input TXID</h3>
-  <input type="text" id="txid" style="width:100%" value="***REMOVED***">
-
+  <input type="text" id="txid" style="width:100%" value="ENTER_INPUT_TXID_HERE">
+  
   <h3>TX Index (N)</h3>
   <input type="number" id="txn" style="width:100%" value="0">
+  <h3>CLTV Locktime (Unix Timestamp)</h3>
+<input type="number" id="lockTime" style="width:100%" placeholder="ENTER_CLTV_LOCKTIME_HERE">
 
   <h3>Input Amount (BTC)</h3>
-  <input type="number" id="inputAmount" style="width:100%" value="0.00002500">
-
+  <input type="number" id="inputAmount" style="width:100%" placeholder="ENTER_INPUT_AMOUNT_BTC_HERE">
+  
   <h3>Destination Address</h3>
-  <input type="text" id="destAddress" style="width:100%" value="***REMOVED***">
-
+  <input type="text" id="destAddress" style="width:100%" value="ENTER_DESTINATION_ADDRESS_HERE">
+  
   <h3>Destination Amount (BTC)</h3>
-  <input type="number" id="destAmount" style="width:100%" value="0.00002300">
-
+  <input type="number" id="destAmount" style="width:100%" placeholder="ENTER_DESTINATION_AMOUNT_BTC_HERE">
+  
   <br><br>
   <button onclick="createUnsignedCltvTx()">Create Unsigned TX</button>
 
