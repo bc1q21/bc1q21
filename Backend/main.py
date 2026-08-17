@@ -160,7 +160,6 @@ async def scan_utxos(address: str = Query(..., description="P2SH address to scan
 
     try:
         async with httpx.AsyncClient() as client:
-            # Step 1: Confirmed UTXOs from UTXO set
             scan_resp = await client.post(
                 rpc_url,
                 json={
@@ -175,69 +174,24 @@ async def scan_utxos(address: str = Query(..., description="P2SH address to scan
             scan_resp.raise_for_status()
             confirmed_utxos = scan_resp.json().get("result", {}).get("unspents", [])
 
-            # Step 2: Unconfirmed UTXOs from mempool
-            mempool_resp = await client.post(
-                rpc_url,
-                json={
-                    "jsonrpc": "1.0",
-                    "id": "mempool",
-                    "method": "getrawmempool",
-                    "params": [True]  # returns full metadata
-                },
-                auth=(rpc_user, rpc_password),
-                timeout=20.0
-            )
-            mempool_resp.raise_for_status()
-            mempool = mempool_resp.json().get("result", {})
-
-            mempool_utxos = []
-
-            for txid in mempool:
-                tx_resp = await client.post(
-                    rpc_url,
-                    json={
-                        "jsonrpc": "1.0",
-                        "id": "getrawtx",
-                        "method": "getrawtransaction",
-                        "params": [txid, True]
-                    },
-                    auth=(rpc_user, rpc_password),
-                    timeout=10.0
-                )
-                tx_resp.raise_for_status()
-                tx = tx_resp.json().get("result", {})
-                for vout in tx.get("vout", []):
-                    spk = vout.get("scriptPubKey", {})
-                    if address in spk.get("addresses", []):
-                        mempool_utxos.append({
-                            "source": "mempool",
-                            "txid": tx.get("txid"),
-                            "vout": vout["n"],
-                            "amount": vout["value"],
-                            "height": None
-                        })
-
-            combined = [
-                {
-                    "source": "confirmed",
-                    "txid": utxo["txid"],
-                    "vout": utxo["vout"],
-                    "amount": utxo["amount"],
-                    "height": utxo.get("height", 0)
-                }
-                for utxo in confirmed_utxos
-            ] + mempool_utxos
-
             return {
                 "address": address,
-                "utxos": combined
+                "utxos": [
+                    {
+                        "source": "confirmed",
+                        "txid": utxo["txid"],
+                        "vout": utxo["vout"],
+                        "amount": utxo["amount"],
+                        "height": utxo.get("height", 0)
+                    }
+                    for utxo in confirmed_utxos
+                ]
             }
 
     except httpx.HTTPError as e:
         return {"error": f"HTTP error: {str(e)}"}
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
-
 
 def _create_giftcard_overlay(page_width: float, page_height: float, recipient_url: str) -> PdfReader:
     qr_img = qrcode.QRCode(
