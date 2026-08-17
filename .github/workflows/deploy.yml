@@ -43,6 +43,8 @@ jobs:
             git -c safe.directory=/opt/bc1q21/repo -C /opt/bc1q21/repo status --short --branch
             echo "Untracked file metadata:"
             stat -c '%n | size=%s bytes | modified=%y | mode=%A | owner=%U:%G' -- /opt/bc1q21/repo/Backend/Accept: /opt/bc1q21/repo/Backend/GET /opt/bc1q21/repo/Backend/Host: /opt/bc1q21/repo/Backend/User-Agent:
+            echo "Backend directory permissions:"
+            stat -c '%A | owner=%U:%G | %n' /opt/bc1q21/repo/Backend
             echo "=== End diagnostics ==="
 
       - name: Deploy over SSH
