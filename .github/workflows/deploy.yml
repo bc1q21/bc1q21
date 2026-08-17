@@ -30,10 +30,11 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            echo "=== Production commit comparison ==="
-            git -c safe.directory=/opt/bc1q21/repo -C /opt/bc1q21/repo rev-parse HEAD
-            git -c safe.directory=/opt/bc1q21/repo -C /opt/bc1q21/repo rev-parse origin/main
-
+            echo "=== Production Git write-permission preflight ==="
+            test -w /opt/bc1q21/repo && echo "repo directory: writable" || echo "repo directory: NOT writable"
+            test -w /opt/bc1q21/repo/.git && echo ".git directory: writable" || echo ".git directory: NOT writable"
+            test -w /opt/bc1q21/repo/.git/index && echo ".git/index: writable" || echo ".git/index: NOT writable"
+            test -w /opt/bc1q21/repo/.git/refs/heads && echo "branch refs directory: writable" || echo "branch refs directory: NOT writable"
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
