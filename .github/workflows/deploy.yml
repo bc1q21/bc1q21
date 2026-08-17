@@ -30,13 +30,9 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            rm -f -- \
-              '/opt/bc1q21/repo/Backend/Accept:' \
-              '/opt/bc1q21/repo/Backend/GET' \
-              '/opt/bc1q21/repo/Backend/Host:' \
-              '/opt/bc1q21/repo/Backend/User-Agent:'
-            echo "=== Production Git status after cleanup ==="
-            git -c safe.directory=/opt/bc1q21/repo -C /opt/bc1q21/repo status --short --branch
+            echo "=== Production commit comparison ==="
+            git -c safe.directory=/opt/bc1q21/repo -C /opt/bc1q21/repo rev-parse HEAD
+            git -c safe.directory=/opt/bc1q21/repo -C /opt/bc1q21/repo rev-parse origin/main
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
