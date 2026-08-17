@@ -30,7 +30,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            sudo rm -f -- \
+            rm -f -- \
               '/opt/bc1q21/repo/Backend/Accept:' \
               '/opt/bc1q21/repo/Backend/GET' \
               '/opt/bc1q21/repo/Backend/Host:' \
