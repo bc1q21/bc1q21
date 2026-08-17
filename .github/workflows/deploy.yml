@@ -23,6 +23,26 @@ jobs:
           fi
           echo "LOCAL SHIM check passed."
 
+      - name: Diagnose production Git state
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            echo "=== Production Git diagnostics ==="
+            echo "SSH user:"
+            whoami
+            echo "Current branch:"
+            sudo -u bc1q21 git -C /opt/bc1q21/repo rev-parse --abbrev-ref HEAD
+            echo "Current commit:"
+            sudo -u bc1q21 git -C /opt/bc1q21/repo rev-parse HEAD
+            echo "Latest local commit:"
+            sudo -u bc1q21 git -C /opt/bc1q21/repo log -1 --oneline
+            echo "Working tree status:"
+            sudo -u bc1q21 git -C /opt/bc1q21/repo status --short --branch
+            echo "=== End diagnostics ==="
+            
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
