@@ -1,4 +1,4 @@
-name: Inspect Production Nginx
+name: Deploy to Production
 
 on:
   push:
@@ -9,22 +9,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  inspect:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Read production nginx configuration
+      - name: Block LOCAL SHIM code
+        run: |
+          if grep -Rni --exclude-dir=.git --exclude-dir=.github "LOCAL SHIM" .; then
+            echo "::error::Deployment blocked: LOCAL SHIM was found in the repository."
+            exit 1
+          fi
+          echo "LOCAL SHIM check passed."
+
+      - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            echo "=== ACTIVE BC1Q21 NGINX SITE ==="
-            sudo cat /etc/nginx/sites-enabled/bc1q21
-
-            echo
-            echo "=== RATE LIMIT DIRECTIVES FOUND BY NGINX ==="
-            sudo nginx -T 2>&1 | grep -nE 'limit_req|limit_conn|limit_req_zone|limit_conn_zone' || true
+            sudo /usr/local/bin/bc1q21-deploy.sh
