@@ -1,0 +1,1 @@
+window.BC1Q21_SERVICE_FEE_ADDRESS = 'bc1qvqajk78h2tqvajyzy8ffgd3p7a693gem9gvk2x';
