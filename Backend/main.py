@@ -275,18 +275,15 @@ def _build_giftcard_pdf_bytes(recipient_url: str) -> io.BytesIO:
 @app.get("/bitcoin/giftcard.pdf")
 async def build_giftcard_pdf(
     request: Request,
-    recipientUrl: str = Query(None, description="Absolute recipient page URL that should be encoded in the PDF QR code."),
-    address: str = Query(None, description="Optional funding address used to build the recipient URL if recipientUrl is omitted.")
+    address: str = Query(..., description="Funding address used to build the recipient URL.")
 ):
-    recipient_url = (recipientUrl or "").strip()
-    address_value = (address or "").strip()
+    address_value = address.strip()
 
-    if not recipient_url and address_value:
-        base_url = str(request.base_url).rstrip("/")
-        recipient_url = f"{base_url}/app/gift/?address={quote_plus(address_value)}"
+    if not address_value:
+        raise HTTPException(status_code=400, detail="Address is required to build the giftcard PDF.")
 
-    if not recipient_url:
-        raise HTTPException(status_code=400, detail="Provide either recipientUrl or address to build the giftcard PDF.")
+    base_url = str(request.base_url).rstrip("/")
+    recipient_url = f"{base_url}/app/gift/?address={quote_plus(address_value)}"
 
     try:
         pdf_buffer = await run_in_threadpool(_build_giftcard_pdf_bytes, recipient_url)
@@ -299,7 +296,6 @@ async def build_giftcard_pdf(
 
     headers = {"Content-Disposition": 'inline; filename="giftcard.pdf"'}
     return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
-
 # ---------- Simple in-memory cache for BTC price ----------
 _price_cache = {
     "value": None,            # float (BTC in USD)
