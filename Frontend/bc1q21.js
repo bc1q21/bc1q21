@@ -167,7 +167,8 @@ function giftWizard() {
             if (!recipientUrl) return;
             if (this.giftCardPdfRecipient === recipientUrl && this.giftCardPdfUrl) return;
             const base = (this.backendBaseUrl || window.location.origin || '').replace(/\/$/, '');
-            this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?recipientUrl=${encodeURIComponent(recipientUrl)}`;
+const addr = this.cryptoManager?.fundingAddress || Alpine.store('planStore')?.fundingAddress || '';
+this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent(addr)}`;
             this.giftCardPdfRecipient = recipientUrl;
         },
         
