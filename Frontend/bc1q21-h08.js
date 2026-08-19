@@ -122,14 +122,13 @@ if (!contentConfig || typeof contentConfig !== 'object') {
 HELP_VIDEOS = contentConfig.helpVideos || {};
 
 if (
-    typeof contentConfig.serviceFeeAddress !== 'string' ||
-    !contentConfig.serviceFeeAddress.trim()
+    typeof window.BC1Q21_SERVICE_FEE_ADDRESS !== 'string' ||
+    !window.BC1Q21_SERVICE_FEE_ADDRESS.trim()
 ) {
     throw new Error('Missing bc1q21 service fee address.');
 }
 
-SERVICE_FEE_ADDRESS = contentConfig.serviceFeeAddress.trim();
-
+SERVICE_FEE_ADDRESS = window.BC1Q21_SERVICE_FEE_ADDRESS.trim();
             // Initialize core managers
             this.priceManager = new PriceManager();
             this.schedulePlanner = new SchedulePlanner(this.priceManager);
