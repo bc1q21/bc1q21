@@ -107,6 +107,7 @@ function giftWizard() {
         
         
         async init() {
+            this.navigationManager = new NavigationManager(this);
 // Load editable content as inert data before the application initializes.
 const configResponse = await fetch('./content-config.json', { cache: 'no-store' });
 if (!configResponse.ok) {
@@ -132,7 +133,6 @@ SERVICE_FEE_ADDRESS = window.BC1Q21_SERVICE_FEE_ADDRESS.trim();
             // Initialize core managers
             this.priceManager = new PriceManager();
             this.schedulePlanner = new SchedulePlanner(this.priceManager);
-            this.navigationManager = new NavigationManager(this);
             this.cryptoManager = new CryptoManager();
             this.uiRenderer = new UIRenderer();
             const backendBaseUrl = this.resolveBackendBaseUrl();
