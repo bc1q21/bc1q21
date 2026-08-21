@@ -223,6 +223,7 @@ class CryptoManager {
                     btc: row.btc,
                     address: address,
                     locktime: locktime,
+                    childIndex: childKey.index,
                     path: childKey.path,
                     redeemScript: this.bytesToHex(script),
                     pubkey: childKey.publicKeyHex
