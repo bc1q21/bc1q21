@@ -158,7 +158,41 @@ class CryptoManager {
             return { success: false, error: error.message };
         }
     }
-    
+    /**
+    * SECURITY CRITICAL: Derive the deterministic key for one CLTV output
+    * Uses the existing per-output path m/84'/0'/0'/1/{index}
+    */
+    async deriveCltvChild(index) {
+        if (!this.masterKey) {
+            throw new Error('Missing master key');
+        }
+
+        const childIndex = Number(index);
+        if (!Number.isInteger(childIndex) || childIndex < 0) {
+            throw new Error('Invalid CLTV child index');
+        }
+
+        const path = `m/84'/0'/0'/1/${childIndex}`;
+        const child = this.masterKey.derive(path);
+
+        if (!child.privateKey || !child.publicKey) {
+            throw new Error('Failed to derive CLTV child key');
+        }
+
+        const extended = new Uint8Array(child.privateKey.length + 2);
+        extended[0] = 0x80;
+        extended.set(child.privateKey, 1);
+        extended[child.privateKey.length + 1] = 0x01;
+
+        const wif = await this.base58CheckEncode(extended);
+
+        return {
+            index: childIndex,
+            path,
+            publicKeyHex: this.bytesToHex(child.publicKey),
+            wif
+        };
+    }
     /**
     * SECURITY CRITICAL: Generate time-locked addresses
     * Creates CLTV addresses for each gift date
@@ -176,15 +210,12 @@ class CryptoManager {
             
             // Use for...of instead of forEach to properly handle async
             for (const [index, row] of schedule.entries()) {
-                const path = `m/84'/0'/0'/1/${index}`;
-                const child = this.masterKey.derive(path);
-                const pubkey = child.publicKey;
-                
+                const childKey = await this.deriveCltvChild(index);                
                 // Convert date to Unix timestamp
                 const locktime = Math.floor(new Date(row.date + 'T00:00:00Z').getTime() / 1000);
                 
                 // Build CLTV script
-                const script = this.buildCLTVScript(locktime, this.publicKeyHex);
+                const script = this.buildCLTVScript(locktime, childKey.publicKeyHex);
                 const address = await this.createP2SHAddress(script); 
                 
                 addresses.push({
@@ -192,9 +223,10 @@ class CryptoManager {
                     btc: row.btc,
                     address: address,
                     locktime: locktime,
-                    path: path,
+                    childIndex: childKey.index,
+                    path: childKey.path,
                     redeemScript: this.bytesToHex(script),
-                    pubkey: pubkey.toString('hex')
+                    pubkey: childKey.publicKeyHex
                 });
             }
             
