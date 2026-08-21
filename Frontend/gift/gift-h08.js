@@ -39,6 +39,7 @@ helpUrl: GIFT_HELP_URL,
         aesKeyAddress: '',
         firstReleaseDateISO: '',
         cryptoManager: null,
+          cltvKeyMode: '',
         readyCount: 0,
         releaseTxHex: '',
         utxoCache: new Map(),
@@ -245,13 +246,21 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
             this.firstReleaseDateISO = firstDate;
 
             // 3) validate first CLTV address and discover interval (month vs year)
-            const derivedFirst = await this.computeCltvForDate(firstDate, cm);
-
             const outputAddresses = new Set(this.timelockedOutputs.map(o => o.address));
-            if (!outputAddresses.has(derivedFirst.address)) {
-              throw new Error('Derived first release address does not match any gift output.');
-            }
 
+const legacyFirst = await this.computeCltvForDate(firstDate, cm);
+
+if (outputAddresses.has(legacyFirst.address)) {
+    this.cltvKeyMode = 'legacy';
+} else {
+    const childFirst = await this.computeCltvForDate(firstDate, cm, 0, true);
+
+    if (!outputAddresses.has(childFirst.address)) {
+        throw new Error('Derived first release address does not match any gift output.');
+    }
+
+    this.cltvKeyMode = 'per-index';
+}
             const { interval: resolvedInterval, addrMap } = await this.detectIntervalFromOutputs(firstDate, cm);
             this.interval = resolvedInterval;
 
@@ -265,7 +274,8 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
                 ready,
                 validation: derived ? 'match' : 'mismatch',
                 redeemScript: derived?.redeemScript || r.redeemScript,
-                locktime: derived?.locktime || r.locktime
+                locktime: derived?.locktime || r.locktime,
+                  childIndex: derived?.childIndex ?? r.childIndex ?? null
               };
             });
 
@@ -319,22 +329,45 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
           return next.toISOString().slice(0, 10);
         },
 
-        async computeCltvForDate(dateISO, cm) {
+                async computeCltvForDate(dateISO, cm, childIndex = null, useChildKey = false) {
           const locktime = Math.floor(new Date(dateISO + 'T00:00:00Z').getTime() / 1000);
-          const script = cm.buildCLTVScript(locktime, cm.publicKeyHex);
+
+          let publicKeyHex = cm.publicKeyHex;
+
+          if (useChildKey) {
+            const childKey = await cm.deriveCltvChild(childIndex);
+            publicKeyHex = childKey.publicKeyHex;
+          }
+
+          const script = cm.buildCLTVScript(locktime, publicKeyHex);
           const address = await cm.createP2SHAddress(script);
           const redeemScript = cm.bytesToHex ? cm.bytesToHex(script) : '';
-          return { address, locktime, date: dateISO, redeemScript };
-        },
 
-        async detectIntervalFromOutputs(firstDate, cm) {
+          return {
+            address,
+            locktime,
+            date: dateISO,
+            redeemScript,
+            childIndex: useChildKey ? Number(childIndex) : null
+          };
+        },
+          
+                async detectIntervalFromOutputs(firstDate, cm) {
+          const useChildKey = this.cltvKeyMode === 'per-index';
+
           if (this.timelockedOutputs.length < 2) {
-            const cltv = await this.computeCltvForDate(firstDate, cm);
+            const cltv = await this.computeCltvForDate(
+              firstDate,
+              cm,
+              0,
+              useChildKey
+            );
             const addrMap = new Map([[this.timelockedOutputs[0].address, cltv]]);
             return { interval: this.interval, addrMap };
           }
 
           const outputAddrs = this.timelockedOutputs.map(o => o.address || '');
+
           // resolvedDates[i] = ISO date string for output i, or null if unknown
           const resolvedDates = new Array(outputAddrs.length).fill(null);
           resolvedDates[0] = firstDate;
@@ -342,9 +375,17 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
           // Try an interval: walk from firstDate using interval, match addresses
           const applyInterval = async (interval) => {
             let date = firstDate;
+
             for (let i = 1; i < outputAddrs.length; i++) {
               date = this.addIntervalToDate(date, interval);
-              const cltv = await this.computeCltvForDate(date, cm);
+
+              const cltv = await this.computeCltvForDate(
+                date,
+                cm,
+                i,
+                useChildKey
+              );
+
               if (cltv.address === outputAddrs[i]) {
                 resolvedDates[i] = date;
               }
@@ -353,25 +394,43 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
 
           // Step 1: try monthly — check 2nd output first as a fast gate
           const monthSecond = await this.computeCltvForDate(
-            this.addIntervalToDate(firstDate, 'month'), cm
+            this.addIntervalToDate(firstDate, 'month'),
+            cm,
+            1,
+            useChildKey
           );
+
           if (monthSecond.address === outputAddrs[1]) {
             await applyInterval('month');
           }
 
           // Step 2: for any still-unresolved outputs, try yearly
-          const unresolvedAfterMonth = resolvedDates.some((d, i) => i > 0 && d === null);
+          const unresolvedAfterMonth = resolvedDates.some(
+            (d, i) => i > 0 && d === null
+          );
+
           if (unresolvedAfterMonth) {
             const yearSecond = await this.computeCltvForDate(
-              this.addIntervalToDate(firstDate, 'year'), cm
+              this.addIntervalToDate(firstDate, 'year'),
+              cm,
+              1,
+              useChildKey
             );
+
             if (yearSecond.address === outputAddrs[1] || resolvedDates[1] === null) {
-              // Walk yearly from firstDate for any slot still null
               let date = firstDate;
+
               for (let i = 1; i < outputAddrs.length; i++) {
                 date = this.addIntervalToDate(date, 'year');
+
                 if (resolvedDates[i] === null) {
-                  const cltv = await this.computeCltvForDate(date, cm);
+                  const cltv = await this.computeCltvForDate(
+                    date,
+                    cm,
+                    i,
+                    useChildKey
+                  );
+
                   if (cltv.address === outputAddrs[i]) {
                     resolvedDates[i] = date;
                   }
@@ -380,25 +439,33 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
             }
           }
 
-          // Step 3: for any remaining unknowns, walk day-by-day from the last known date
+          // Step 3: for any remaining unknowns, walk day-by-day
           for (let i = 1; i < outputAddrs.length; i++) {
             if (resolvedDates[i] !== null) continue;
 
-            // Find the most recent resolved date before i
             let searchFrom = resolvedDates[i - 1];
+
             for (let j = i - 1; j >= 0 && searchFrom === null; j--) {
               searchFrom = resolvedDates[j];
             }
+
             if (!searchFrom) continue;
 
-            // Walk forward one day at a time until address matches
             const [y, m, d] = searchFrom.split('-').map(Number);
             let cursor = new Date(Date.UTC(y, m - 1, d));
-            const MAX_DAYS = 366 * 10; // safety cap: 10 years
+            const MAX_DAYS = 366 * 10;
+
             for (let step = 0; step < MAX_DAYS; step++) {
               cursor = new Date(cursor.getTime() + 86400000);
               const dateISO = cursor.toISOString().slice(0, 10);
-              const cltv = await this.computeCltvForDate(dateISO, cm);
+
+              const cltv = await this.computeCltvForDate(
+                dateISO,
+                cm,
+                i,
+                useChildKey
+              );
+
               if (cltv.address === outputAddrs[i]) {
                 resolvedDates[i] = dateISO;
                 break;
@@ -406,9 +473,9 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
             }
           }
 
-          // Derive interval from resolved dates for caller convenience
-          // (returns the dominant interval: month/year, or falls back to this.interval)
+          // Derive interval from resolved dates
           const intervals = [];
+
           for (let i = 1; i < resolvedDates.length; i++) {
             if (resolvedDates[i - 1] && resolvedDates[i]) {
               const prev = new Date(resolvedDates[i - 1] + 'T00:00:00Z');
@@ -417,22 +484,36 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
               intervals.push(days >= 300 ? 'year' : 'month');
             }
           }
+
           const yearCount = intervals.filter(x => x === 'year').length;
           const monthCount = intervals.filter(x => x === 'month').length;
-          const dominantInterval = yearCount > monthCount ? 'year' : monthCount > 0 ? 'month' : this.interval;
 
-          // Build addrMap from resolved dates so the caller can skip countScheduleMatches
+          const dominantInterval =
+            yearCount > monthCount
+              ? 'year'
+              : monthCount > 0
+                ? 'month'
+                : this.interval;
+
+          // Build addrMap from resolved dates
           const addrMap = new Map();
+
           for (let i = 0; i < outputAddrs.length; i++) {
             if (resolvedDates[i]) {
-              const cltv = await this.computeCltvForDate(resolvedDates[i], cm);
+              const cltv = await this.computeCltvForDate(
+                resolvedDates[i],
+                cm,
+                i,
+                useChildKey
+              );
+
               addrMap.set(outputAddrs[i], cltv);
             }
           }
 
           return { interval: dominantInterval, addrMap };
         },
-
+          
         async countScheduleMatches(firstDate, interval, cm) {
           const schedule = this.buildSchedule(firstDate, this.timelockedOutputs.length, interval);
           const computed = [];
@@ -514,9 +595,8 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
           return tx.serialize();
         },
 
-        async signCltvReleaseTx({ unsignedTxHex, wif }) {
+                    async signCltvReleaseTx({ unsignedTxHex, wif, wifs = null }) {
           if (!window.coinjs) throw new Error('coin.js not loaded.');
-          if (!wif) throw new Error('Missing WIF for signing.');
 
           const tx = coinjs.transaction();
           const txUnserialized = tx.deserialize(unsignedTxHex);
@@ -525,28 +605,33 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
             throw new Error('Invalid or empty transaction inputs.');
           }
 
-          for (let i = 0; i < txUnserialized.ins.length; i++) {
-            txUnserialized.signhodl(i, wif, 1);
+          if (Array.isArray(wifs)) {
+            if (wifs.length !== txUnserialized.ins.length) {
+              throw new Error('WIF count does not match transaction input count.');
+            }
+
+            for (let i = 0; i < txUnserialized.ins.length; i++) {
+              if (!wifs[i]) {
+                throw new Error(`Missing WIF for input ${i}.`);
+              }
+
+              txUnserialized.signhodl(i, wifs[i], 1);
+            }
+          } else {
+            if (!wif) throw new Error('Missing WIF for signing.');
+
+            for (let i = 0; i < txUnserialized.ins.length; i++) {
+              txUnserialized.signhodl(i, wif, 1);
+            }
           }
 
           const signedHex = txUnserialized.serialize();
+
           return {
             hex: signedHex,
             vsize: Math.ceil(signedHex.length / 2),
             txid: this.computeTxidFromHex(signedHex)
           };
-        },
-
-        computeTxidFromHex(rawHex) {
-          try {
-            if (!window.Crypto || !Crypto.util || !rawHex) return '';
-            const first = Crypto.SHA256(Crypto.util.hexToBytes(rawHex), { asBytes: true });
-            const second = Crypto.SHA256(first, { asBytes: true });
-            return Crypto.util.bytesToHex(second.reverse());
-          } catch (err) {
-            console.error('Failed to compute txid', err);
-            return '';
-          }
         },
 
         async releaseReady() {
@@ -581,7 +666,8 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
                   vout: typeof u.vout !== 'undefined' ? u.vout : (typeof u.txout_n !== 'undefined' ? u.txout_n : (typeof u.n !== 'undefined' ? u.n : 0)),
                   value: Number(u.value) || 0,
                   redeemScript: r.redeemScript || '',
-                  locktime: r.locktime
+locktime: r.locktime,
+childIndex: r.childIndex ?? null
                 });
               });
             }
@@ -600,7 +686,8 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
                       vout: typeof o.n !== 'undefined' ? o.n : (typeof o.vout !== 'undefined' ? o.vout : 0),
                       value: Number(o.value) || 0,
                       redeemScript: matchedRow?.redeemScript || '',
-                      locktime: matchedRow?.locktime
+locktime: matchedRow?.locktime,
+childIndex: matchedRow?.childIndex ?? null
                     });
                   }
                 }
@@ -635,11 +722,21 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
               lockTime: txLockTime
             });
 
-            const signedEstimate = await this.signCltvReleaseTx({
-              unsignedTxHex: unsignedEstimate,
-              wif: this.cryptoManager.cltvWif || this.cryptoManager.wif
-            });
+              const releaseWifs = this.cltvKeyMode === 'per-index'
+  ? await Promise.all(utxos.map(async (u) => {
+      if (!Number.isInteger(u.childIndex) || u.childIndex < 0) {
+        throw new Error('Missing CLTV child index for release input.');
+      }
 
+      const childKey = await this.cryptoManager.deriveCltvChild(u.childIndex);
+      return childKey.wif;
+    }))
+  : null;
+            const signedEstimate = await this.signCltvReleaseTx({
+  unsignedTxHex: unsignedEstimate,
+  wif: this.cryptoManager.cltvWif || this.cryptoManager.wif,
+  wifs: releaseWifs
+});
             const estFee = Math.ceil((signedEstimate.vsize || 0) * feeRate);
             const sendValue = totalValue - estFee;
             if (sendValue <= 0) {
@@ -655,10 +752,10 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
             });
 
             const signedFinal = await this.signCltvReleaseTx({
-              unsignedTxHex: unsignedFinal,
-              wif: this.cryptoManager.cltvWif || this.cryptoManager.wif
-            });
-
+  unsignedTxHex: unsignedFinal,
+  wif: this.cryptoManager.cltvWif || this.cryptoManager.wif,
+  wifs: releaseWifs
+});
             const finalFee = totalValue - sendValue;
             this.releaseTxHex = signedFinal.hex;
             this.notice = `Release transaction ready. TXID (pre-broadcast): ${signedFinal.txid || 'n/a'} (fee ~${finalFee} sats)`;
