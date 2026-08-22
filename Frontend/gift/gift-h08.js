@@ -633,8 +633,34 @@ if (outputAddresses.has(legacyFirst.address)) {
             txid: this.computeTxidFromHex(signedHex)
           };
         },
+        computeTxidFromHex(rawHex) {
+          try {
+            if (!window.Crypto || !Crypto.util || !window.coinjs || !rawHex) {
+              return '';
+            }
 
+            // Deserialize first so SegWit witness data can be excluded.
+            // Bitcoin txid is the double-SHA256 of the non-witness serialization.
+            const decoded = coinjs.transaction().deserialize(rawHex);
+            if (!decoded) return '';
+
+            decoded.witness = false;
+            const baseHex = decoded.serialize();
+
+            const first = Crypto.SHA256(
+              Crypto.util.hexToBytes(baseHex),
+              { asBytes: true }
+            );
+            const second = Crypto.SHA256(first, { asBytes: true });
+
+            return Crypto.util.bytesToHex(second.reverse());
+          } catch (err) {
+            console.error('Failed to compute txid', err);
+            return '';
+          }
+        },
         async releaseReady() {
+            
           if (!this.unlocked) {
             this.error = 'Unlock the gift first.';
             return;
@@ -710,7 +736,48 @@ childIndex: matchedRow?.childIndex ?? null
               throw new Error('Missing destination address.');
             }
 
-            const totalValue = utxos.reduce((s, u) => s + (u.value || 0), 0);
+                        // H-15: independently verify each input amount against the raw funding transaction
+            const verifiedUtxos = await this.ensureNonWitnessUtxo(utxos);
+
+            for (const u of verifiedUtxos) {
+              if (!u.nonWitnessUtxo) {
+                throw new Error(`Unable to verify funding transaction ${u.txid}.`);
+              }
+
+              const computedTxid = this.computeTxidFromHex(u.nonWitnessUtxo);
+              if (!computedTxid || computedTxid !== u.txid) {
+                throw new Error(`Funding transaction ID verification failed for ${u.txid}.`);
+              }
+
+              const vout = Number(u.vout);
+              if (!Number.isInteger(vout) || vout < 0) {
+                throw new Error(`Invalid output index for transaction ${u.txid}.`);
+              }
+
+              const rawTx = coinjs.transaction().deserialize(u.nonWitnessUtxo);
+
+              if (!rawTx?.outs || vout >= rawTx.outs.length) {
+                throw new Error(`Funding output ${vout} not found in transaction ${u.txid}.`);
+              }
+
+              const actualValue = Number(rawTx.outs[vout].value);
+              const reportedValue = Number(u.value);
+
+              if (!Number.isSafeInteger(actualValue) || actualValue < 0) {
+                throw new Error(`Invalid raw transaction value for ${u.txid}:${vout}.`);
+              }
+
+              if (!Number.isSafeInteger(reportedValue) || reportedValue < 0) {
+                throw new Error(`Invalid reported UTXO value for ${u.txid}:${vout}.`);
+              }
+
+              if (actualValue !== reportedValue) {
+                throw new Error(
+                  `Security check failed: reported amount does not match the Bitcoin transaction for ${u.txid}:${vout}.`
+                );
+              }
+            }
+              const totalValue = utxos.reduce((s, u) => s + (u.value || 0), 0);
             const feeRate = 2; // sats/vbyte (conservative above min relay)
             const txLockTime = utxos.reduce((m, u) => Math.max(m, Number(u.locktime) || 0), 0);
 
@@ -738,6 +805,10 @@ childIndex: matchedRow?.childIndex ?? null
   wifs: releaseWifs
 });
             const estFee = Math.ceil((signedEstimate.vsize || 0) * feeRate);
+                          const MAX_RELEASE_FEE_SATS = 100000; // 0.001 BTC emergency safety ceiling
+            if (!Number.isSafeInteger(estFee) || estFee < 0 || estFee > MAX_RELEASE_FEE_SATS) {
+              throw new Error('Calculated miner fee exceeds the bc1q21 safety limit.');
+            }
             const sendValue = totalValue - estFee;
             if (sendValue <= 0) {
               throw new Error('Not enough funds to cover fee.');
