@@ -19,27 +19,33 @@ class SchedulePlanner {
     * the permanent bc1q21 maximum release date.
     */
     isValidReleaseDate(dateStr) {
-        if (typeof dateStr !== 'string') return false;
+    if (typeof dateStr !== 'string') return false;
 
-        const value = dateStr.trim();
+    const value = dateStr.trim();
 
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-            return false;
-        }
-
-        const parsed = new Date(value + 'T00:00:00Z');
-
-        if (Number.isNaN(parsed.getTime())) {
-            return false;
-        }
-
-        if (parsed.toISOString().slice(0, 10) !== value) {
-            return false;
-        }
-
-        return value <= this.maxReleaseDate;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return false;
     }
 
+    const parsed = new Date(value + 'T00:00:00Z');
+
+    if (Number.isNaN(parsed.getTime())) {
+        return false;
+    }
+
+    if (parsed.toISOString().slice(0, 10) !== value) {
+        return false;
+    }
+
+    const now = new Date();
+    const today =
+        `${now.getFullYear()}-` +
+        `${String(now.getMonth() + 1).padStart(2, '0')}-` +
+        `${String(now.getDate()).padStart(2, '0')}`;
+
+    return value >= today && value <= this.maxReleaseDate;
+}
+    
     /**
     * Generate date sequence based on start date, count, and period type.
     * Rejects any schedule that contains an invalid date or a release date

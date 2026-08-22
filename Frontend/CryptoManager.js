@@ -212,7 +212,36 @@ class CryptoManager {
             for (const [index, row] of schedule.entries()) {
                 const childKey = await this.deriveCltvChild(index);                
                 // Convert date to Unix timestamp
-                const locktime = Math.floor(new Date(row.date + 'T00:00:00Z').getTime() / 1000);
+                const dateValue = typeof row.date === 'string' ? row.date.trim() : '';
+
+if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    throw new Error(`Invalid release date: ${row.date}`);
+}
+
+const parsedDate = new Date(dateValue + 'T00:00:00Z');
+
+if (
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.toISOString().slice(0, 10) !== dateValue
+) {
+    throw new Error(`Invalid release date: ${row.date}`);
+}
+
+const now = new Date();
+const today =
+    `${now.getFullYear()}-` +
+    `${String(now.getMonth() + 1).padStart(2, '0')}-` +
+    `${String(now.getDate()).padStart(2, '0')}`;
+
+if (dateValue < today || dateValue > '2105-12-31') {
+    throw new Error(`Release date outside allowed range: ${row.date}`);
+}
+
+const locktime = Math.floor(parsedDate.getTime() / 1000);
+
+if (!Number.isFinite(locktime) || locktime <= 0) {
+    throw new Error(`Invalid Bitcoin locktime for release date: ${row.date}`);
+}
                 
                 // Build CLTV script
                 const script = this.buildCLTVScript(locktime, childKey.publicKeyHex);
