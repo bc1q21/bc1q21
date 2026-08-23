@@ -452,8 +452,16 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
                 const opReturnHex = this.cryptoManager?.bytesToHex(firstTimestampBytes);
 
                 // 3) Encrypt it (async)
-                const passphrase = this.cryptoManager.aesKeyAddress; // or wherever you store it
-                const encryptedOpReturnHex = await window.encryptShortHex(opReturnHex, passphrase, 1);
+                const encryptionSecret = this.cryptoManager.opReturnEncryptionSecret;
+
+if (!encryptionSecret) {
+    throw new Error('Missing OP_RETURN encryption secret.');
+}
+
+const encryptedOpReturnHex = await window.encryptShortHex(
+    opReturnHex,
+    encryptionSecret
+);
 
                 // 4) Build SPK and sign as before
                 const spk = this.cryptoManager.buildP2WPKHScriptPubKeyFromPubkeyHex(

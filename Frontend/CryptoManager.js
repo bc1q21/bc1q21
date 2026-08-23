@@ -13,7 +13,8 @@ class CryptoManager {
         this.extended = null,
         this.fundingAddress = '';
         this.releaseAddress = '';
-        this.aesKeyAddress = ''; //this address is used as AES key to encrypt/decrypt the OP_RETURN data 
+this.aesKeyAddress = ''; // Legacy OP_RETURN decryption only
+        this.opReturnEncryptionSecret = '';
         this.fundingPubkeyHex = '';
         this.releasePubkeyHex = '';
         this.unlockTransactions = [];
@@ -81,12 +82,37 @@ class CryptoManager {
             
 
             // Third address (m/84'/0'/0'/0/2)
-            const thirdAddressKey = account.deriveChild(0).deriveChild(2);
-            this.aesKeyAddress = await this.createBech32Address(thirdAddressKey.publicKey);
+// aesKeyAddress is retained only for decrypting legacy gifts.
+// New gifts use a domain-separated secret derived from the private child key.
+const thirdAddressKey = account.deriveChild(0).deriveChild(2);
 
+this.aesKeyAddress = await this.createBech32Address(
+    thirdAddressKey.publicKey
+);
+
+if (!thirdAddressKey.privateKey) {
+    throw new Error('Failed to derive OP_RETURN encryption secret');
+}
+
+const encryptionLabel = new TextEncoder().encode(
+    'bc1q21-opreturn-encryption-v1'
+);
+
+const encryptionMaterial = new Uint8Array(
+    thirdAddressKey.privateKey.length + encryptionLabel.length
+);
+
+encryptionMaterial.set(thirdAddressKey.privateKey, 0);
+encryptionMaterial.set(
+    encryptionLabel,
+    thirdAddressKey.privateKey.length
+);
+
+this.opReturnEncryptionSecret = this.bytesToHex(
+    window.nobleHashes.sha256(encryptionMaterial)
+);
             console.log('fundingAddress', this.fundingAddress);
             console.log('releaseAddress', this.releaseAddress);
-            console.log('aesKeyAddress', this.aesKeyAddress);
             return { success: true };
         } catch (error) {
             console.error('Key derivation failed:', error);
@@ -458,7 +484,8 @@ buildCLTVScript(locktime, pubkey) {
         this.extended = null,
         this.fundingAddress = '';
         this.releaseAddress = '';
-        this.aesKeyAddress = ''; //this address is used as AES key to encrypt/decrypt the OP_RETURN data 
+this.aesKeyAddress = ''; // Legacy OP_RETURN decryption only
+        this.opReturnEncryptionSecret = '';
         this.fundingPubkeyHex = '';
         this.releasePubkeyHex = '';
         this.unlockTransactions = [];
