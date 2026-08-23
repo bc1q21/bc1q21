@@ -234,8 +234,8 @@ class TimelockScript {
             throw new Error('Invalid public key format');
         }
 
-        if (locktime < 50000) {
-            throw new Error('Timestamp must be >= 50000 (for CLTV to treat as date)');
+        if (locktime < 500000000) {
+            throw new Error('Timestamp must be >= 500000000 (for CLTV to treat as date)');
         }
 
         const script = this.buildCLTVScript(locktime, pubkeyHex);
