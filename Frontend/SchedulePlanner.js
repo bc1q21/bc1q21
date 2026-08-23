@@ -58,16 +58,15 @@ class SchedulePlanner {
         return [];
     }
 
-    const start = new Date(startDate + 'T00:00:00');
-
+    const start = new Date(startDate + 'T00:00:00Z');
     for (let i = 0; i < count; i++) {
         const date = new Date(start);
 
         if (periodType === 'monthly') {
-            date.setMonth(start.getMonth() + i);
-        } else {
-            date.setFullYear(start.getFullYear() + i);
-        }
+    date.setUTCMonth(start.getUTCMonth() + i);
+} else {
+    date.setUTCFullYear(start.getUTCFullYear() + i);
+}
 
         const dateString = date.toISOString().slice(0, 10);
 
