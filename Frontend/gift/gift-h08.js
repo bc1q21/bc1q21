@@ -224,7 +224,13 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
             // 2) decrypt OP_RETURN to get first release date
             console.log("opReturnCipherHex", this.opReturnCipherHex);
             if (!window.__decryptShortHex) throw new Error('AESHelper decryptShortHex not loaded.');
-            let firstDate = await window.__decryptShortHex(this.opReturnCipherHex, this.aesKeyAddress); 
+            const currentEncryptionSecret = cm.opReturnEncryptionSecret || '';
+
+let firstDate = await window.__decryptShortHex(
+  this.opReturnCipherHex,
+  this.aesKeyAddress,
+  currentEncryptionSecret
+);
 
             console.log("firstDate", firstDate);
 
