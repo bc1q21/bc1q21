@@ -62,8 +62,24 @@ class SchedulePlanner {
     for (let i = 0; i < count; i++) {
         const date = new Date(start);
 
-        if (periodType === 'monthly') {
-    date.setUTCMonth(start.getUTCMonth() + i);
+       if (periodType === 'monthly') {
+    const targetMonth = new Date(Date.UTC(
+        start.getUTCFullYear(),
+        start.getUTCMonth() + i,
+        1
+    ));
+
+    const lastDayOfTargetMonth = new Date(Date.UTC(
+        targetMonth.getUTCFullYear(),
+        targetMonth.getUTCMonth() + 1,
+        0
+    )).getUTCDate();
+
+    targetMonth.setUTCDate(
+        Math.min(start.getUTCDate(), lastDayOfTargetMonth)
+    );
+
+    date.setTime(targetMonth.getTime());
 } else {
     date.setUTCFullYear(start.getUTCFullYear() + i);
 }
