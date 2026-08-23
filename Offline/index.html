@@ -423,8 +423,8 @@
         }
 
         this.unlockTimestamp = Math.floor(date.getTime() / 1000);
-        if (this.unlockTimestamp < 50000) {
-          outputManager.displayError('Timestamp must be >= 50000 (for CLTV to treat as date)');
+        if (this.unlockTimestamp < 500000000) {
+          outputManager.displayError('Timestamp must be >= 500000000 (for CLTV to treat as date)');
           return;
         }
 
