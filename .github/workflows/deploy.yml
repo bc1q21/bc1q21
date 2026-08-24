@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 concurrency:
   group: deploy-production
   cancel-in-progress: true
@@ -11,9 +14,11 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
+
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Block LOCAL SHIM code
         run: |
@@ -24,10 +29,11 @@ jobs:
           echo "LOCAL SHIM check passed."
 
       - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          fingerprint: SHA256:EjYYcUbY4DHPtAdwV4+IH0NY83X36Wb0CHbwUsTU53Y
           script: |
             sudo /usr/local/bin/bc1q21-deploy.sh
