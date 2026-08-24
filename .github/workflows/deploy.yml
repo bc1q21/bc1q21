@@ -34,6 +34,6 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          fingerprint: SHA256:EjYYcUbY4DHPtAdwV4+IH0NY83X36Wb0CHbwUsTU53Y
+          fingerprint: SHA256:TyUuu25Hg/15qqPdecb2Em4SUpPaOAyN50weJr3VLiE
           script: |
             sudo /usr/local/bin/bc1q21-deploy.sh
