@@ -560,9 +560,7 @@
           const feeRate = parseInt(document.getElementById('fee-rate').value) || 1;
           const destAddress = document.getElementById('dest-address').value.trim();
           
-          const dateStr = document.getElementById('unlockDate').value;
-          const date = new Date(dateStr);
-          const lockTime = Math.floor(date.getTime() / 1000);
+          const lockTime = timelockScript.unlockTimestamp;
 
           if (!txid || inputAmount <= 0 || !destAddress) {
             outputManager.displayError('Please fill in all required fields with valid values');
