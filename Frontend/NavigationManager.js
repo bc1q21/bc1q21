@@ -127,7 +127,9 @@ class NavigationManager {
             'recovery_words': {
                 group: 2,
                 canGoBack: true,
-                validate: (context) => !!context.cryptoManager.masterKey,
+                validate: (context) =>
+    !!context.cryptoManager.masterKey &&
+    !context.hasDustGiftOutputs(),
                 getNextStep: () => {
                     this.owner.handleDisplaySegwit();
                     this.owner.initAddFundsStep();
