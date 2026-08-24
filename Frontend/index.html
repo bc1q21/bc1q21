@@ -261,6 +261,13 @@
             </table>
           </div>
           <p class="small muted">* Based on today's price.</p>
+          <div class="callout callout-critical small" x-show="hasDustGiftOutputs()" style="margin-top:.75rem;">
+            <p><strong>One or more gift amounts are too small.</strong></p>
+            <p class="small">
+              Each individual Bitcoin release must be at least 546 satoshis.
+              Increase your total gift amount, reduce the number of releases, or adjust the individual amounts before continuing.
+            </p>
+          </div>
         </article>
       </template>
 
@@ -383,6 +390,13 @@
                 </tr>
               </tfoot>
             </table>
+          </div>
+          <div class="callout callout-critical small" x-show="hasDustGiftOutputs()" style="margin-top:.75rem;">
+            <p><strong>One or more gift amounts are too small.</strong></p>
+            <p class="small">
+              Each individual Bitcoin release must be at least 546 satoshis.
+              Increase your total gift amount, reduce the number of releases, or adjust the individual amounts before continuing.
+            </p>
           </div>
         </article>
       </template>

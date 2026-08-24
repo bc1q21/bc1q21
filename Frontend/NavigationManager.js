@@ -67,7 +67,7 @@ class NavigationManager {
             'prefilled_equal_table': {
                 group: 1,
                 canGoBack: true,
-                validate: () => true,
+                validate: (context) => !context.hasDustGiftOutputs(),
                 getNextStep: () => 'finish_schedule'
             },
             'schedule_or_manual': {
@@ -98,7 +98,7 @@ class NavigationManager {
             'projected_table': {
                 group: 1,
                 canGoBack: true,
-                validate: () => true,
+                validate: (context) => !context.hasDustGiftOutputs(),
                 getNextStep: () => 'finish_schedule'
             },
             'manual_entry': {
