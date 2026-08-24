@@ -417,6 +417,9 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
                     address: row.address,
                     value: Math.round(Number(row.btc || 0) * 1e8)
                 }));
+                if (outputs.some((output) => output.value < 546)) {
+                throw new Error('Gift payout is below the minimum Bitcoin output size of 546 sats.');
+                }
                 
                 const totalIn = utxos.reduce((acc, u) => acc + (Number(u.value) || 0), 0);
                 const totalOutGifts = outputs.reduce((acc, o) => acc + (o.value || 0), 0);
@@ -454,14 +457,14 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
                 // 3) Encrypt it (async)
                 const encryptionSecret = this.cryptoManager.opReturnEncryptionSecret;
 
-if (!encryptionSecret) {
-    throw new Error('Missing OP_RETURN encryption secret.');
-}
+                if (!encryptionSecret) {
+                    throw new Error('Missing OP_RETURN encryption secret.');
+                }
 
-const encryptedOpReturnHex = await window.encryptShortHex(
-    opReturnHex,
-    encryptionSecret
-);
+                const encryptedOpReturnHex = await window.encryptShortHex(
+                    opReturnHex,
+                    encryptionSecret
+                );
 
                 // 4) Build SPK and sign as before
                 const spk = this.cryptoManager.buildP2WPKHScriptPubKeyFromPubkeyHex(
@@ -532,7 +535,12 @@ const encryptedOpReturnHex = await window.encryptShortHex(
         // ====
         // CALCULATION METHODS
         // ====
-        
+        hasDustGiftOutputs() {
+            return this.scheduleRows.some((row) => {
+                const sats = Math.round(Number(row.btc || 0) * 1e8);
+                return sats < 546;
+            });
+        },
         totalBTC() {
             const totals = this.schedulePlanner.calculateScheduleTotals(this.scheduleRows);
             return totals.totalBtc;
