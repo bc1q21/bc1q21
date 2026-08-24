@@ -458,12 +458,12 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
                 const encryptionSecret = this.cryptoManager.opReturnEncryptionSecret;
 
                 if (!encryptionSecret) {
-                throw new Error('Missing OP_RETURN encryption secret.');
+                    throw new Error('Missing OP_RETURN encryption secret.');
                 }
 
                 const encryptedOpReturnHex = await window.encryptShortHex(
-                opReturnHex,
-                encryptionSecret
+                    opReturnHex,
+                    encryptionSecret
                 );
 
                 // 4) Build SPK and sign as before
@@ -535,12 +535,12 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
         // ====
         // CALCULATION METHODS
         // ====
-            hasDustGiftOutputs() {
+        hasDustGiftOutputs() {
             return this.scheduleRows.some((row) => {
-            const sats = Math.round(Number(row.btc || 0) * 1e8);
-            return sats < 546;
+                const sats = Math.round(Number(row.btc || 0) * 1e8);
+                return sats < 546;
             });
-            },
+        },
         totalBTC() {
             const totals = this.schedulePlanner.calculateScheduleTotals(this.scheduleRows);
             return totals.totalBtc;
