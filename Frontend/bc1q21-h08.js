@@ -639,10 +639,22 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
         // FEE CALCULATION
         // ====
         
-        onFinishScheduleEnter() {
+            async onFinishScheduleEnter() {
             this.serviceFee = this.schedulePlanner.calculateServiceFee(this.scheduleRows.length);
-            this.networkFee = this.schedulePlanner.estimateNetworkFees(this.scheduleRows.length);
-            this.networkFeeLowPriority = this.schedulePlanner.estimateNetworkFeesLowPriority(this.scheduleRows.length);
+            const feeEstimate = await this.backendClient.fetchFeeEstimate();
+            console.log('Bitcoin fee estimate:', feeEstimate);
+            const normalFeeRate = Number(feeEstimate?.normal?.sat_vb);
+            console.log('Normal Bitcoin fee rate (sat/vB):', normalFeeRate);
+            const estimatedVsize = this.schedulePlanner.estimateNetworkFeesLowPriority(this.scheduleRows.length);
+            const lowPriorityFeeRate = Number(feeEstimate?.low_priority?.sat_vb);
+            console.log('Low-priority Bitcoin fee rate (sat/vB):', lowPriorityFeeRate);
+            const normalNetworkFee = Math.ceil(estimatedVsize * normalFeeRate);
+            const lowPriorityNetworkFee = Math.min(normalNetworkFee, Math.ceil(estimatedVsize * lowPriorityFeeRate));
+            console.log('Calculated Bitcoin network fees (sats):', { normalNetworkFee, lowPriorityNetworkFee });
+            const liveFeeEstimateValid = feeEstimate?.success && Number.isFinite(normalNetworkFee) && normalNetworkFee > 0 && Number.isFinite(lowPriorityNetworkFee) && lowPriorityNetworkFee > 0;
+            this.networkFee = liveFeeEstimateValid ? normalNetworkFee : this.schedulePlanner.estimateNetworkFees(this.scheduleRows.length);
+            this.networkFeeLowPriority = liveFeeEstimateValid ? lowPriorityNetworkFee : this.schedulePlanner.estimateNetworkFeesLowPriority(this.scheduleRows.length);
+            console.log('Using Bitcoin network fees (sats):', { networkFee: this.networkFee, networkFeeLowPriority: this.networkFeeLowPriority, source: liveFeeEstimateValid ? 'bitcoin-core' : 'fallback' });
 
             this.serviceFeeUsd = this.serviceFee * this.priceManager.currentPrice / 100000000;
             this.networkFeeUsd = this.networkFee * this.priceManager.currentPrice / 100000000;

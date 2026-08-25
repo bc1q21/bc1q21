@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 import os
+import math
 import httpx
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse
@@ -99,6 +100,130 @@ async def get_blockchain_info():
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
 
+async def _bitcoin_rpc(method: str, params: list):
+    rpc_url = os.environ["BITCOIN_RPC_URL"]
+    rpc_user = os.environ["RPC_USER"]
+    rpc_password = os.environ["RPC_PASSWORD"]
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            rpc_url,
+            json={
+                "jsonrpc": "1.0",
+                "id": "bc1q21",
+                "method": method,
+                "params": params,
+            },
+            auth=(rpc_user, rpc_password),
+            timeout=10.0,
+        )
+
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get("error"):
+            raise RuntimeError(
+                data["error"].get("message", "Unknown Bitcoin Core RPC error")
+            )
+
+        return data.get("result")
+
+
+def _btc_per_kvb_to_sat_per_vb(value) -> float:
+    rate = float(value)
+    if rate <= 0:
+        raise ValueError("Invalid Bitcoin Core fee rate.")
+    return rate * 100000
+
+
+@app.get("/bitcoin/fee-estimate")
+async def bitcoin_fee_estimate():
+    """
+    Return current Bitcoin Core fee estimates for bc1q21.
+
+    Normal:
+      6-block CONSERVATIVE estimate.
+
+    Low priority:
+      12-block ECONOMICAL estimate.
+
+    Fee rates are returned as whole sat/vB values.
+    A live mempool minimum is used as the floor.
+    If smart fee estimation is unavailable, a 2 sat/vB emergency
+    fallback is used, subject to the current mempool minimum.
+    """
+    normal_rate = None
+    low_priority_rate = None
+    mempool_min_rate = 1.0
+
+    warnings = []
+
+    try:
+        mempool_info = await _bitcoin_rpc("getmempoolinfo", [])
+        raw_mempool_min = (mempool_info or {}).get("mempoolminfee")
+
+        if raw_mempool_min is not None:
+            mempool_min_rate = _btc_per_kvb_to_sat_per_vb(raw_mempool_min)
+    except Exception as exc:
+        warnings.append(f"Unable to read mempool minimum fee: {exc}")
+
+    fee_floor = max(1.0, mempool_min_rate)
+
+    try:
+        normal = await _bitcoin_rpc(
+            "estimatesmartfee",
+            [6, "CONSERVATIVE"],
+        )
+        if normal and normal.get("feerate") is not None:
+            normal_rate = _btc_per_kvb_to_sat_per_vb(normal["feerate"])
+    except Exception as exc:
+        warnings.append(f"Normal fee estimate unavailable: {exc}")
+
+    try:
+        low_priority = await _bitcoin_rpc(
+            "estimatesmartfee",
+            [12, "ECONOMICAL"],
+        )
+        if low_priority and low_priority.get("feerate") is not None:
+            low_priority_rate = _btc_per_kvb_to_sat_per_vb(
+                low_priority["feerate"]
+            )
+    except Exception as exc:
+        warnings.append(f"Low-priority fee estimate unavailable: {exc}")
+
+    fallback_rate = max(2.0, fee_floor)
+
+    normal_fallback = normal_rate is None
+    low_priority_fallback = low_priority_rate is None
+
+    if normal_fallback:
+        normal_rate = fallback_rate
+
+    if low_priority_fallback:
+        low_priority_rate = fallback_rate
+
+    normal_rate = math.ceil(max(normal_rate, fee_floor))
+    low_priority_rate = math.ceil(max(low_priority_rate, fee_floor))
+    mempool_min_rate = math.ceil(fee_floor)
+
+    return {
+        "normal": {
+            "sat_vb": normal_rate,
+            "target_blocks": 6,
+            "mode": "CONSERVATIVE",
+            "fallback": normal_fallback,
+        },
+        "low_priority": {
+            "sat_vb": low_priority_rate,
+            "target_blocks": 12,
+            "mode": "ECONOMICAL",
+            "fallback": low_priority_fallback,
+        },
+        "mempool_min_sat_vb": mempool_min_rate,
+        "fallback_used": normal_fallback or low_priority_fallback,
+        "warnings": warnings,
+        "source": "Bitcoin Core",
+    }
 
 @app.get("/bitcoin/tx/{txid}/hex")
 async def get_tx_hex(txid: str):
