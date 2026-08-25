@@ -10,11 +10,13 @@ class BtcBackendClient {
     constructor({
         baseUrl = '',
         utxoPath = '/bitcoin/address/{address}/utxo',
+        feeEstimatePath = '/bitcoin/fee-estimate',
         broadcastPath = '/bitcoin/sendrawtransaction',
         fetchOptions = {}
     } = {}) {
         this.baseUrl = baseUrl.replace(/\/$/, '');
         this.utxoPath = utxoPath;
+        this.feeEstimatePath = feeEstimatePath;
         this.broadcastPath = broadcastPath;
         this.fetchOptions = fetchOptions; // e.g., headers, credentials if needed
         this.loading = false;
@@ -70,7 +72,25 @@ class BtcBackendClient {
             this.loading = false;
         }
     }
-    
+        /**
+    * GET current Bitcoin fee-rate estimates from the backend
+    */
+    async fetchFeeEstimate() {
+        try {
+            const url = this._join(this.feeEstimatePath);
+            const resp = await fetch(url, {
+                cache: 'no-store',
+                ...this.fetchOptions
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+            const data = await resp.json();
+            return { success: true, ...data };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    }
+
     /**
     * POST a raw transaction hex to the backend
     * Returns { txid } on success or { error } on failure
