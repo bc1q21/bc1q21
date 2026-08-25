@@ -112,6 +112,7 @@ class TransactionManager {
       tx.addInput({
         txid: this.hexToBytes(u.txid),
         index: Number(u.vout),
+        sequence: 0xfffffffd,
         witnessUtxo: {
           amount: BigInt(Math.trunc(Number(u.value) || 0)),
           script: this.hexToBytes(u.scriptPubKey),
