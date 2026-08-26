@@ -97,7 +97,8 @@
               </ul>
               <label class="small" style="margin-top:.75rem">12 recovery words (separated by spaces)</label>
               <textarea class="mono" rows="3" placeholder="twelve words separated by spaces" x-model="mnemonic"
-                @input.debounce.300ms="onMnemonicChanged()"></textarea>
+  spellcheck="false" autocomplete="off" autocapitalize="none" autocorrect="off"
+  @input.debounce.300ms="onMnemonicChanged()"></textarea>
 
               <div style="margin-top:.5rem;align-items:center">
                 <template x-if="!unlocked">
