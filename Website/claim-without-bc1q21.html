@@ -79,382 +79,278 @@
  <div class="section" style="background-color:#ffffff; color:#1a1a1a;">
     <div class="container">
 <div class="terms-content" style="color:#1a1a1a; max-width:1200px; margin:0 auto; padding:40px;">
-  <h1 class="heading h2">Claim Without bc1q21</h1>
+    <h1 class="heading h2">Claim Without bc1q21</h1>
+
   <p class="paragraph large"><strong>Smart Contract Giving, powered by bc1q21.com</strong></p>
 
-<p class="paragraph large">
-A Smart Contract Gift is not stored inside bc1q21.com.
-</p>
+  <p class="paragraph large">
+    A bc1q21 Smart Contract Gift is not stored inside bc1q21.com.
+  </p>
 
-<p class="paragraph large">
-The Bitcoin and the time-lock rules live directly on the Bitcoin blockchain.
-</p>
+  <p class="paragraph large">
+    The Bitcoin and the time-lock conditions exist directly on the Bitcoin blockchain.
+    bc1q21 is a convenience tool that helps users create and claim those gifts, but bc1q21
+    does not hold the Bitcoin, store the recipient's recovery words, or control the funds.
+  </p>
+
+  <p class="paragraph large">
+    If bc1q21.com were no longer available, a technically capable person could still
+    reconstruct and claim a gift after its release date using the original 12 recovery words,
+    public Bitcoin blockchain data, and compatible Bitcoin transaction and script tools.
+  </p>
 
-<p class="paragraph large">
-bc1q21 is a convenience tool that makes creating and claiming gifts easier, but it does not hold Bitcoin, control user funds, or store seed words.
-</p>
+  <p class="paragraph large">
+    This page explains how that independent recovery is possible.
+  </p>
 
-<p class="paragraph large">
-If bc1q21.com disappeared tomorrow, a gift could still be recovered after the release date using the original 12 seed words, public blockchain data, and standard Bitcoin transaction tools.
-</p>
 
-<p class="paragraph large">
-This page explains that recovery process at three different levels:
-</p>
-
-<ul>
-<li>Everyday User Recovery Process</li>
-<li>Professional Recovery Process</li>
-<li>Complete Real-World Recovery Example</li>
-</ul>
-<h2 class="heading h3">1. Everyday User Recovery Process</h2>
-<p class="paragraph large"><strong>“How to Recover Gift Without bc1q21”</strong><br>
-for Average Bob/Betty (Everyday User Recovery Process)</p>
-
-<p class="paragraph large">A gift can be claimed using only the 12 seed words, even if the gift card or QR code has been lost or bc1q21.com is no longer in operation.</p>
-
-<p class="paragraph large">The Bitcoin contained in a Smart Contract Gift is not stored inside bc1q21.com. The funds and time-lock rules live directly on the Bitcoin blockchain.</p>
-
-<p class="paragraph large"><strong>AFTER THE RELEASE DATE HAS PASSED, the recovery process is:</strong></p>
-
-<ol>
-  <li>Use the 12 seed words to recreate the original Bitcoin keys.</li>
-  <li>Find the related blockchain transactions.</li>
-  <li>Locate the time-locked contract address.</li>
-  <li>Recover the on-chain contract information.</li>
-  <li>Rebuild and sign the release transaction.</li>
-  <li>Broadcast that transaction to the Bitcoin network.</li>
-  <li>Send the Bitcoin to a wallet address you control.</li>
-</ol>
-
-<p class="paragraph large">This is not a simple “click one button” process. It is technical. But it is absolutely doable.</p>
-
-<p class="paragraph large">We have already successfully tested this exact process using only the 12 seed words, public blockchain data, and Bitcoin transaction tools. No bc1q21 backend, server, QR code, or gift card is required.</p>
-
-<p class="paragraph large">In plain English: the 12 seed words are the key. The blockchain contains the rest of the information. A Bitcoin-knowledgeable person, or someone guided carefully by ChatGPT or another AI tool, can recover the gift after the unlock date.</p>  
-<h2 class="heading h3">2. Professional Recovery Process</h2>
-<p class="paragraph large"><strong>“How to Recover Gift Without bc1q21”</strong><br>
-for Professionals (Coder to Coder)</p>
-
-<p class="paragraph large">Time-Locked Smart Contract Gifts are not stored “inside” bc1q21.com. The funds and time-lock conditions exist directly on the Bitcoin blockchain itself.</p>
-
-<p class="paragraph large">bc1q21 simply makes the creation and claiming process easy and user-friendly.</p>
-
-<p class="paragraph large"><strong>Coder to coder, the recovery process is straightforward:</strong></p>
-
-<p class="paragraph large">The funds are locked in a Bitcoin P2SH address with three requirements that must be satisfied before the funds can be spent:</p>
-
-<ol>
-  <li>The unlock date/time must have been reached.</li>
-  <li>You must have access to the redeem script used to create the address (this information is encoded on-chain in the OP_RETURN data).</li>
-  <li>You must have the correct private key / seed phrase controlling the address.</li>
-</ol>
-
-<p class="paragraph large">Once those three conditions are met, a technically capable Bitcoin developer can rebuild, sign, and broadcast the release transaction directly to the Bitcoin network without needing bc1q21.com to exist.</p>
-
-<p class="paragraph large"><strong>In simple terms:</strong></p>
-
-<p class="paragraph large">The website is a convenience tool. The actual Bitcoin and time-lock logic live permanently on the Bitcoin blockchain.</p>
-<h2 class="heading h3">3. Complete Real-World Recovery Example</h2>
-
-<p class="paragraph large">The following is the complete real-world recovery example from the successful manual redemption test.</p>
-
-<p class="paragraph large">This process was completed using only the original 12 seed words, public blockchain data, publicly accessible bc1q21 frontend logic, and Bitcoin transaction inspection tools.</p>
-
-<p class="paragraph large"><strong>No bc1q21 backend, server, QR code, gift card, or normal website claiming function was used.</strong></p>
-<p class="paragraph large"><strong>Redeeming a bc1q21 Smart Contract Gift WITHOUT bc1q21.com</strong></p>
-
-<h2 class="heading h3">IMPORTANT</h2>
-
-<p class="paragraph large">These notes are for personal archival and educational purposes only.</p>
-
-<p class="paragraph large">This process was successfully completed manually using:</p>
-
-<ul>
-  <li>ONLY the 12 seed words</li>
-  <li>Public blockchain data</li>
-  <li>Publicly accessible bc1q21 frontend logic</li>
-  <li>Bitcoin transaction inspection tools</li>
-</ul>
-
-<p class="paragraph large">No bc1q21 backend, server, QR code, or website functions were used during redemption.</p>
-
-<h2 class="heading h3">OBJECTIVE</h2>
-
-<p class="paragraph large">Redeem a bc1q21 Smart Contract Gift manually if:</p>
-
-<ul>
-  <li>bc1q21.com no longer exists</li>
-  <li>The QR code is gone</li>
-  <li>The gift card is lost</li>
-  <li>No TXID is known</li>
-  <li>No wallet address is known</li>
-  <li>No release date is known</li>
-  <li>ONLY the 12 seed words remain</li>
-</ul>
-
-<h2 class="heading h3">WHAT WAS PROVEN</h2>
-
-<p class="paragraph large">The following was successfully completed manually:</p>
-
-<ol>
-  <li>Rediscovered the funding wallet from the seed words</li>
-  <li>Located the funding transaction on-chain</li>
-  <li>Located the smart contract creation transaction</li>
-  <li>Located the P2SH time-lock contract address</li>
-  <li>Extracted the OP_RETURN recovery payload</li>
-  <li>Decrypted the OP_RETURN payload</li>
-  <li>Reconstructed the redeem script</li>
-  <li>Built a raw Bitcoin transaction manually</li>
-  <li>Signed the transaction manually</li>
-  <li>Broadcast the transaction directly to the Bitcoin network</li>
-  <li>Received confirmed Bitcoin into a new receiving address</li>
-</ol>
-
-<h2 class="heading h3">TOOLS USED</h2>
-
-<p class="paragraph large"><strong>Website Used</strong></p>
-
-<p class="paragraph large">https://mempool.space</p>
-
-<p class="paragraph large">Specifically:</p>
-
-<ul>
-  <li>Address explorer</li>
-  <li>Transaction explorer</li>
-  <li>Raw transaction hex viewer</li>
-  <li>Transaction broadcaster</li>
-</ul>
-<h2 class="heading h3">STARTING INFORMATION</h2>
-
-<p class="paragraph large"><strong>ONLY the following was initially available:</strong></p>
-
-<p class="paragraph large">The 12 Seed Words</p>
-
-<p class="paragraph large"><strong>Original seed phrase omitted for security best practices.</strong></p>
-
-<h2 class="heading h3">STEP 1 — VERIFY THE WORDS ARE VALID BIP39</h2>
-
-<p class="paragraph large">Confirm the 12 words are legitimate Bitcoin BIP39 seed words.</p>
-
-<p class="paragraph large"><strong>Result:</strong></p>
-
-<ul>
-  <li>The words were valid.</li>
-</ul>
-
-<p class="paragraph large">This confirms that the phrase can deterministically derive Bitcoin keys.</p>
-
-<h2 class="heading h3">STEP 2 — DERIVE THE FUNDING ADDRESS</h2>
-
-<p class="paragraph large">The bc1q21 frontend logic was inspected.</p>
-
-<p class="paragraph large"><strong>Important discovery:</strong></p>
-
-<ul>
-  <li>bc1q21 derives the funding address from the seed.</li>
-  <li>The derivation path used was:</li>
-</ul>
-
-<p class="paragraph large"><strong>m/84'/0'/0'/0/0</strong></p>
-
-<p class="paragraph large">Using the seed words, the derived funding address was:</p>
-
-<p class="paragraph large"><strong>Original example funding address omitted for privacy.</strong></p>
-
-<h2 class="heading h3">STEP 3 — SEARCH THE BLOCKCHAIN FOR THE FUNDING ADDRESS</h2>
-
-<p class="paragraph large">Open:</p>
-
-<p class="paragraph large"><strong>Original example blockchain lookup URL omitted for privacy.</strong></p>
-
-<p class="paragraph large">This revealed:</p>
-
-<ul>
-  <li>Incoming funding transaction</li>
-  <li>Outgoing smart contract creation transaction</li>
-</ul>
-
-<h2 class="heading h3">STEP 4 — IDENTIFY THE FUNDING TRANSACTION</h2>
-
-<p class="paragraph large">Funding TXID discovered:</p>
-
-<p class="paragraph large"><strong>Original example funding TXID omitted for privacy.</strong></p>
-
-<p class="paragraph large">This transaction funded the derived wallet address.</p>
-
-<h2 class="heading h3">STEP 5 — IDENTIFY THE SMART CONTRACT CREATION TRANSACTION</h2>
-
-<p class="paragraph large">Outgoing contract TXID discovered:</p>
-
-<p class="paragraph large"><strong>Original example contract TXID omitted for privacy.</strong></p>
-
-<p class="paragraph large">This transaction:</p>
-
-<ul>
-  <li>Created the P2SH time-lock contract</li>
-  <li>Included an OP_RETURN output</li>
-</ul>
-<h2 class="heading h3">STEP 6 — IDENTIFY THE P2SH CONTRACT ADDRESS</h2>
-
-<p class="paragraph large">Inside the contract transaction outputs, the following P2SH address was found:</p>
-
-<p class="paragraph large"><strong>Original example P2SH contract address omitted for privacy.</strong></p>
-
-<p class="paragraph large">This was the actual time-locked contract holding the Bitcoin.</p>
-
-<h2 class="heading h3">STEP 7 — IDENTIFY THE OP_RETURN OUTPUT</h2>
-
-<p class="paragraph large">Inside the same transaction, an OP_RETURN output existed.</p>
-
-<p class="paragraph large">This matched Edgar's explanation that recovery metadata was encoded on-chain.</p>
-
-<h2 class="heading h3">STEP 8 — VIEW THE RAW TRANSACTION HEX</h2>
-
-<p class="paragraph large">Open:</p>
-
-<p class="paragraph large"><strong>Original example raw transaction lookup URL omitted for privacy.</strong></p>
-
-<p class="paragraph large">The raw transaction hex revealed:</p>
-
-<p class="paragraph large"><strong>53616c7465645f5f</strong></p>
-
-<p class="paragraph large">Decoded ASCII:</p>
-
-<p class="paragraph large"><strong>Salted__</strong></p>
-
-<p class="paragraph large">This is the standard OpenSSL encrypted payload marker.</p>
-
-<p class="paragraph large"><strong>Critical discovery:</strong></p>
-
-<ul>
-  <li>The OP_RETURN payload was encrypted.</li>
-</ul>
-
-<h2 class="heading h3">STEP 9 — DETERMINE THE ENCRYPTION MODEL</h2>
-
-<p class="paragraph large">By inspecting bc1q21 frontend logic, the following was determined:</p>
-
-<ul>
-  <li>The OP_RETURN payload uses encrypted recovery metadata.</li>
-  <li>The decryption key is derived deterministically from the seed phrase.</li>
-  <li>The blockchain itself contains the recovery package.</li>
-</ul>
-
-<p class="paragraph large">The process effectively became:</p>
-
-<p class="paragraph large">
-seed words<br>
-→ derive AES key<br>
-→ decrypt OP_RETURN payload<br>
-→ recover redeem script<br>
-→ spend P2SH contract
-</p>
-
-<h2 class="heading h3">STEP 10 — RECOVER THE AES KEY ADDRESS</h2>
-
-<p class="paragraph large">Using the seed-derived logic, the following AES-related address was derived:</p>
-
-<p class="paragraph large"><strong>Original example AES-related address omitted for privacy.</strong></p>
-
-<p class="paragraph large">This was used as part of the decryption process.</p>
-
-<h2 class="heading h3">STEP 11 — DECRYPT THE OP_RETURN PAYLOAD</h2>
-
-<p class="paragraph large">The encrypted OP_RETURN payload was successfully decrypted.</p>
-
-<p class="paragraph large"><strong>Recovered information included:</strong></p>
-
-<ul>
-  <li>Unlock Date: 2026-04-15</li>
-  <li>Redeem Script: Original example redeem script omitted for privacy.</li>
-  <li>Reconstructed P2SH Address: Original example address omitted for privacy.</li>
-</ul>
-
-<p class="paragraph large">The reconstructed P2SH address matched the live blockchain contract address exactly.</p>
-
-<p class="paragraph large">This confirmed the recovery process was working correctly.</p>
-<h2 class="heading h3">STEP 12 — CREATE A NEW RECEIVING ADDRESS</h2>
-
-<p class="paragraph large">A normal Bitcoin receiving address controlled by the redeemer was created.</p>
-
-<p class="paragraph large"><strong>Receiving address used:</strong></p>
-
-<p class="paragraph large"><strong>Original example receiving address omitted for privacy.</strong></p>
-
-<h2 class="heading h3">STEP 13 — BUILD THE MANUAL RELEASE TRANSACTION</h2>
-
-<p class="paragraph large">A raw Bitcoin transaction was manually constructed.</p>
-
-<p class="paragraph large">The transaction:</p>
-
-<ul>
-  <li>Spent the P2SH contract output</li>
-  <li>Sent funds to the new receiving address</li>
-  <li>Included a mining fee</li>
-  <li>Included the reconstructed redeem script</li>
-  <li>Included the proper signature</li>
-</ul>
-
-<h2 class="heading h3">STEP 14 — BROADCAST THE RAW TRANSACTION</h2>
-
-<p class="paragraph large">Open:</p>
-
-<p class="paragraph large"><strong>https://mempool.space/tx/push</strong></p>
-
-<p class="paragraph large">Paste the raw signed transaction into the broadcast window.</p>
-
-<p class="paragraph large">Click:</p>
-
-<p class="paragraph large"><strong>Broadcast Transaction</strong></p>
-
-<h2 class="heading h3">STEP 15 — CONFIRM THE TRANSACTION</h2>
-
-<p class="paragraph large">After broadcast:</p>
-
-<ul>
-  <li>mempool.space returned a TXID</li>
-  <li>Transaction entered the mempool as "Unconfirmed"</li>
-  <li>Shortly afterward the transaction confirmed successfully</li>
-  <li>Bitcoin arrived in the receiving wallet</li>
-</ul>
-
-<p class="paragraph large"><strong>Final redemption TXID:</strong></p>
-
-<p class="paragraph large"><strong>Original example final redemption TXID omitted for privacy.</strong></p>
-
-<h2 class="heading h3">FINAL RESULT</h2>
-
-<p class="paragraph large">The Smart Contract Gift was successfully redeemed manually WITHOUT bc1q21.com.</p>
-
-<p class="paragraph large">The process required:</p>
-
-<ul>
-  <li>the 12 seed words</li>
-  <li>public blockchain data</li>
-  <li>understanding of Bitcoin transactions and scripts</li>
-  <li>inspection of public frontend logic</li>
-</ul>
-
-<p class="paragraph large">No backend systems were required.</p>
-
-<h2 class="heading h3">IMPORTANT CONCLUSION</h2>
-
-<p class="paragraph large">This does NOT mean the average person could manually redeem a bc1q21 gift.</p>
-
-<p class="paragraph large">However, this test strongly demonstrated that a competent Bitcoin engineer can independently recover and redeem a bc1q21 Smart Contract Gift directly from the Bitcoin blockchain and the original 12 seed words — even if bc1q21.com disappeared permanently.</p>
-
-<hr>
-
-<p class="paragraph large"><strong>Important:</strong></p>
-
-<p class="paragraph large">This example does not mean the average person is expected to manually recover a gift on their own.</p>
-
-<p class="paragraph large">It does demonstrate that Smart Contract Gifts created using bc1q21 are not dependent on the continued operation of bc1q21.com.</p>
-
-<p class="paragraph large">The Bitcoin remains on the Bitcoin blockchain, and the original 12 seed words remain the most important recovery information.</p>
-
-<p class="paragraph large"><strong>Protect your seed words carefully.</strong></p>
+  <h2 class="heading h3">1. What the 12 Recovery Words Provide</h2>
+
+  <p class="paragraph large">
+    The 12 recovery words are a BIP39 mnemonic. From those same words, bc1q21
+    deterministically derives the Bitcoin keys and addresses used by the gift.
+  </p>
+
+  <p class="paragraph large">
+    For current bc1q21 gifts, important derivation paths include:
+  </p>
+
+  <ul>
+    <li><strong>m/84'/0'/0'/0/0</strong> — funding address</li>
+    <li><strong>m/84'/0'/0'/0/1</strong> — release / destination address</li>
+    <li><strong>m/84'/0'/0'/0/2</strong> — source key material used for current OP_RETURN recovery metadata encryption</li>
+    <li><strong>m/84'/0'/0'/1/{index}</strong> — current per-release CLTV signing keys</li>
+  </ul>
+
+  <p class="paragraph large">
+    Older bc1q21 gifts used a legacy CLTV signing key at:
+  </p>
+
+  <p class="paragraph large">
+    <strong>m/44'/0'/0'/0/0</strong>
+  </p>
+
+  <p class="paragraph large">
+    The current bc1q21 claim software retains compatibility with both the legacy
+    and current gift formats.
+  </p>
+
+
+  <h2 class="heading h3">2. How the Gift Is Found on the Blockchain</h2>
+
+  <p class="paragraph large">
+    The funding address can be deterministically recreated from the 12 recovery words.
+    Public Bitcoin blockchain data can then be searched for transactions involving that address.
+  </p>
+
+  <p class="paragraph large">
+    A bc1q21 gift creation transaction contains one or more P2SH time-locked outputs
+    and an OP_RETURN output containing encrypted recovery metadata.
+  </p>
+
+  <p class="paragraph large">
+    The correct gift transaction should not be identified merely because it contains
+    an OP_RETURN output and a P2SH address. The recovery words must be used to
+    reconstruct the expected contract and verify that it matches an actual output
+    in the transaction.
+  </p>
+
+
+  <h2 class="heading h3">3. What Is Stored in OP_RETURN</h2>
+
+  <p class="paragraph large">
+    <strong>The redeem script is not stored in OP_RETURN.</strong>
+  </p>
+
+  <p class="paragraph large">
+    The OP_RETURN output contains encrypted recovery metadata representing the
+    first release date of the gift.
+  </p>
+
+  <p class="paragraph large">
+    For current gifts, the encryption secret is derived deterministically from
+    private key material associated with:
+  </p>
+
+  <p class="paragraph large">
+    <strong>m/84'/0'/0'/0/2</strong>
+  </p>
+
+  <p class="paragraph large">
+    Current gifts use authenticated AES-GCM encryption. Older gifts used a legacy
+    AES-CBC format. The current bc1q21 recovery software supports both formats so
+    previously created gifts remain recoverable.
+  </p>
+
+
+  <h2 class="heading h3">4. Reconstructing the Time-Locked Contract</h2>
+
+  <p class="paragraph large">
+    After the encrypted OP_RETURN metadata is decrypted, the first release date is known.
+  </p>
+
+  <p class="paragraph large">
+    The redeem script is then reconstructed rather than downloaded from bc1q21
+    or recovered directly from OP_RETURN.
+  </p>
+
+  <p class="paragraph large">
+    For current gifts, each release uses a deterministic child key derived from:
+  </p>
+
+  <p class="paragraph large">
+    <strong>m/84'/0'/0'/1/{index}</strong>
+  </p>
+
+  <p class="paragraph large">
+    That child public key is combined with the applicable release date to rebuild
+    the Bitcoin CHECKLOCKTIMEVERIFY (CLTV) redeem script.
+  </p>
+
+  <p class="paragraph large">
+    Conceptually, the script enforces:
+  </p>
+
+  <ul>
+    <li>the required Bitcoin locktime must have been reached;</li>
+    <li>the locktime condition must be satisfied;</li>
+    <li>the matching derived public key must provide a valid signature.</li>
+  </ul>
+
+  <p class="paragraph large">
+    The redeem script is hashed to recreate the corresponding P2SH contract address.
+    That reconstructed address must match an actual time-locked output in the gift
+    creation transaction.
+  </p>
+
+  <p class="paragraph large">
+    Older gifts are reconstructed using the legacy CLTV key derivation.
+    A correct independent recovery process must therefore determine whether the
+    gift uses the legacy or current per-release key format and verify the result
+    against the blockchain.
+  </p>
+
+
+  <h2 class="heading h3">5. Creating the Release Transaction</h2>
+
+  <p class="paragraph large">
+    Once a release date has been reached and the correct contract output has been
+    identified, a Bitcoin transaction can be constructed to spend that output.
+  </p>
+
+  <p class="paragraph large">
+    A technically correct release transaction must identify the correct previous
+    transaction and output, use the proper transaction locktime and sequence,
+    account for the actual Bitcoin value being spent and an appropriate miner fee,
+    and provide the required signature together with the reconstructed redeem script.
+  </p>
+
+  <p class="paragraph large">
+    The transaction can then send the released Bitcoin to an address controlled
+    by the recipient and be broadcast directly to the Bitcoin network.
+  </p>
+
+  <p class="paragraph large">
+    Before signing, the raw funding transaction and the actual value of the output
+    being spent should be independently verified. This helps ensure that incorrect
+    third-party or API data cannot cause an unintended miner fee or invalid transaction.
+  </p>
+
+
+  <h2 class="heading h3">6. Independent Recovery Sequence</h2>
+
+  <p class="paragraph large">
+    In simplified technical form, independent recovery follows this sequence:
+  </p>
+
+  <ol>
+    <li>Validate the 12 recovery words as a BIP39 mnemonic.</li>
+    <li>Derive the bc1q21 funding address.</li>
+    <li>Locate candidate gift transactions using public Bitcoin blockchain data.</li>
+    <li>Extract the encrypted OP_RETURN recovery metadata.</li>
+    <li>Derive the appropriate decryption material from the recovery words.</li>
+    <li>Decrypt and validate the first release date.</li>
+    <li>Determine whether the gift uses the legacy or current CLTV key format.</li>
+    <li>Derive the appropriate CLTV signing key.</li>
+    <li>Reconstruct the CLTV redeem script for the applicable release.</li>
+    <li>Recreate the P2SH contract address and verify that it matches the blockchain output.</li>
+    <li>Verify the raw funding transaction, output index, and Bitcoin amount.</li>
+    <li>After the release date has been reached, construct the spending transaction.</li>
+    <li>Sign the transaction with the matching derived private key.</li>
+    <li>Broadcast the signed transaction to the Bitcoin network.</li>
+  </ol>
+
+
+  <h2 class="heading h3">7. What This Demonstrates</h2>
+
+  <p class="paragraph large">
+    bc1q21 has previously completed a manual mainnet recovery test using the original
+    recovery words and public Bitcoin blockchain information without relying on the
+    normal bc1q21 recipient claiming interface.
+  </p>
+
+  <p class="paragraph large">
+    The historical wallet addresses, transaction IDs, redeem scripts, recovery words,
+    and other identifying blockchain information from that test are intentionally
+    not published here.
+  </p>
+
+  <p class="paragraph large">
+    The purpose of the test was to demonstrate the underlying property of the system:
+    the recipient's ability to recover the Bitcoin does not depend on bc1q21 holding
+    a secret or maintaining custody of the funds.
+  </p>
+
+
+  <h2 class="heading h3">8. Important Limitations</h2>
+
+  <p class="paragraph large">
+    Claiming a gift manually is an advanced Bitcoin recovery procedure.
+    It requires an accurate understanding of BIP39 key derivation, Bitcoin scripts,
+    P2SH, CHECKLOCKTIMEVERIFY, transaction construction, transaction fees,
+    signatures, and broadcasting.
+  </p>
+
+  <p class="paragraph large">
+    This page is intended to document the independent recovery architecture and
+    provide a technical reference. It should not be interpreted as a recommendation
+    that an inexperienced user manually construct or sign Bitcoin transactions.
+  </p>
+
+  <p class="paragraph large">
+    Bitcoin transactions are irreversible. A mistake in transaction construction,
+    signing, fee calculation, output selection, or destination address can result
+    in permanent loss.
+  </p>
+
+  <p class="paragraph large">
+    The ordinary bc1q21 recipient interface exists to perform these steps more safely
+    and conveniently. Independent manual recovery is the fallback path demonstrating
+    that the Bitcoin itself is not dependent on the continued operation of bc1q21.com.
+  </p>
+
+
+  <h2 class="heading h3">Final Conclusion</h2>
+
+  <p class="paragraph large">
+    A bc1q21 Smart Contract Gift is controlled by Bitcoin's blockchain rules and
+    deterministic cryptographic information derived from the recipient's recovery words.
+  </p>
+
+  <p class="paragraph large">
+    bc1q21 does not hold the recipient's Bitcoin or possess a server-side secret
+    required to release it.
+  </p>
+
+  <p class="paragraph large">
+    With the original 12 recovery words, public blockchain data, and appropriate
+    Bitcoin technical tools, a competent Bitcoin engineer can reconstruct and claim
+    a mature gift independently of bc1q21.com.
+  </p>
+
+  <p class="paragraph large">
+    <strong>Protect the 12 recovery words carefully. They are the critical private recovery information for the gift.</strong>
+  </p>
 
 </div>
     </div>
