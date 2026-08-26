@@ -16,8 +16,9 @@ helpUrl: GIFT_HELP_URL,
 
         // ---- Gift identity ----
         fundingAddress: '',
-        txs: [],
-        giftTx: null,
+txs: [],
+giftTxCandidates: [],
+giftTx: null,
 
         // ---- From chain ----
         createdAt: null,
@@ -88,70 +89,78 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
             const txs = await fetch(url).then(r => r.json());
             this.txs = Array.isArray(txs) ? txs : [];
 
-            // pick the first tx that looks like the "gift creation tx":
-            // - has OP_RETURN output
-            // - has at least 1 P2SH output where address starts with "3"
-            const giftTx = this.txs.find(tx => {
-              const vout = tx?.vout || [];
-              const hasOpReturn = vout.some(o => o?.scriptpubkey_type === 'op_return');
-              const hasP2sh3 = vout.some(o => (o?.scriptpubkey_address || '').startsWith('3'));
-              return hasOpReturn && hasP2sh3;
-            });
+            // Collect all transactions that could be the gift creation transaction.
+// Do not trust transaction ordering; the correct candidate will be
+// validated against the recipient's recovery words during unlock.
+this.giftTxCandidates = this.txs.filter(tx => {
+  const vout = tx?.vout || [];
+  const hasOpReturn = vout.some(o => o?.scriptpubkey_type === 'op_return');
+  const hasP2sh3 = vout.some(o => (o?.scriptpubkey_address || '').startsWith('3'));
+  return hasOpReturn && hasP2sh3;
+});
 
-            if (!giftTx) {
-              this.error = 'Could not find a gift transaction.';
-              return;
-            }
+            if (!this.giftTxCandidates.length) {
+  this.error = 'Could not find a gift transaction.';
+  return;
+}
 
-            this.giftTx = giftTx;
+// M-03: do not choose a gift transaction based on upstream ordering.
+// Final selection happens during unlock, when the recovery words
+// can cryptographically validate the correct candidate.
+this.giftTx = null;
+this.createdAt = null;
+this.createdAtBlock = null;
+this.creationPriceUSD = null;
+this.creationPriceTime = null;
+this.priceHistory = [];
+this.timelockedOutputs = [];
+this.opReturnCipherHex = '';
+this.rows = [];
+this.totalBTC = 0;
+              // Preserve Edgar's existing pre-unlock gift overview when there is
+// exactly one plausible candidate, without authenticating it yet.
+if (this.giftTxCandidates.length === 1) {
+  const previewTx = this.giftTxCandidates[0];
+  const previewStatus = previewTx?.status || {};
 
-            // created at
-            const st = giftTx.status || {};
-            this.createdAt = st.block_time ? new Date(st.block_time * 1000) : new Date();
-            this.createdAtBlock = st.block_height || null;
+  this.createdAt = previewStatus.block_time
+    ? new Date(previewStatus.block_time * 1000)
+    : new Date();
+  this.createdAtBlock = previewStatus.block_height || null;
 
-            const priceList = Array.isArray(st.price) ? st.price : [];
-            const firstPrice = priceList.find(p => typeof p?.USD === 'number');
-            const parsedPrice = firstPrice ? Number(firstPrice.USD) : NaN;
-            console.log("st", st);
-            this.creationPriceUSD = Number.isFinite(parsedPrice) ? parsedPrice : null;
-            this.creationPriceTime = typeof firstPrice?.time === 'number' ? firstPrice.time : null;
-            this.priceHistory = priceList;
+  const previewPriceList = Array.isArray(previewStatus.price)
+    ? previewStatus.price
+    : [];
+  const previewFirstPrice = previewPriceList.find(
+    p => typeof p?.USD === 'number'
+  );
+  const previewParsedPrice = previewFirstPrice
+    ? Number(previewFirstPrice.USD)
+    : NaN;
 
-            // extract timelocked outputs (addresses starting with "3")
-            const vouts = giftTx.vout || [];
-            const timeLocked = vouts
-              .filter(o => (o?.scriptpubkey_address || '').startsWith('3'))
-              .map(o => ({
-                address: o.scriptpubkey_address,
-                sats: Number(o.value) || 0,
-                voutN: Number(o.n),
-                scriptPubKey: o.scriptpubkey || '',
-                spent: Boolean(o.spent)
-              }));
+  this.creationPriceUSD = Number.isFinite(previewParsedPrice)
+    ? previewParsedPrice
+    : null;
+  this.creationPriceTime =
+    typeof previewFirstPrice?.time === 'number'
+      ? previewFirstPrice.time
+      : null;
+  this.priceHistory = previewPriceList;
 
-            if (!timeLocked.length) {
-              this.error = 'No timelocked (3...) outputs found in the gift transaction.';
-              return;
-            }
+  const previewVouts = previewTx?.vout || [];
 
-            this.timelockedOutputs = timeLocked;
+  this.timelockedOutputs = previewVouts
+    .filter(o => (o?.scriptpubkey_address || '').startsWith('3'))
+    .map(o => ({
+      address: o.scriptpubkey_address,
+      sats: Number(o.value) || 0,
+      voutN: Number(o.n),
+      scriptPubKey: o.scriptpubkey || '',
+      spent: Boolean(o.spent)
+    }));
 
-            // extract OP_RETURN encrypted hex (strip "6a" script wrapper)
-            const op = vouts.find(o => o?.scriptpubkey_type === 'op_return');
-            const asm = op?.scriptpubkey_asm || '';
-            // expected "OP_RETURN OP_PUSHBYTES_64 <hex>"
-            const asmParts = asm.split(' ').map(s => s.trim()).filter(Boolean);
-            const lastToken = asmParts[asmParts.length - 1] || '';
-            this.opReturnCipherHex = lastToken;
-
-            if (!/^[0-9a-fA-F]+$/.test(this.opReturnCipherHex)) {
-              this.error = 'OP_RETURN payload is missing or not hex.';
-              return;
-            }
-
-            // Build rows WITHOUT dates yet (locked until mnemonic)
-            this.buildRowsWithoutSchedule();
+  this.buildRowsWithoutSchedule();
+}
 
             // Spend status
             //this can be a heavy operation, let's hold it for now
@@ -195,7 +204,99 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
           this.notice = '';
         },
 
-        async unlockGift() {
+        async inspectGiftCandidate(tx, cm) {
+  const vouts = tx?.vout || [];
+
+  const timeLocked = vouts
+    .filter(o => (o?.scriptpubkey_address || '').startsWith('3'))
+    .map(o => ({
+      address: o.scriptpubkey_address,
+      sats: Number(o.value) || 0,
+      voutN: Number(o.n),
+      scriptPubKey: o.scriptpubkey || '',
+      spent: Boolean(o.spent)
+    }));
+
+  if (!timeLocked.length) return null;
+
+  const op = vouts.find(o => o?.scriptpubkey_type === 'op_return');
+  const asm = op?.scriptpubkey_asm || '';
+  const asmParts = asm.split(' ').map(s => s.trim()).filter(Boolean);
+  const opReturnCipherHex = asmParts[asmParts.length - 1] || '';
+
+  if (!/^[0-9a-fA-F]+$/.test(opReturnCipherHex)) {
+    return null;
+  }
+
+  let firstDate;
+
+  try {
+    firstDate = await window.__decryptShortHex(
+      opReturnCipherHex,
+      cm.aesKeyAddress || '',
+      cm.opReturnEncryptionSecret || ''
+    );
+  } catch (_) {
+    return null;
+  }
+
+  if (typeof firstDate !== 'string') {
+    return null;
+  }
+
+  if (/^[0-9a-fA-F]+$/.test(firstDate) && firstDate.length % 2 === 0) {
+    try {
+      const bytes = new Uint8Array(
+        firstDate.match(/.{1,2}/g).map(b => parseInt(b, 16))
+      );
+      firstDate = new TextDecoder().decode(bytes).trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(firstDate)) {
+    return null;
+  }
+
+  const parsedDate = new Date(firstDate + 'T00:00:00Z');
+
+  if (
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.toISOString().slice(0, 10) !== firstDate
+  ) {
+    return null;
+  }
+
+  const outputAddresses = new Set(timeLocked.map(o => o.address));
+
+  const legacyFirst = await this.computeCltvForDate(firstDate, cm);
+
+  if (outputAddresses.has(legacyFirst.address)) {
+    return {
+      tx,
+      timeLocked,
+      opReturnCipherHex,
+      firstDate,
+      cltvKeyMode: 'legacy'
+    };
+  }
+
+  const childFirst = await this.computeCltvForDate(firstDate, cm, 0, true);
+
+  if (outputAddresses.has(childFirst.address)) {
+    return {
+      tx,
+      timeLocked,
+      opReturnCipherHex,
+      firstDate,
+      cltvKeyMode: 'per-index'
+    };
+  }
+
+  return null;
+},
+          async unlockGift() {
           this.loading = true;
           this.error = '';
           this.notice = '';
@@ -221,6 +322,66 @@ if (contentConfig && typeof contentConfig.giftHelpUrl === 'string' && contentCon
 
             if (!this.aesKeyAddress) throw new Error('AES key address (m/84/0/0/0/2) not derived.');
 
+              // M-03: cryptographically validate every plausible gift transaction.
+// Do not rely on the order returned by the upstream transaction API.
+const validCandidates = [];
+
+for (const candidateTx of this.giftTxCandidates) {
+  const inspected = await this.inspectGiftCandidate(candidateTx, cm);
+
+  if (inspected) {
+    validCandidates.push(inspected);
+  }
+}
+
+if (validCandidates.length === 0) {
+  throw new Error(
+    'No gift transaction matched the recovery words and blockchain contract.'
+  );
+}
+
+if (validCandidates.length > 1) {
+  throw new Error(
+    'More than one gift transaction matched. Unable to safely determine the correct gift.'
+  );
+}
+
+const selectedGift = validCandidates[0];
+
+// Only now commit the validated transaction to page state.
+this.giftTx = selectedGift.tx;
+this.timelockedOutputs = selectedGift.timeLocked;
+this.opReturnCipherHex = selectedGift.opReturnCipherHex;
+this.firstReleaseDateISO = selectedGift.firstDate;
+this.cltvKeyMode = selectedGift.cltvKeyMode;
+
+// Restore the normal gift metadata from the authenticated transaction.
+const selectedStatus = this.giftTx?.status || {};
+this.createdAt = selectedStatus.block_time
+  ? new Date(selectedStatus.block_time * 1000)
+  : new Date();
+this.createdAtBlock = selectedStatus.block_height || null;
+
+const selectedPriceList = Array.isArray(selectedStatus.price)
+  ? selectedStatus.price
+  : [];
+const selectedFirstPrice = selectedPriceList.find(
+  p => typeof p?.USD === 'number'
+);
+const selectedParsedPrice = selectedFirstPrice
+  ? Number(selectedFirstPrice.USD)
+  : NaN;
+
+this.creationPriceUSD = Number.isFinite(selectedParsedPrice)
+  ? selectedParsedPrice
+  : null;
+this.creationPriceTime =
+  typeof selectedFirstPrice?.time === 'number'
+    ? selectedFirstPrice.time
+    : null;
+this.priceHistory = selectedPriceList;
+
+this.buildRowsWithoutSchedule();
             // 2) decrypt OP_RETURN to get first release date
             console.log("opReturnCipherHex", this.opReturnCipherHex);
             if (!window.__decryptShortHex) throw new Error('AESHelper decryptShortHex not loaded.');
