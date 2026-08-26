@@ -19,7 +19,6 @@
             const tx = coinjs.transaction();
             const txUnserialized = tx.deserialize(unsignedTxHex);
             console.log("signCltvTransaction unsignedTxHex:", unsignedTxHex);
-            console.log("signCltvTransaction wif:", wif);
 
             if (!txUnserialized || !txUnserialized.ins || txUnserialized.ins.length === 0) {
             throw new Error("Invalid or empty transaction inputs.");
