@@ -80,7 +80,6 @@
     document.getElementById('convertBtn').addEventListener('click', async () => {
       const mnemonic = document.getElementById('mnemonic').value.trim();
 
-      console.log('Mnemonic:', JSON.stringify(mnemonic));
 
       if (!bip39.validateMnemonic(mnemonic, english)) {
         document.getElementById('output').textContent = '❌ Invalid mnemonic';
