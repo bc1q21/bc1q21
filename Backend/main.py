@@ -44,20 +44,16 @@ async def strip_server_header(request: Request, call_next):
 
 
 origins = [
-    "http://localhost",
-    "http://localhost:80",
-    "http://127.0.0.1",
-    "http://127.0.0.1:80",
+    "https://bc1q21.com",
     "https://www.bc1q21.com",
-    "http://bc1q21.com",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,          # or ["*"] for quick dev
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 BACKEND_DIR  = Path(__file__).resolve().parent
