@@ -495,10 +495,41 @@ async def bitcoin_price_usd():
 
 
 
-# ---------- Simple per-address in-memory cache for UTXOs ----------
+# ---------- Bounded per-address in-memory caches ----------
+_ADDRESS_CACHE_MAX_ENTRIES = 256
+_ADDRESS_CACHE_RETENTION = timedelta(minutes=5)
+
 # Structure: { address: {"value": List[dict], "fetched_at": datetime, "ttl": timedelta} }
 _utxo_cache: Dict[str, Dict[str, Any]] = {}
 _UTXO_TTL = timedelta(seconds=15)
+
+
+def _prune_address_cache(cache: Dict[str, Dict[str, Any]], now: datetime) -> None:
+    """
+    Remove entries that have exceeded the stale-retention window and
+    enforce a hard maximum number of attacker-controlled address keys.
+    """
+    cutoff = now - _ADDRESS_CACHE_RETENTION
+
+    expired_keys = [
+        key
+        for key, entry in cache.items()
+        if not entry.get("fetched_at") or entry["fetched_at"] < cutoff
+    ]
+
+    for key in expired_keys:
+        cache.pop(key, None)
+
+    overflow = len(cache) - _ADDRESS_CACHE_MAX_ENTRIES
+    if overflow > 0:
+        oldest_keys = sorted(
+            cache,
+            key=lambda key: cache[key].get("fetched_at") or datetime.min
+        )[:overflow]
+
+        for key in oldest_keys:
+            cache.pop(key, None)
+
 
 async def _fetch_mempool_address_utxos(address: str) -> List[Dict[str, Any]]:
     """
@@ -518,6 +549,7 @@ async def _fetch_mempool_address_utxos(address: str) -> List[Dict[str, Any]]:
     except (httpx.HTTPError, ValueError) as e:
         raise RuntimeError(str(e)) from e
 
+
 @app.get("/bitcoin/address/{address}/utxo")
 async def get_address_utxos(address: str, response: Response):
     """
@@ -531,6 +563,7 @@ async def get_address_utxos(address: str, response: Response):
         x-fetched-at: ISO8601 timestamp of the cached fetch
     """
     now = datetime.utcnow()
+    _prune_address_cache(_utxo_cache, now)
     cache = _utxo_cache.get(address)
 
     # Serve fresh cache if valid
@@ -548,6 +581,7 @@ async def get_address_utxos(address: str, response: Response):
             "fetched_at": now,
             "ttl": _UTXO_TTL
         }
+        _prune_address_cache(_utxo_cache, now)
         response.headers["x-source"] = f"https://mempool.space/api/address/{address}/utxo"
         response.headers["x-cached"] = "false"
         response.headers["x-fetched-at"] = now.isoformat() + "Z"
@@ -566,9 +600,6 @@ async def get_address_utxos(address: str, response: Response):
         raise HTTPException(status_code=502, detail=f"UTXO fetch failed: {str(e)}")
 
 
-
-
-# ---------- Simple per-address in-memory cache for TXs ----------
 # Structure: { cache_key: {"value": List[dict], "fetched_at": datetime, "ttl": timedelta} }
 _txs_cache: Dict[str, Dict[str, Any]] = {}
 _TXS_TTL = timedelta(seconds=15)
@@ -672,6 +703,7 @@ async def _attach_price(
     if isinstance(price, list) and price:
         status["price"] = price
 
+
 async def _fetch_mempool_address_txs(address: str) -> List[Dict[str, Any]]:
     """
     Fetch recent transactions for an address from mempool.space.
@@ -685,9 +717,6 @@ async def _fetch_mempool_address_txs(address: str) -> List[Dict[str, Any]]:
             data = r.json()
             if not isinstance(data, list):
                 raise ValueError("Unexpected response shape (expected a list)")
-            
-            
-
 
             target_tx: Dict[str, Any] = {}
             if address.startswith("3") and data:
@@ -702,6 +731,7 @@ async def _fetch_mempool_address_txs(address: str) -> List[Dict[str, Any]]:
             return data
     except (httpx.HTTPError, ValueError) as e:
         raise RuntimeError(str(e)) from e
+
 
 @app.get("/bitcoin/address/{address}/txs")
 async def get_address_txs(address: str, response: Response):
@@ -719,6 +749,7 @@ async def get_address_txs(address: str, response: Response):
 
     # If later you add query params (pagination), include them in cache_key.
     cache_key = address
+    _prune_address_cache(_txs_cache, now)
     cache = _txs_cache.get(cache_key)
 
     # Serve fresh cache if valid
@@ -736,6 +767,7 @@ async def get_address_txs(address: str, response: Response):
             "fetched_at": now,
             "ttl": _TXS_TTL
         }
+        _prune_address_cache(_txs_cache, now)
         response.headers["x-source"] = f"https://mempool.space/api/address/{address}/txs"
         response.headers["x-cached"] = "false"
         response.headers["x-fetched-at"] = now.isoformat() + "Z"
@@ -752,8 +784,6 @@ async def get_address_txs(address: str, response: Response):
 
         # No cache to fall back on
         raise HTTPException(status_code=502, detail=f"TX fetch failed: {str(e)}")
-
-
 @app.post("/bitcoin/contact")
 async def contact_form(request: Request):
     form = await request.form()
