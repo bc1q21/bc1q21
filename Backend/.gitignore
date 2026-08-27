@@ -5,3 +5,5 @@ __pycache__/
 *.pyc
 # Environment variables
 .env
+# Windows download metadata
+*:Zone.Identifier
