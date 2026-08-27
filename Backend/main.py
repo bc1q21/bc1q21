@@ -784,12 +784,67 @@ async def get_address_txs(address: str, response: Response):
 
         # No cache to fall back on
         raise HTTPException(status_code=502, detail=f"TX fetch failed: {str(e)}")
+# ---------- Contact form abuse protection ----------
+_CONTACT_MAX_REQUEST_BYTES = 16 * 1024
+_CONTACT_MAX_NAME_LENGTH = 100
+_CONTACT_MAX_EMAIL_LENGTH = 254
+_CONTACT_MAX_MESSAGE_LENGTH = 5000
+_CONTACT_ALLOWED_ORIGINS = {
+    "https://bc1q21.com",
+    "https://www.bc1q21.com",
+}
+
+
 @app.post("/bitcoin/contact")
 async def contact_form(request: Request):
+    # Reject obviously oversized requests before parsing the form.
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > _CONTACT_MAX_REQUEST_BYTES:
+                raise HTTPException(status_code=413, detail="Contact request is too large.")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid Content-Length header.")
+
+    # Check the actual body size as a second line of defence.
+    body = await request.body()
+    if len(body) > _CONTACT_MAX_REQUEST_BYTES:
+        raise HTTPException(status_code=413, detail="Contact request is too large.")
+
+    # Block browser submissions originating from unrelated websites.
+    # Requests without an Origin header remain allowed for compatibility;
+    # rate limiting at nginx is the primary anti-automation control.
+    origin = request.headers.get("origin")
+    if origin and origin not in _CONTACT_ALLOWED_ORIGINS:
+        raise HTTPException(status_code=403, detail="Contact request origin is not allowed.")
+
     form = await request.form()
-    name = (form.get("name") or "Anonymous").strip()
-    email_raw = (form.get("email") or "").strip()
-    message = (form.get("field") or "").strip()
+
+    name = str(form.get("name") or "Anonymous").strip()
+    email_raw = str(form.get("email") or "").strip()
+    message = str(form.get("field") or "").strip()
+
+    if len(name) > _CONTACT_MAX_NAME_LENGTH:
+        raise HTTPException(status_code=400, detail="Name is too long.")
+
+    if "\r" in name or "\n" in name:
+        raise HTTPException(status_code=400, detail="Name contains invalid characters.")
+
+    if len(email_raw) > _CONTACT_MAX_EMAIL_LENGTH:
+        raise HTTPException(status_code=400, detail="Email address is too long.")
+
+    if "\r" in email_raw or "\n" in email_raw:
+        raise HTTPException(status_code=400, detail="Email address contains invalid characters.")
+
+    if email_raw and ("@" not in email_raw or email_raw.startswith("@") or email_raw.endswith("@")):
+        raise HTTPException(status_code=400, detail="Email address is invalid.")
+
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required.")
+
+    if len(message) > _CONTACT_MAX_MESSAGE_LENGTH:
+        raise HTTPException(status_code=400, detail="Message is too long.")
+
     email_display = email_raw or "No email provided"
 
     try:
@@ -820,7 +875,6 @@ async def contact_form(request: Request):
     </html>
     """
     return HTMLResponse(content=html, status_code=200)
-
 
 
 def _send_contact_email(name: str, email: str, message: str) -> None:
