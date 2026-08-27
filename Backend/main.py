@@ -812,11 +812,25 @@ async def contact_form(request: Request):
         raise HTTPException(status_code=413, detail="Contact request is too large.")
 
     # Block browser submissions originating from unrelated websites.
-    # Requests without an Origin header remain allowed for compatibility;
-    # rate limiting at nginx is the primary anti-automation control.
+    # The Webflow-generated contact form can legitimately submit with
+    # Origin: null, so allow that only when the browser also identifies
+    # the request as same-origin. Requests without an Origin header remain
+    # allowed for compatibility; nginx rate limiting is the primary
+    # anti-automation control.
     origin = request.headers.get("origin")
-    if origin and origin not in _CONTACT_ALLOWED_ORIGINS:
-        raise HTTPException(status_code=403, detail="Contact request origin is not allowed.")
+    fetch_site = request.headers.get("sec-fetch-site")
+
+    if origin == "null":
+        if fetch_site != "same-origin":
+            raise HTTPException(
+                status_code=403,
+                detail="Contact request origin is not allowed."
+            )
+    elif origin and origin not in _CONTACT_ALLOWED_ORIGINS:
+        raise HTTPException(
+            status_code=403,
+            detail="Contact request origin is not allowed."
+        )
 
     form = await request.form()
 
