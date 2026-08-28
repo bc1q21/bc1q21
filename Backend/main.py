@@ -31,8 +31,11 @@ if missing:
 class RawTx(BaseModel):
     hex: str
 
-app = FastAPI()
-
+app = FastAPI(
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 
 @app.middleware("http")
 async def strip_server_header(request: Request, call_next):
