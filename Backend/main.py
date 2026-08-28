@@ -91,10 +91,16 @@ async def get_blockchain_info():
             )
             response.raise_for_status()
             return response.json()["result"]
-    except httpx.HTTPError as e:
-        return {"error": f"HTTP error: {str(e)}"}
-    except Exception as e:
-        return {"error": f"Unexpected error: {str(e)}"}
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to communicate with the Bitcoin service."
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to retrieve blockchain information."
+        )
 
 async def _bitcoin_rpc(method: str, params: list):
     rpc_url = os.environ["BITCOIN_RPC_URL"]
@@ -161,7 +167,7 @@ async def bitcoin_fee_estimate():
         if raw_mempool_min is not None:
             mempool_min_rate = _btc_per_kvb_to_sat_per_vb(raw_mempool_min)
     except Exception as exc:
-        warnings.append(f"Unable to read mempool minimum fee: {exc}")
+        warnings.append("Unable to read mempool minimum fee.")
 
     fee_floor = max(1.0, mempool_min_rate)
 
@@ -173,7 +179,7 @@ async def bitcoin_fee_estimate():
         if normal and normal.get("feerate") is not None:
             normal_rate = _btc_per_kvb_to_sat_per_vb(normal["feerate"])
     except Exception as exc:
-        warnings.append(f"Normal fee estimate unavailable: {exc}")
+        warnings.append("Normal fee estimate unavailable.")
 
     try:
         low_priority = await _bitcoin_rpc(
@@ -185,8 +191,7 @@ async def bitcoin_fee_estimate():
                 low_priority["feerate"]
             )
     except Exception as exc:
-        warnings.append(f"Low-priority fee estimate unavailable: {exc}")
-
+        warnings.append("Low-priority fee estimate unavailable.")
     fallback_rate = max(2.0, fee_floor)
 
     normal_fallback = normal_rate is None
@@ -232,10 +237,16 @@ async def get_tx_hex(txid: str):
             resp = await client.get(url)
             resp.raise_for_status()
             return {"txid": txid, "hex": resp.text.strip()}
-    except httpx.HTTPError as e:
-        return {"error": f"HTTP error: {str(e)}"}
-    except Exception as e:
-        return {"error": f"Unexpected error: {str(e)}"}
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to retrieve transaction information."
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to retrieve transaction information."
+        )
 
 @app.post("/bitcoin/sendrawtransaction")
 async def send_raw_transaction(raw: RawTx):
@@ -246,8 +257,10 @@ async def send_raw_transaction(raw: RawTx):
     # Basic sanity check
     tx_hex = (raw.hex or "").strip()
     if not tx_hex or any(c not in "0123456789abcdefABCDEF" for c in tx_hex):
-        return {"error": "Invalid or empty transaction hex."}
-
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or empty transaction hex."
+        )
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
@@ -264,13 +277,23 @@ async def send_raw_transaction(raw: RawTx):
             # Bitcoin Core RPC always returns 200; errors are in "error"
             data = resp.json()
             if data.get("error"):
-                # Typical errors: non-final, non-mandatory-script-verify, etc.
-                return {"error": data["error"].get("message", "Unknown RPC error")}
+                raise HTTPException(
+                    status_code=400,
+                    detail="Transaction was rejected by the Bitcoin network."
+                )
             return {"txid": data.get("result")}
-    except httpx.HTTPError as e:
-        return {"error": f"HTTP error: {str(e)}"}
-    except Exception as e:
-        return {"error": f"Unexpected error: {str(e)}"}
+    except HTTPException:
+        raise
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to communicate with the Bitcoin service."
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to submit transaction."
+        )
 
 
 @app.get("/bitcoin/scan-utxos")
@@ -309,10 +332,16 @@ async def scan_utxos(address: str = Query(..., description="P2SH address to scan
                 ]
             }
 
-    except httpx.HTTPError as e:
-        return {"error": f"HTTP error: {str(e)}"}
-    except Exception as e:
-        return {"error": f"Unexpected error: {str(e)}"}
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to communicate with the Bitcoin service."
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to retrieve UTXO information."
+        )
 
 def _create_giftcard_overlay(page_width: float, page_height: float, recipient_url: str) -> PdfReader:
     qr_img = qrcode.QRCode(
@@ -408,13 +437,16 @@ async def build_giftcard_pdf(
 
     try:
         pdf_buffer = await run_in_threadpool(_build_giftcard_pdf_bytes, recipient_url)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Unable to generate gift card PDF: {exc}")
-
+    except (ValueError, FileNotFoundError):
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to generate gift card PDF."
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to generate gift card PDF."
+        )
     headers = {"Content-Disposition": 'inline; filename="giftcard.pdf"'}
     return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
 # ---------- Simple in-memory cache for BTC price ----------
@@ -474,18 +506,22 @@ async def bitcoin_price_usd():
             "fetched_at": now.isoformat() + "Z",
             "source": "https://k1technology.net/api/ExchangeRate"
         }
-    except RuntimeError as e:
-        # If we have a stale cached value, return it with a warning
+    except RuntimeError:
+        # If we have a stale cached value, return it without exposing
+        # upstream exception details.
         if _price_cache["value"] is not None:
             return {
                 "btc_usd": _price_cache["value"],
                 "cached": True,
                 "stale": True,
-                "warning": f"Upstream error: {str(e)}",
+                "warning": "Live Bitcoin price is temporarily unavailable.",
                 "fetched_at": _price_cache["fetched_at"].isoformat() + "Z",
                 "source": "https://k1technology.net/api/ExchangeRate"
             }
-        return {"error": f"Price fetch failed: {str(e)}"}
+        raise HTTPException(
+            status_code=502,
+            detail="Live Bitcoin price is temporarily unavailable."
+        )
 
 
 
@@ -582,18 +618,22 @@ async def get_address_utxos(address: str, response: Response):
         response.headers["x-cached"] = "false"
         response.headers["x-fetched-at"] = now.isoformat() + "Z"
         return data
-    except RuntimeError as e:
+    except RuntimeError:
         # On upstream error, serve stale cache if available
+        # without exposing upstream exception details.
         if cache and cache.get("value") is not None:
             response.headers["x-source"] = f"https://mempool.space/api/address/{address}/utxo"
             response.headers["x-cached"] = "true"
             response.headers["x-stale"] = "true"
-            response.headers["x-warning"] = f"Upstream error: {str(e)}"
+            response.headers["x-warning"] = "Live UTXO data is temporarily unavailable."
             response.headers["x-fetched-at"] = cache["fetched_at"].isoformat() + "Z"
             return cache["value"]
 
         # No cache to fall back on
-        raise HTTPException(status_code=502, detail=f"UTXO fetch failed: {str(e)}")
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to retrieve UTXO information."
+        )
 
 
 # Structure: { cache_key: {"value": List[dict], "fetched_at": datetime, "ttl": timedelta} }
@@ -768,18 +808,22 @@ async def get_address_txs(address: str, response: Response):
         response.headers["x-cached"] = "false"
         response.headers["x-fetched-at"] = now.isoformat() + "Z"
         return data
-    except RuntimeError as e:
+    except RuntimeError:
         # On upstream error, serve stale cache if available
+        # without exposing upstream exception details.
         if cache and cache.get("value") is not None:
             response.headers["x-source"] = f"https://mempool.space/api/address/{address}/txs"
             response.headers["x-cached"] = "true"
             response.headers["x-stale"] = "true"
-            response.headers["x-warning"] = f"Upstream error: {str(e)}"
+            response.headers["x-warning"] = "Live transaction data is temporarily unavailable."
             response.headers["x-fetched-at"] = cache["fetched_at"].isoformat() + "Z"
             return cache["value"]
 
         # No cache to fall back on
-        raise HTTPException(status_code=502, detail=f"TX fetch failed: {str(e)}")
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to retrieve transaction information."
+        )
 # ---------- Contact form abuse protection ----------
 _CONTACT_MAX_REQUEST_BYTES = 16 * 1024
 _CONTACT_MAX_NAME_LENGTH = 100
@@ -859,9 +903,11 @@ async def contact_form(request: Request):
 
     try:
         await run_in_threadpool(_send_contact_email, name, email_display, message)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Unable to send email: {exc}")
-
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to send message."
+        )
     html = """
     <!doctype html>
     <html lang="en">
