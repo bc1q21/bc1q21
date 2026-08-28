@@ -449,80 +449,165 @@ async def build_giftcard_pdf(
         )
     headers = {"Content-Disposition": 'inline; filename="giftcard.pdf"'}
     return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
-# ---------- Simple in-memory cache for BTC price ----------
+# ---------- BTC/USD price with validated fallback and bounded stale cache ----------
+_PRICE_FRESH_TTL = timedelta(seconds=20)
+_PRICE_STALE_MAX_AGE = timedelta(minutes=5)
+_PRICE_MIN_USD = 1_000.0
+_PRICE_MAX_USD = 10_000_000.0
+
 _price_cache = {
-    "value": None,            # float (BTC in USD)
-    "fetched_at": None,       # datetime
-    "ttl": timedelta(seconds=20)
+    "value": None,
+    "fetched_at": None,
+    "source": None,
 }
 
-# ---------- Existing routes ----------
 
-# ---------- New: BTC price (USD) ----------
-async def _fetch_bitcoin_price_usd() -> float:
-    """
-    Calls K1's upstream rate service and returns BTC price in USD as float.
-    Upstream shape:
-      { "currencies": [ {"currency":"BTC","amount":...}, {"currency":"USD","amount":...}, ... ] }
-    """
-    url = "https://k1technology.net/api/ExchangeRate"
+def _validate_bitcoin_price_usd(value) -> float:
     try:
-        async with httpx.AsyncClient(timeout=6.0) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            data = resp.json()
-            btc = next((x for x in data.get("currencies", []) if x.get("currency") == "BTC"), None)
-            usd = next((x for x in data.get("currencies", []) if x.get("currency") == "USD"), None)
-            if not (btc and usd) or "amount" not in btc or "amount" not in usd:
-                raise ValueError("Invalid exchange rate data")
-            # If 'amount' means value per 1 unit of currency, USD/BTC gives price of 1 BTC in USD.
-            price = usd["amount"] / btc["amount"]
-            if not isinstance(price, (int, float)) or price <= 0:
-                raise ValueError("Computed invalid BTC price")
-            return float(price)
-    except (httpx.HTTPError, ValueError) as e:
-        # Let caller decide how to surface
-        raise RuntimeError(str(e)) from e
+        price = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Invalid BTC/USD price") from exc
+
+    if not math.isfinite(price):
+        raise ValueError("Invalid BTC/USD price")
+
+    if price < _PRICE_MIN_USD or price > _PRICE_MAX_USD:
+        raise ValueError("BTC/USD price outside accepted range")
+
+    return price
+
+
+async def _fetch_k1_bitcoin_price_usd(client: httpx.AsyncClient) -> float:
+    url = "https://k1technology.net/api/ExchangeRate"
+    resp = await client.get(url)
+    resp.raise_for_status()
+    data = resp.json()
+
+    if not isinstance(data, dict):
+        raise ValueError("Invalid K1 exchange rate data")
+
+    currencies = data.get("currencies")
+    if not isinstance(currencies, list):
+        raise ValueError("Invalid K1 exchange rate data")
+
+    btc = next(
+        (
+            item
+            for item in currencies
+            if isinstance(item, dict) and item.get("currency") == "BTC"
+        ),
+        None,
+    )
+    usd = next(
+        (
+            item
+            for item in currencies
+            if isinstance(item, dict) and item.get("currency") == "USD"
+        ),
+        None,
+    )
+
+    if not btc or not usd:
+        raise ValueError("Invalid K1 exchange rate data")
+
+    try:
+        btc_amount = float(btc["amount"])
+        usd_amount = float(usd["amount"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("Invalid K1 exchange rate data") from exc
+
+    if not math.isfinite(btc_amount) or btc_amount <= 0:
+        raise ValueError("Invalid K1 BTC amount")
+
+    if not math.isfinite(usd_amount) or usd_amount <= 0:
+        raise ValueError("Invalid K1 USD amount")
+
+    return _validate_bitcoin_price_usd(usd_amount / btc_amount)
+
+
+async def _fetch_coinbase_bitcoin_price_usd(client: httpx.AsyncClient) -> float:
+    url = "https://api.coinbase.com/v2/exchange-rates"
+    resp = await client.get(url, params={"currency": "BTC"})
+    resp.raise_for_status()
+    data = resp.json()
+
+    try:
+        usd_rate = data["data"]["rates"]["USD"]
+    except (KeyError, TypeError) as exc:
+        raise ValueError("Invalid Coinbase exchange rate data") from exc
+
+    return _validate_bitcoin_price_usd(usd_rate)
+
+
+async def _fetch_bitcoin_price_usd():
+    async with httpx.AsyncClient(timeout=6.0) as client:
+        try:
+            price = await _fetch_k1_bitcoin_price_usd(client)
+            return price, "https://k1technology.net/api/ExchangeRate"
+        except (httpx.HTTPError, ValueError):
+            pass
+
+        try:
+            price = await _fetch_coinbase_bitcoin_price_usd(client)
+            return price, "https://api.coinbase.com/v2/exchange-rates"
+        except (httpx.HTTPError, ValueError) as exc:
+            raise RuntimeError("BTC/USD price providers unavailable") from exc
+
 
 @app.get("/bitcoin/price-usd")
 async def bitcoin_price_usd():
-    # Serve cached value if still fresh
     now = datetime.utcnow()
-    if _price_cache["value"] is not None and _price_cache["fetched_at"] and (now - _price_cache["fetched_at"] < _price_cache["ttl"]):
+    cached_value = _price_cache["value"]
+    cached_at = _price_cache["fetched_at"]
+    cached_source = _price_cache["source"]
+
+    if (
+        cached_value is not None
+        and cached_at is not None
+        and now - cached_at < _PRICE_FRESH_TTL
+    ):
         return {
-            "btc_usd": _price_cache["value"],
+            "btc_usd": cached_value,
             "cached": True,
-            "fetched_at": _price_cache["fetched_at"].isoformat() + "Z",
-            "source": "https://k1technology.net/api/ExchangeRate"
+            "stale": False,
+            "fetched_at": cached_at.isoformat() + "Z",
+            "source": cached_source,
         }
 
     try:
-        price = await _fetch_bitcoin_price_usd()
+        price, source = await _fetch_bitcoin_price_usd()
+        fetched_at = datetime.utcnow()
+
         _price_cache["value"] = price
-        _price_cache["fetched_at"] = now
+        _price_cache["fetched_at"] = fetched_at
+        _price_cache["source"] = source
+
         return {
             "btc_usd": price,
             "cached": False,
-            "fetched_at": now.isoformat() + "Z",
-            "source": "https://k1technology.net/api/ExchangeRate"
+            "stale": False,
+            "fetched_at": fetched_at.isoformat() + "Z",
+            "source": source,
         }
     except RuntimeError:
-        # If we have a stale cached value, return it without exposing
-        # upstream exception details.
-        if _price_cache["value"] is not None:
+        if (
+            cached_value is not None
+            and cached_at is not None
+            and now - cached_at <= _PRICE_STALE_MAX_AGE
+        ):
             return {
-                "btc_usd": _price_cache["value"],
+                "btc_usd": cached_value,
                 "cached": True,
                 "stale": True,
                 "warning": "Live Bitcoin price is temporarily unavailable.",
-                "fetched_at": _price_cache["fetched_at"].isoformat() + "Z",
-                "source": "https://k1technology.net/api/ExchangeRate"
+                "fetched_at": cached_at.isoformat() + "Z",
+                "source": cached_source,
             }
-        raise HTTPException(
-            status_code=502,
-            detail="Live Bitcoin price is temporarily unavailable."
-        )
 
+        raise HTTPException(
+            status_code=503,
+            detail="Live Bitcoin price is temporarily unavailable.",
+        )
 
 
 

@@ -7,36 +7,62 @@ class PriceManager {
         this.currentPrice = null;
         this.priceAsOf = null;
         this.priceCached = false;
+        this.priceStale = false;
         this.priceSource = null;
         this.priceEndpoint = '/bitcoin/price-usd';
         this.loadingPrice = false;
     }
-    
+
     async loadPrice({ silent = false } = {}) {
         try {
             this.loadingPrice = true;
+
             const resp = await fetch(this.priceEndpoint, { cache: 'no-store' });
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const data = await resp.json();
-            
-            if (typeof data.btc_usd === 'number') {
-                this.currentPrice = Number(data.btc_usd);
-                this.priceAsOf = data.fetched_at || null;
-                this.priceCached = !!data.cached;
-                this.priceSource = data.source || null;
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status}`);
             }
-            
-            return { success: true, price: this.currentPrice };
+
+            const data = await resp.json();
+
+            if (
+                typeof data.btc_usd !== 'number' ||
+                !Number.isFinite(data.btc_usd) ||
+                data.btc_usd <= 0
+            ) {
+                throw new Error('Invalid BTC/USD price');
+            }
+
+            this.currentPrice = data.btc_usd;
+            this.priceAsOf = data.fetched_at || null;
+            this.priceCached = !!data.cached;
+            this.priceStale = !!data.stale;
+            this.priceSource = data.source || null;
+
+            return {
+                success: true,
+                price: this.currentPrice,
+                stale: this.priceStale
+            };
         } catch (error) {
+            this.currentPrice = null;
+            this.priceAsOf = null;
+            this.priceCached = false;
+            this.priceStale = false;
+            this.priceSource = null;
+
             if (!silent) {
                 console.error('Price loading failed:', error);
             }
-            return { success: false, error: error.message };
+
+            return {
+                success: false,
+                price: null,
+                error: error.message
+            };
         } finally {
             this.loadingPrice = false;
         }
-    }
-    
+    } 
     convertBtcToUsd(btcAmount) {
         if (!this.currentPrice || !btcAmount) return 0;
         return Number((btcAmount * this.currentPrice).toFixed(2));
