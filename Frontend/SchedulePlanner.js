@@ -97,21 +97,37 @@ class SchedulePlanner {
 }    
     
     /**
-    * Create equal BTC amount schedule
-    */
+     * Create equal BTC amount schedule.
+     * Divide in whole satoshis so the payment rows always add
+     * exactly back to the original gift amount.
+     */
     createEqualBtcSchedule(totalBtc, startDate, count, periodType) {
         const dates = this.generateDateSequence(startDate, count, periodType);
-        const btcPerPayment = totalBtc / count;
-        
+
+        if (!Array.isArray(dates) || dates.length === 0 || !Number.isInteger(count) || count <= 0) {
+            return [];
+        }
+
+        const totalSats = Math.round(Number(totalBtc) * 1e8);
+
+        if (!Number.isSafeInteger(totalSats) || totalSats <= 0) {
+            return [];
+        }
+
+        const baseSats = Math.floor(totalSats / count);
+        const remainderSats = totalSats - (baseSats * count);
+
         return dates.map((date, index) => {
+            const sats = baseSats + (index === dates.length - 1 ? remainderSats : 0);
+            const btc = sats / 1e8;
+
             return {
                 date,
-                btc: btcPerPayment,
-                usd: btcPerPayment * this.priceManager.currentPrice
+                btc,
+                usd: btc * this.priceManager.currentPrice
             };
         });
-    }
-    
+    }    
     
     /**
     * Create equal USD value schedule (price-adjusted).
