@@ -350,34 +350,47 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
                     return;
                 }
                 
-                const t = res.totals || {};
-                const needed = Number(this.totalGiftWithFees || 0) || 0;
-                const total = Number(t.btcTotal || 0);
-                const confirmed = Number(t.btcConfirmed || 0);
-                
-                this.depositDetected = (t.count || 0) > 0;
-                this.depositConfirmed = confirmed >= Math.max(0, needed - 1e-8);
-                
-                const remaining = Math.max(0, needed - total);
-                const excess = Math.max(0, total - needed);
-                
-                this.depositTotals = {
-                    neededBtc: needed,
-                    totalBtc: total,
-                    confirmedBtc: confirmed,
-                    remainingBtc: remaining,
-                    excessBtc: excess
-                };
-                
-                if (!this.depositDetected) {
-                    this.depositStage = 'waiting';
-                } else if (total + 1e-8 < needed) {
-                    const neededLowPriority = (this.btcAmount * 1e8 + this.serviceFee + (this.networkFeeLowPriority || 0)) / 1e8;
-                    if (this.networkFeeLowPriority && total + 1e-8 >= neededLowPriority) {
-                        this.depositStage = 'fee_spike';
-                    } else {
-                        this.depositStage = 'insufficient';
-                    }
+const t = res.totals || {};
+const needed = Number(this.totalGiftWithFees || 0) || 0;
+const total = Number(t.btcTotal || 0);
+const confirmed = Number(t.btcConfirmed || 0);
+
+// Compare deposits in whole satoshis so the funding check uses
+// the same accounting precision as the transaction builder.
+const neededSats = Math.round(needed * 1e8);
+const totalSats = Math.round(total * 1e8);
+const confirmedSats = Math.round(confirmed * 1e8);
+
+this.depositDetected = (t.count || 0) > 0;
+this.depositConfirmed = confirmedSats >= neededSats;
+
+const remaining = Math.max(0, neededSats - totalSats) / 1e8;
+const excess = Math.max(0, totalSats - neededSats) / 1e8;
+
+this.depositTotals = {
+    neededBtc: needed,
+    totalBtc: total,
+    confirmedBtc: confirmed,
+    remainingBtc: remaining,
+    excessBtc: excess
+};
+
+if (!this.depositDetected) {
+    this.depositStage = 'waiting';
+} else if (totalSats < neededSats) {
+    const neededLowPrioritySats =
+        Math.round(Number(this.btcAmount || 0) * 1e8) +
+        Number(this.serviceFee || 0) +
+        Number(this.networkFeeLowPriority || 0);
+
+    if (
+        this.networkFeeLowPriority &&
+        totalSats >= neededLowPrioritySats
+    ) {
+        this.depositStage = 'fee_spike';
+    } else {
+        this.depositStage = 'insufficient';
+    }
                 } else {
                     // Deposit is enough or more
                     this.depositStage = 'ready';
