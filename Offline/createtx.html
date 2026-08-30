@@ -2,19 +2,19 @@
 <html>
 <head>  
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-afcwFgntYjBIdbgy7dXJFZ+ri+POI6nfgY5SuHYjk9E='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
   <title>Create Unsigned CLTV TX</title>
 
   <!-- Coinbin dependencies -->
-  <script src="coinbin/js/crypto-min.js"></script>
-  <script src="coinbin/js/crypto-sha256.js"></script>
-  <script src="coinbin/js/crypto-sha256-hmac.js"></script>
-  <script src="coinbin/js/sha512.js"></script>
-  <script src="coinbin/js/ripemd160.js"></script>
-  <script src="coinbin/js/aes.js"></script>
-  <script src="coinbin/js/jsbn.js"></script>
-  <script src="coinbin/js/ellipticcurve.js"></script>
-  <script src="coinbin/js/coin.js"></script>
-
+<script src="coinbin/js/crypto-min.js" integrity="sha384-QA6ETmyfFX/Dp/6Pgyjf83hQ/FqUQZI30gWOBiddzsNgKo7ujhkABM7CqOqCN5iv"></script>
+<script src="coinbin/js/crypto-sha256.js" integrity="sha384-OVBTDRfeBIhqF/Oh4hyDBEyshU9kjVnJ5KRcowXUkJWXmPh9qPdZSOlJVmz3to+B"></script>
+<script src="coinbin/js/crypto-sha256-hmac.js" integrity="sha384-YSPnpU4IfdDYrBxKPVyuLHsKuoeLO5FgwXu//zaHMxGDCwNzTBUsA0D1VMmuAv0q"></script>
+<script src="coinbin/js/sha512.js" integrity="sha384-G+ZrHNE8IX80vHFXIwBFMBz8JOO44fUdOfIt2Wj/eYdfW9PlB3RUka5YB/cM8zl2"></script>
+<script src="coinbin/js/ripemd160.js" integrity="sha384-xRbUfo/iPIRdqezE32enNVKz3tRstdNnKZf7iGJAUD/3kbbQ3YGe45ncJlfCbAPB"></script>
+<script src="coinbin/js/aes.js" integrity="sha384-YkYpnhy3j3+zc3fQvzlbh4WGwDgt+06gsGsaApwM1O3IKIsKJk61C0Lr6YvbovUV"></script>
+<script src="coinbin/js/jsbn.js" integrity="sha384-4kAktv1oqWFrGlpPdLiR8uZZYDFsVs3DA7t799VdbBZnO/tmkVd8euBMFKEzQTh/"></script>
+<script src="coinbin/js/ellipticcurve.js" integrity="sha384-Ggi2jZYak8oq8ARmopHQyrbald3onMvc57YpK13hHbnVmAHPV27jLrnqFr9SYHzk"></script>
+<script src="coinbin/js/coin.js" integrity="sha384-7yj0N3l9stShkxotxd/AJYp2tSaR5rdW5E+jodv8OnAN8fkKdnzP+K/A69ov3zrT"></script>
   <script>
     function createUnsignedCltvTx() {
       try {
@@ -45,6 +45,7 @@
         document.getElementById('unsignedTx').value = "Error: " + err.message;
       }
     }
+        document.getElementById('createTxBtn').addEventListener('click', createUnsignedCltvTx);
   </script>
 </head>
 <body>
@@ -69,8 +70,8 @@
   <input type="number" id="destAmount" style="width:100%" placeholder="ENTER_DESTINATION_AMOUNT_BTC_HERE">
   
   <br><br>
-  <button onclick="createUnsignedCltvTx()">Create Unsigned TX</button>
-
+<button id="createTxBtn">Create Unsigned TX</button>
+  
   <h3>Unsigned TX (Hex)</h3>
   <textarea id="unsignedTx" rows="5" style="width:100%"></textarea>
 </body>
