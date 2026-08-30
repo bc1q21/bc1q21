@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
-<head>  
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-F8rRytZdms7uuqFu6aVd8ca+TPbG0eIxNXCSi3Uw2E='; base-uri 'none'; form-action 'none';">
   <title>Mnemonic to WIF</title>
 </head>
 <body>
@@ -8,7 +9,11 @@
   <textarea id="mnemonic" rows="3" cols="60" spellcheck="false" autocomplete="off" autocapitalize="none" autocorrect="off">ENTER_12_WORD_SEED_PHRASE_HERE</textarea><br>
   <button id="convertBtn">Convert to WIF</button>
   <pre id="output"></pre>
-<script src="./modules/noble-hashes.js"></script>
+  <link rel="modulepreload" href="./modules/bip39.bundle.js" integrity="sha384-CAHYVNKv7mkslmk45aKwFkTO/P/cagWfx/YFqjjDIs8zsV+11steoT4jSnegfO4B">
+<link rel="modulepreload" href="./modules/bip32.bundle.js" integrity="sha384-GJIiWCnZ1n5GA9fKuMgtnX7ke9+eBfsdWEQIs331bL6JMxpFATOPB9hpFWaBJDm9">
+<link rel="modulepreload" href="./scure.wordlist.english.js" integrity="sha384-EoYxlZ0fpeGXftIbACdNcTqyQNMOyPJanUI1QH7345n4aidaoEBia1PEvDo/3pfn">
+<link rel="modulepreload" href="./modules/bech32.js" integrity="sha384-YyJtkO/wTI3b7nslOsz0v8CuaOM7U9wdmZd6Y6SCeNpr9w+Nd9RFrjcXDKW3r3FB">
+<script src="./modules/noble-hashes.js" integrity="sha384-B5GdS4UcqRdZ1p/p6kMi10QwhyVAqpnc4Mb2Hw0nJdZxC6M83FLcm+2USK0hvB3W"></script>
   <script type="module">
     import { bip39 } from './modules/bip39.bundle.js';
     import { HDKey } from './modules/bip32.bundle.js';

@@ -3,6 +3,7 @@
 <head>  
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-so18QeXwwHjybOTUtdBn7DEXXfCgzT6/7ByJuCJREOk='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
   <title>bc1q21.com Offline</title>
   <style>
     body {
@@ -261,19 +262,23 @@
   <div id="output" class="output hidden"></div>
   <div id="tx-form-container" class="output hidden" style="margin-top: 70px;"></div>
 
-  <script type="text/javascript" src="modules/noble-hashes.js"></script>
-  <script type="text/javascript" src="modules/qrcode.min.js"></script>
+<script type="text/javascript" src="modules/noble-hashes.js" integrity="sha384-B5GdS4UcqRdZ1p/p6kMi10QwhyVAqpnc4Mb2Hw0nJdZxC6M83FLcm+2USK0hvB3W"></script>
+<script type="text/javascript" src="modules/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"></script>
 
-  <script src="coinbin/js/crypto-min.js"></script>
-  <script src="coinbin/js/crypto-sha256.js"></script>
-  <script src="coinbin/js/crypto-sha256-hmac.js"></script>
-  <script src="coinbin/js/sha512.js"></script>
-  <script src="coinbin/js/ripemd160.js"></script>
-  <script src="coinbin/js/aes.js"></script>
-  <script src="coinbin/js/jsbn.js"></script>
-  <script src="coinbin/js/ellipticcurve.js"></script>
-  <script type="text/javascript" src="coinbin/js/coin.js"></script>
+<script src="coinbin/js/crypto-min.js" integrity="sha384-QA6ETmyfFX/Dp/6Pgyjf83hQ/FqUQZI30gWOBiddzsNgKo7ujhkABM7CqOqCN5iv"></script>
+<script src="coinbin/js/crypto-sha256.js" integrity="sha384-OVBTDRfeBIhqF/Oh4hyDBEyshU9kjVnJ5KRcowXUkJWXmPh9qPdZSOlJVmz3to+B"></script>
+<script src="coinbin/js/crypto-sha256-hmac.js" integrity="sha384-YSPnpU4IfdDYrBxKPVyuLHsKuoeLO5FgwXu//zaHMxGDCwNzTBUsA0D1VMmuAv0q"></script>
+<script src="coinbin/js/sha512.js" integrity="sha384-G+ZrHNE8IX80vHFXIwBFMBz8JOO44fUdOfIt2Wj/eYdfW9PlB3RUka5YB/cM8zl2"></script>
+<script src="coinbin/js/ripemd160.js" integrity="sha384-xRbUfo/iPIRdqezE32enNVKz3tRstdNnKZf7iGJAUD/3kbbQ3YGe45ncJlfCbAPB"></script>
+<script src="coinbin/js/aes.js" integrity="sha384-YkYpnhy3j3+zc3fQvzlbh4WGwDgt+06gsGsaApwM1O3IKIsKJk61C0Lr6YvbovUV"></script>
+<script src="coinbin/js/jsbn.js" integrity="sha384-4kAktv1oqWFrGlpPdLiR8uZZYDFsVs3DA7t799VdbBZnO/tmkVd8euBMFKEzQTh/"></script>
+<script src="coinbin/js/ellipticcurve.js" integrity="sha384-Ggi2jZYak8oq8ARmopHQyrbald3onMvc57YpK13hHbnVmAHPV27jLrnqFr9SYHzk"></script>
+<script type="text/javascript" src="coinbin/js/coin.js" integrity="sha384-7yj0N3l9stShkxotxd/AJYp2tSaR5rdW5E+jodv8OnAN8fkKdnzP+K/A69ov3zrT"></script>
 
+  <link rel="modulepreload" href="./modules/bip39.bundle.js" integrity="sha384-CAHYVNKv7mkslmk45aKwFkTO/P/cagWfx/YFqjjDIs8zsV+11steoT4jSnegfO4B">
+<link rel="modulepreload" href="./modules/bip32.bundle.js" integrity="sha384-GJIiWCnZ1n5GA9fKuMgtnX7ke9+eBfsdWEQIs331bL6JMxpFATOPB9hpFWaBJDm9">
+<link rel="modulepreload" href="./scure.wordlist.english.js" integrity="sha384-EoYxlZ0fpeGXftIbACdNcTqyQNMOyPJanUI1QH7345n4aidaoEBia1PEvDo/3pfn">
+<link rel="modulepreload" href="./modules/bech32.js" integrity="sha384-YyJtkO/wTI3b7nslOsz0v8CuaOM7U9wdmZd6Y6SCeNpr9w+Nd9RFrjcXDKW3r3FB">
   <script type="module">
     import { bip39 } from './modules/bip39.bundle.js';
     import { HDKey } from './modules/bip32.bundle.js';
