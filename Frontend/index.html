@@ -8,9 +8,10 @@
   <title>bc1q21 • Gifting Wizard</title>
 
   <!-- UI libs -->
-  <script src="static/collapse.min.js" integrity="sha384-OI7J071C5UbEZNkN/pwwvuyVCJfaEUcOdHW3pGMaUQzeMod0WnkHcT5RfjonN4rH" crossorigin="anonymous" defer></script>
-  <script src="alpine-csp-adapter.js" integrity="sha384-kAMuuv1gTS/qLIxIj2betmY7qLd80coR8wXEpcWXE0+Rtc0MZJiAs3X3eoS66y9X" crossorigin="anonymous" defer></script>
-  <script src="static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
+<script src="static/collapse.min.js" integrity="sha384-OI7J071C5UbEZNkN/pwwvuyVCJfaEUcOdHW3pGMaUQzeMod0WnkHcT5RfjonN4rH" crossorigin="anonymous" defer></script>
+<script src="alpine-csp-adapter.js" integrity="sha384-kAMuuv1gTS/qLIxIj2betmY7qLd80coR8wXEpcWXE0+Rtc0MZJiAs3X3eoS66y9X" crossorigin="anonymous" defer></script>
+<script src="gift-card-preview.js" integrity="sha384-YsLpvzmnE40E3udF4eMtS4D7IzaW2TddC8ar+evXrELxfjcEwoH5KSHabOxjMs0+" crossorigin="anonymous" defer></script>
+<script src="static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
   <link rel="stylesheet" href="static/pico.min.css" integrity="sha384-Igjx5rLo1oJuDlq1Ls6uECey1nXahm4j4GoF8ixTon9zxdse6QkdsFelFYk8j7rI" crossorigin="anonymous" />
   <link rel="stylesheet" href="static/style.css" integrity="sha384-joQKvIcAspm0sdbWnaOrv+0Xw8Sn3V1SpbXBYuPzVRNEbPJC/7Lr4wt5ogcKeTjf" crossorigin="anonymous" />
 
@@ -764,9 +765,14 @@ Download a printable gift card that includes the QR with this recipient link.
    rel="noopener noreferrer"
    @click="markProcessComplete()">Download Gift Card</a>
 </p>
-            <div style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; margin:0.5rem 0; height:420px;">
-              <object :data="giftCardPdfUrl" type="application/pdf" title="Gift Card" style="width:100%; height:100%;"></object>
-            </div>
+            <div id="giftCardPreviewWrapper"
+     :data-pdf-url="giftCardPdfUrl"
+     style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; margin:0.5rem 0; height:420px;">
+  <iframe x-ignore
+          id="giftCardPreview"
+          title="Gift Card"
+          style="width:100%; height:100%; border:0;"></iframe>
+</div>
           </div>
         </div>
       </article>
