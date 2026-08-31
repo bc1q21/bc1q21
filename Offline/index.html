@@ -3,7 +3,7 @@
 <head>  
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-so18QeXwwHjybOTUtdBn7DEXXfCgzT6/7ByJuCJREOk='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-a7C8DOkObbNnOO6ILbkZnw6xLfkqQn9fbK5X3M0wGpQ='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
   <title>bc1q21.com Offline</title>
   <style>
     body {
@@ -516,43 +516,99 @@
       /**
        * Displays the transaction creation form
        */
-      showTransactionForm() {
-        const formContainer = document.getElementById('tx-form-container');
-        formContainer.innerHTML = `
-        
-          <div class="instruction-box">
-            <h3>Unlock your Bitcoin</h3>
-            <div class="instruction-text">After depositing Bitcoin to the address above, enter the transaction details here to create an unlocking transaction.</div>
-          </div>
+showTransactionForm() {
+  const formContainer = document.getElementById('tx-form-container');
+  formContainer.replaceChildren();
 
-          <div class="info-section">
-            <h3>Create Transaction</h3>
-            <form id="tx-form">
-              <label for="input-txid">Input Transaction ID</label>
-              <input type="text" id="input-txid" placeholder="Enter the TXID of the transaction to spend from"><br />
+  const instructionBox = document.createElement('div');
+  instructionBox.className = 'instruction-box';
 
-              <label for="input-vout">Input Output Index (vout) * Leave as 0 unless you know what you're doing</label>
-              <input type="number" id="input-vout" value="0" min="0"><br />
+  const instructionHeading = document.createElement('h3');
+  instructionHeading.textContent = 'Unlock your Bitcoin';
 
-              <label for="input-amount">Input Amount (BTC)</label>
-              <input type="number" id="input-amount" step="0.00000001" placeholder="Amount in BTC"><br />
+  const instructionText = document.createElement('div');
+  instructionText.className = 'instruction-text';
+  instructionText.textContent =
+    'After depositing Bitcoin to the address above, enter the transaction details here to create an unlocking transaction.';
 
-              <label for="dest-address">Destination Address (The default address is controlled by the seed phrase used above)</label>
-              <input type="text" id="dest-address" value="${keyDerivation.bech32Address2}"><br />
+  instructionBox.append(instructionHeading, instructionText);
 
-              <label for="fee-rate">Mining Fee Rate (sats/vbyte)</label>
-              <input type="number" id="fee-rate" value="1" step="1" min="1"><br />
+  const infoSection = document.createElement('div');
+  infoSection.className = 'info-section';
 
-              <button type="button" id="generate-tx">Generate Transaction</button>
-            </form>
-          </div>
-          
-          <div id="tx-results"></div>
-        `;
+  const sectionHeading = document.createElement('h3');
+  sectionHeading.textContent = 'Create Transaction';
 
-        this.bindFormHandlers();
-      }
+  const form = document.createElement('form');
+  form.id = 'tx-form';
 
+  const addInput = (labelText, id, type, attributes = {}) => {
+    const label = document.createElement('label');
+    label.htmlFor = id;
+    label.textContent = labelText;
+
+    const input = document.createElement('input');
+    input.type = type;
+    input.id = id;
+
+    for (const [name, value] of Object.entries(attributes)) {
+      input.setAttribute(name, value);
+    }
+
+    form.append(label, input, document.createElement('br'));
+    return input;
+  };
+
+  addInput(
+    'Input Transaction ID',
+    'input-txid',
+    'text',
+    { placeholder: 'Enter the TXID of the transaction to spend from' }
+  );
+
+  addInput(
+    "Input Output Index (vout) * Leave as 0 unless you know what you're doing",
+    'input-vout',
+    'number',
+    { value: '0', min: '0' }
+  );
+
+  addInput(
+    'Input Amount (BTC)',
+    'input-amount',
+    'number',
+    { step: '0.00000001', placeholder: 'Amount in BTC' }
+  );
+
+  const destinationInput = addInput(
+    'Destination Address (The default address is controlled by the seed phrase used above)',
+    'dest-address',
+    'text'
+  );
+  destinationInput.value = keyDerivation.bech32Address2;
+
+  addInput(
+    'Mining Fee Rate (sats/vbyte)',
+    'fee-rate',
+    'number',
+    { value: '1', step: '1', min: '1' }
+  );
+
+  const generateButton = document.createElement('button');
+  generateButton.type = 'button';
+  generateButton.id = 'generate-tx';
+  generateButton.textContent = 'Generate Transaction';
+  form.appendChild(generateButton);
+
+  infoSection.append(sectionHeading, form);
+
+  const resultsContainer = document.createElement('div');
+  resultsContainer.id = 'tx-results';
+
+  formContainer.append(instructionBox, infoSection, resultsContainer);
+
+  this.bindFormHandlers();
+}
       /**
        * Binds event handlers for the transaction form
        */
@@ -672,42 +728,60 @@
       /**
        * Displays transaction results in formatted HTML
        */
-      displayTransactionResults(unsignedTx, signedTx, outputAmount) {
-        const resultsContainer = document.getElementById('tx-results');
-        resultsContainer.innerHTML = `
-          <!--<div class="tx-output">
-            <h4>Unsigned Transaction</h4>
-            <div class="tx-hex">${unsignedTx}</div>
-          </div>-->
-          
-          <div class="tx-output">
-            <h4>Signed Transaction</h4>
-            <div class="tx-hex">${signedTx}</div>
-          </div>
-          
-          <div class="info-section">
-            <h3>Transaction Summary</h3>
-            <div class="info-item">
-              <span class="info-label">Size:</span>
-              <span class="info-value">${signedTx.length / 2} bytes</span>
-            </div>
-            
-            <div class="info-item">
-              <span class="info-label">Unlock Date:</span>
-              <span class="info-value">${new Date(timelockScript.unlockTimestamp * 1000).toUTCString()} (${timelockScript.unlockTimestamp})</span>
-            </div>
+displayTransactionResults(unsignedTx, signedTx, outputAmount) {
+  const resultsContainer = document.getElementById('tx-results');
+  resultsContainer.replaceChildren();
 
-            <div class="info-item">
-              <span class="info-label">Output Amount:</span>
-              <span class="info-value">${outputAmount} BTC</span>
-            </div>
-          </div>
-        `;
-      }
+  const txOutput = document.createElement('div');
+  txOutput.className = 'tx-output';
 
+  const txHeading = document.createElement('h4');
+  txHeading.textContent = 'Signed Transaction';
+
+  const txHex = document.createElement('div');
+  txHex.className = 'tx-hex';
+  txHex.textContent = signedTx;
+
+  txOutput.append(txHeading, txHex);
+
+  const infoSection = document.createElement('div');
+  infoSection.className = 'info-section';
+
+  const summaryHeading = document.createElement('h3');
+  summaryHeading.textContent = 'Transaction Summary';
+  infoSection.appendChild(summaryHeading);
+
+  const items = [
+    ['Size:', `${signedTx.length / 2} bytes`],
+    [
+      'Unlock Date:',
+      `${new Date(timelockScript.unlockTimestamp * 1000).toUTCString()} (${timelockScript.unlockTimestamp})`
+    ],
+    ['Output Amount:', `${outputAmount} BTC`]
+  ];
+
+  for (const [labelText, valueText] of items) {
+    const infoItem = document.createElement('div');
+    infoItem.className = 'info-item';
+
+    const label = document.createElement('span');
+    label.className = 'info-label';
+    label.textContent = labelText;
+
+    const value = document.createElement('span');
+    value.className = 'info-value';
+    value.textContent = valueText;
+
+    infoItem.append(label, value);
+    infoSection.appendChild(infoItem);
+  }
+
+  resultsContainer.append(txOutput, infoSection);
+}
     }
-
+    
     // ============================================================================
+ 
     // UI BINDINGS
     // ============================================================================
 
@@ -754,101 +828,141 @@
        * Displays the mnemonic phrase with proper formatting
        * @param {string} mnemonic - The BIP39 mnemonic phrase
        */
-      displayMnemonic(mnemonic) {
-        this.outputContainer.innerHTML = `
-          <div class="mnemonic-display">
-            <h3>Your Seed Phrase</h3>
-            <div class="mnemonic-words">${mnemonic}</div>
-          </div>
-          
-          <div class="warning-box">
-            <div class="warning-text">SECURITY WARNING</div>
-            <p>Write down this seed phrase and store it securely offline. Anyone with access to this phrase can control your Bitcoin. Never share it or store it digitally.</p>
-          </div>
-        `;
-      }
+displayMnemonic(mnemonic) {
+  this.outputContainer.replaceChildren();
 
+  const mnemonicDisplay = document.createElement('div');
+  mnemonicDisplay.className = 'mnemonic-display';
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'Your Seed Phrase';
+
+  const mnemonicWords = document.createElement('div');
+  mnemonicWords.className = 'mnemonic-words';
+  mnemonicWords.textContent = mnemonic;
+
+  mnemonicDisplay.append(heading, mnemonicWords);
+
+  const warningBox = document.createElement('div');
+  warningBox.className = 'warning-box';
+
+  const warningText = document.createElement('div');
+  warningText.className = 'warning-text';
+  warningText.textContent = 'SECURITY WARNING';
+
+  const warningMessage = document.createElement('p');
+  warningMessage.textContent =
+    'Write down this seed phrase and store it securely offline. Anyone with access to this phrase can control your Bitcoin. Never share it or store it digitally.';
+
+  warningBox.append(warningText, warningMessage);
+
+  this.outputContainer.append(mnemonicDisplay, warningBox);
+}
       /**
        * Displays key derivation information
        * @param {Object} keyInfo - Key information object
        */
-      displayKeyInformation(keyInfo) {
-        const keySection = `
-          <div class="info-section">
-            <h3>Derived Keys & Addresses</h3>
-            
-            <div class="info-item">
-              <span class="info-label">Public Key:</span>
-              <div class="info-value">${keyInfo.publicKey}</div>
-            </div>
-            
-            <div class="info-item">
-              <span class="info-label">WIF Private Key:</span>
-              <div class="info-value">${keyInfo.wif}</div>
-            </div>
-            
-            <div class="info-item">
-              <span class="info-label">Address 1:</span>
-              <div class="info-value">${keyInfo.bech32Address1}</div>
-            </div>
-            
-            <div class="info-item">
-              <span class="info-label">Address 2:</span>
-              <div class="info-value">${keyInfo.bech32Address2}</div>
-            </div>
-          </div>
-        `;
-        
-        this.outputContainer.innerHTML += keySection;
-      }
+displayKeyInformation(keyInfo) {
+  const infoSection = document.createElement('div');
+  infoSection.className = 'info-section';
 
+  const heading = document.createElement('h3');
+  heading.textContent = 'Derived Keys & Addresses';
+  infoSection.appendChild(heading);
+
+  const items = [
+    ['Public Key:', keyInfo.publicKey],
+    ['WIF Private Key:', keyInfo.wif],
+    ['Address 1:', keyInfo.bech32Address1],
+    ['Address 2:', keyInfo.bech32Address2]
+  ];
+
+  for (const [labelText, valueText] of items) {
+    const infoItem = document.createElement('div');
+    infoItem.className = 'info-item';
+
+    const label = document.createElement('span');
+    label.className = 'info-label';
+    label.textContent = labelText;
+
+    const value = document.createElement('div');
+    value.className = 'info-value';
+    value.textContent = valueText;
+
+    infoItem.append(label, value);
+    infoSection.appendChild(infoItem);
+  }
+
+  this.outputContainer.appendChild(infoSection);
+}
       /**
        * Displays timelock script information
        * @param {Object} timelockInfo - Timelock information object
        */
-      displayTimelockInformation(timelockInfo) {
-        const timelockSection = `
-        
-          <div class="instruction-box" style="margin-top: 70px;">
-            <h3>Send Bitcoin to this address</h3>
-            <div class="instruction-text">Your Bitcoin will be locked until the unlock date.</div>
-          </div>
+displayTimelockInformation(timelockInfo) {
+  const instructionBox = document.createElement('div');
+  instructionBox.className = 'instruction-box';
+  instructionBox.style.marginTop = '70px';
 
-          <div class="info-section">
-            <h3>Time-Locked Address</h3>
+  const instructionHeading = document.createElement('h3');
+  instructionHeading.textContent = 'Send Bitcoin to this address';
 
-            <div class="info-item">
-              <span class="info-label">QR Code:</span>
-              <div class="info-value"><div id="qrcode"></div></div>
-            </div>
-            
-            <div class="info-item">
-              <span class="info-label">P2SH Address:</span>
-              <div class="info-value">${timelockInfo.address}</div>
-            </div>
-            
-            <div class="info-item">
-              <span class="info-label">Redeem Script:</span>
-              <div class="info-value">${timelockInfo.redeemScript}</div>
-            </div>
-            
-            <!--<div class="info-item">
-              <span class="info-label">Unlock Timestamp:</span>
-              <div class="info-value">${timelockInfo.unlockTimestamp}</div>
-            </div>-->
-            
-            <div class="info-item">
-              <span class="info-label">Unlock Date:</span>
-              <div class="info-value">${timelockInfo.unlockDate}</div>
-            </div>
-          </div>
-        `;
-        
-        this.outputContainer.innerHTML += timelockSection;
-        
-        this.generateQr(timelockInfo.address);
-      }
+  const instructionText = document.createElement('div');
+  instructionText.className = 'instruction-text';
+  instructionText.textContent = 'Your Bitcoin will be locked until the unlock date.';
 
+  instructionBox.append(instructionHeading, instructionText);
+
+  const infoSection = document.createElement('div');
+  infoSection.className = 'info-section';
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'Time-Locked Address';
+  infoSection.appendChild(heading);
+
+  const qrItem = document.createElement('div');
+  qrItem.className = 'info-item';
+
+  const qrLabel = document.createElement('span');
+  qrLabel.className = 'info-label';
+  qrLabel.textContent = 'QR Code:';
+
+  const qrValue = document.createElement('div');
+  qrValue.className = 'info-value';
+
+  const qrCode = document.createElement('div');
+  qrCode.id = 'qrcode';
+
+  qrValue.appendChild(qrCode);
+  qrItem.append(qrLabel, qrValue);
+  infoSection.appendChild(qrItem);
+
+  const items = [
+    ['P2SH Address:', timelockInfo.address],
+    ['Redeem Script:', timelockInfo.redeemScript],
+    ['Unlock Date:', timelockInfo.unlockDate]
+  ];
+
+  for (const [labelText, valueText] of items) {
+    const infoItem = document.createElement('div');
+    infoItem.className = 'info-item';
+
+    const label = document.createElement('span');
+    label.className = 'info-label';
+    label.textContent = labelText;
+
+    const value = document.createElement('div');
+    value.className = 'info-value';
+    value.textContent = valueText;
+
+    infoItem.append(label, value);
+    infoSection.appendChild(infoItem);
+  }
+
+  this.outputContainer.append(instructionBox, infoSection);
+
+  this.generateQr(timelockInfo.address);
+}
       
       /**
        * creates the QR code for the time-locked address
@@ -862,18 +976,22 @@
        * Displays error messages
        * @param {string} message - Error message to display
        */
-      displayError(message) {
-        const errorSection = `
-          <div class="warning-box">
-            <div class="warning-text">Error</div>
-            <p>${message}</p>
-          </div>
-        `;
-        
-        this.outputContainer.innerHTML += errorSection;
-      }
-    }
+displayError(message) {
+  const warningBox = document.createElement('div');
+  warningBox.className = 'warning-box';
 
+  const warningText = document.createElement('div');
+  warningText.className = 'warning-text';
+  warningText.textContent = 'Error';
+
+  const errorMessage = document.createElement('p');
+  errorMessage.textContent = message;
+
+  warningBox.append(warningText, errorMessage);
+  this.outputContainer.appendChild(warningBox);
+}
+    }
+      
     // ============================================================================
     // UTILITIES
     // ============================================================================

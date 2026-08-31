@@ -176,7 +176,7 @@ SERVICE_FEE_ADDRESS = window.BC1Q21_SERVICE_FEE_ADDRESS.trim();
             const el = this.$refs?.recipientQr;
             const url = this.recipientPageUrl();
             if (!el) return;
-            el.innerHTML = '';
+el.replaceChildren();
             if (!url || !window.QRCode) return;
             new QRCode(el, { text: url, width: 200, height: 200 });
         },
