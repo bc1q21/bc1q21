@@ -9,7 +9,8 @@
 
   <!-- UI libs -->
   <script src="static/collapse.min.js" integrity="sha384-OI7J071C5UbEZNkN/pwwvuyVCJfaEUcOdHW3pGMaUQzeMod0WnkHcT5RfjonN4rH" crossorigin="anonymous" defer></script>
-  <script src="static/alpine.min.js" integrity="sha384-nvcVwwZ0SGLBuKyNGsePDIKtVY6YrcmSgUNazSk+pXQ+bQwDItnwO6/lbvMOo4KN" crossorigin="anonymous" defer></script>
+  <script src="alpine-csp-adapter.js" integrity="sha384-kAMuuv1gTS/qLIxIj2betmY7qLd80coR8wXEpcWXE0+Rtc0MZJiAs3X3eoS66y9X" crossorigin="anonymous" defer></script>
+  <script src="static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
   <link rel="stylesheet" href="static/pico.min.css" integrity="sha384-Igjx5rLo1oJuDlq1Ls6uECey1nXahm4j4GoF8ixTon9zxdse6QkdsFelFYk8j7rI" crossorigin="anonymous" />
   <link rel="stylesheet" href="static/style.css" integrity="sha384-joQKvIcAspm0sdbWnaOrv+0Xw8Sn3V1SpbXBYuPzVRNEbPJC/7Lr4wt5ogcKeTjf" crossorigin="anonymous" />
 
@@ -22,7 +23,7 @@
 </head>
 
 <body>
-  <main class="container" x-data="giftWizard()">
+  <main class="container" x-data="giftWizard">
     <header class="brand">
       <img src="static/img/bc1q21-logo.png" alt="bc1q21 logo"><br>
       <div>
@@ -34,7 +35,7 @@
     <!-- CIRCLE STEPPER -->
     <div class="stepper-wrap" x-data>
       <div class="stepper">
-        <div class="progress" :style="`width:${(navigationState.stepGroup-1)/3*100}%`"></div>
+        <div class="progress" :style="progressStyle()"></div>
 
         <div class="step"
           :class="navigationState.stepGroup>1 ? 'done' : (navigationState.stepGroup===1 ? 'active' : '')">
@@ -165,10 +166,10 @@
           <h3>How would you like to give?</h3>
           <div class="actions">
             <button type="button" :class="giftType==='one' ? 'btn-primary' : 'btn-outline'"
-              @click="giftType='one'; navigateToStep('one_time_claim_date')">One-time
+              @click="chooseOneTimeGift()">One-time
               gift</button>
             <button type="button" :class="giftType==='multiple' ? 'btn-primary' : 'btn-outline'"
-              @click="giftType='multiple'; navigateToStep('schedule_duration')">Multiple
+              @click="chooseMultipleGift()">Multiple
               dates</button>
           </div>
 
@@ -218,10 +219,10 @@
           <h3>Do you want each gift to be the same BTC amount?</h3>
           <div class="actions">
             <button type="button" :class="equal===true ? 'btn-primary' : 'btn-outline'"
-              @click="equal=true; buildEqualTable();  navigateToStep('prefilled_equal_table')">Yes, same BTC each
+              @click="chooseEqualPayouts()">Yes, same BTC each
               time</button>
             <button type="button" :class="equal===false ? 'btn-primary' : 'btn-outline'"
-              @click="equal=false; navigateToStep('schedule_or_manual')">No, different
+              @click="chooseVariablePayouts()">No, different
               amounts</button>
           </div>
         </article>
@@ -326,18 +327,18 @@
           </label>
 
           <!-- Tiny preview so the guess feels concrete -->
-          <p class="small muted" x-show="priceManager?.currentPrice">
+          <p class="small muted" x-show="hasCurrentPrice()">
             Today:
-            <strong x-text="priceManager.currentPrice.toLocaleString(undefined,{maximumFractionDigits:0})"></strong>
+            <strong x-text="formatCurrentBtcPrice()"></strong>
             USD/BTC
-            <template x-if="Number(growthPct) > 0">
+            <template x-if="hasGrowthProjection()">
               <span>
                 • In 1 year:
                 <strong
-                  x-text="(priceManager.currentPrice*Math.pow(1 + (growthPct/100), 1)).toLocaleString(undefined,{maximumFractionDigits:0})"></strong>
+                  x-text="formatProjectedBtcPrice(1)"></strong>
                 • In 5 years:
                 <strong
-                  x-text="(priceManager.currentPrice*Math.pow(1 + (growthPct/100), 5)).toLocaleString(undefined,{maximumFractionDigits:0})"></strong>
+                  x-text="formatProjectedBtcPrice(5)"></strong>
                 USD/BTC
               </span>
             </template>
@@ -415,7 +416,7 @@
             <div>
               <h4>Current Total</h4>
               <div class="result-line"
-                :class="Math.abs(manualScheduleTotalBTC() - (btcAmount || 0)) < 0.00000001 ? '' : 'accent'">
+                :class="manualScheduleTotalClass()">
                 <strong x-text="manualScheduleTotalBTC().toFixed(8) + ' BTC'"></strong>
                 <span>≈ <span x-text="formatUSD(manualScheduleTotalUSD())"></span></span>
               </div>
@@ -424,14 +425,14 @@
 
           <label>Enter one line per date: <span class="mono">YYYY-MM-DD, BTC</span></label>
           <textarea rows="8" x-model="manualSchedule"
-            @input="$nextTick(() => $el.style.height = 'auto'); $nextTick(() => $el.style.height = $el.scrollHeight + 'px')"
+            @input="resizeManualSchedule($el)"
             placeholder="2026-06-01, 0.0105&#10;2026-07-01, 0.0105"></textarea>
 
           <p class="small muted" style="margin-top: 0.5rem;">
-            <template x-if="Math.abs(manualScheduleTotalBTC() - (btcAmount || 0)) < 0.00000001">
+            <template x-if="manualScheduleTotalsMatch()">
               <span style="color: #059669;">✓ Totals match perfectly!</span>
             </template>
-            <template x-if="Math.abs(manualScheduleTotalBTC() - (btcAmount || 0)) >= 0.00000001">
+            <template x-if="!manualScheduleTotalsMatch()">
               <span style="color: #dc2626;">
                 Difference: <span x-text="(manualScheduleTotalBTC() - (btcAmount || 0)).toFixed(8)"></span> BTC
               </span>
@@ -451,9 +452,9 @@
                 <tr>
                   <th style="width:220px;">Your gift (today)</th>
                   <td class="mono">
-                    <span x-text="(Number(btcAmount)||0).toFixed(8) + ' BTC'"></span>
+                    <span x-text="giftAmountBtcText()"></span>
                     <span class="muted"> • </span>
-                    <span x-text="formatUSD((Number(btcAmount)||0) * (Number(priceManager.currentPrice)||0))"></span>
+                    <span x-text="giftAmountUsdText()"></span>
                   </td>
                 </tr>
                 <tr>
@@ -463,7 +464,7 @@
                 <tr>
                   <th>Service fee</th>
                   <td class="mono">
-                    <span x-text="(1000 + Math.max(0, scheduleRows.length - 1) * 250) + ' sats'"></span>
+                    <span x-text="serviceFeeSatsText()"></span>
                     <span class="muted"> • </span>
                     <span x-text="formatUSD(serviceFeeUsd)"></span>
                     <span class="small muted" x-show="scheduleRows.length > 1"> (1000 sats + 250 sats for each extra
@@ -485,7 +486,7 @@
                 <tr>
                   <th>Total to deposit</th>
                   <td class="mono">
-                    <span x-text="(Number(totalGiftWithFees)||0).toFixed(8) + ' BTC'"></span>
+                    <span x-text="totalDepositBtcText()"></span>
                     <span class="muted"> • </span>
                     <span x-text="formatUSD(totalGiftWithFeesUsd)"></span>
                   </td>
