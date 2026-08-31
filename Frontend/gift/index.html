@@ -8,7 +8,8 @@
 
   <!-- Same stack as the gifting wizard -->
   <script src="../static/collapse.min.js" integrity="sha384-OI7J071C5UbEZNkN/pwwvuyVCJfaEUcOdHW3pGMaUQzeMod0WnkHcT5RfjonN4rH" crossorigin="anonymous" defer></script>
-  <script src="../static/alpine.js" integrity="sha384-xIk1uCTSBs9wfs2bjT5hvfEpls8FIzZ1376f80rZpJoariShCCQV88A7F2QZz7yC" crossorigin="anonymous" defer></script>
+  <script src="../alpine-csp-adapter.js" integrity="sha384-kAMuuv1gTS/qLIxIj2betmY7qLd80coR8wXEpcWXE0+Rtc0MZJiAs3X3eoS66y9X" crossorigin="anonymous" defer></script>
+  <script src="../static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
   <link rel="stylesheet" href="../static/pico.min.css" integrity="sha384-Igjx5rLo1oJuDlq1Ls6uECey1nXahm4j4GoF8ixTon9zxdse6QkdsFelFYk8j7rI" crossorigin="anonymous" />
   <link rel="stylesheet" href="../static/style.css" integrity="sha384-joQKvIcAspm0sdbWnaOrv+0Xw8Sn3V1SpbXBYuPzVRNEbPJC/7Lr4wt5ogcKeTjf" crossorigin="anonymous" />
 
@@ -51,7 +52,7 @@
 </head>
 
 <body>
-  <main class="container" x-data="recipientPage()">
+  <main class="container" x-data="recipientPage">
 
     <header class="brand">
       <img src="../static/img/bc1q21-logo.png" alt="bc1q21 logo">
@@ -205,7 +206,7 @@
                   <td class="mono" x-text="formatUSD(o.usdAtCreation)"></td>
                   <td class="mono" x-text="formatUSD(o.usdAtRelease)"></td>
                   <td class="mono">
-                    <a :href="`https://mempool.space/address/${o.address}`" target="_blank" rel="noopener noreferrer"
+                    <a :href="mempoolAddressUrl(o.address)" target="_blank" rel="noopener noreferrer"
                       x-text="o.address"></a>
                   </td>
                 </tr>
