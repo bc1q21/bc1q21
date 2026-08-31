@@ -98,7 +98,7 @@
           <p class="small muted">You must review and accept the Liability Disclaimer below before continuing. You cannot
             access the application without confirming that you have read and accepted these terms.</p>
           <div style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; margin:0.5rem 0; height:420px;">
-            <iframe src="https://www.bc1q21.com/doc/bc1q21_disclaimers.pdf" title="Liability Disclaimer"
+            <iframe x-ignore src="https://www.bc1q21.com/doc/bc1q21_disclaimers.pdf" title="Liability Disclaimer"
               style="width:100%; height:100%;" frameborder="0"></iframe>
           </div>
           <label class="small muted" style="display:flex; gap:.5rem; align-items:center; margin-top:.5rem;">
@@ -765,7 +765,7 @@ Download a printable gift card that includes the QR with this recipient link.
    @click="markProcessComplete()">Download Gift Card</a>
 </p>
             <div style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; margin:0.5rem 0; height:420px;">
-              <iframe :src="giftCardPdfUrl" title="Gift Card" style="width:100%; height:100%;" frameborder="0"></iframe>
+              <object :data="giftCardPdfUrl" type="application/pdf" title="Gift Card" style="width:100%; height:100%;"></object>
             </div>
           </div>
         </div>
