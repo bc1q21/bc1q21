@@ -856,7 +856,7 @@ if (outputAddresses.has(legacyFirst.address)) {
               cached.forEach(u => {
                 utxos.push({
                   txid: u.txid || u.tx_hash || '',
-                  vout: typeof u.vout !== 'undefined' ? u.vout : (typeof u.txout_n !== 'undefined' ? u.txout_n : (typeof u.n !== 'undefined' ? u.n : 0)),
+                  vout: typeof u.vout !== 'undefined' ? Number(u.vout) : (typeof u.txout_n !== 'undefined' ? Number(u.txout_n) : (typeof u.n !== 'undefined' ? Number(u.n) : undefined)),
                   value: Number(u.value) || 0,
                   redeemScript: r.redeemScript || '',
 locktime: r.locktime,
@@ -876,7 +876,7 @@ childIndex: r.childIndex ?? null
                     const matchedRow = readyRows.find(x => x.address === addr);
                     utxos.push({
                       txid,
-                      vout: typeof o.n !== 'undefined' ? o.n : (typeof o.vout !== 'undefined' ? o.vout : 0),
+                      vout: typeof o.n !== 'undefined' ? Number(o.n) : (typeof o.vout !== 'undefined' ? Number(o.vout) : undefined),
                       value: Number(o.value) || 0,
                       redeemScript: matchedRow?.redeemScript || '',
 locktime: matchedRow?.locktime,
@@ -891,8 +891,8 @@ childIndex: matchedRow?.childIndex ?? null
               throw new Error('No UTXOs found for ready outputs.');
             }
 
-            if (utxos.some(u => !u.txid || typeof u.vout === 'undefined')) {
-              throw new Error('Missing txid or vout for one or more ready outputs.');
+            if (utxos.some(u => !u.txid || !Number.isInteger(u.vout) || u.vout < 0)) {
+              throw new Error('Missing or invalid txid/vout for one or more ready outputs.');
             }
 
             if (utxos.some(u => !u.redeemScript)) {
