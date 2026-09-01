@@ -8,7 +8,6 @@
 
 
 // ---- Runtime content configuration (loaded from inert JSON data) ----
-let HELP_VIDEOS = {};
 let SERVICE_FEE_ADDRESS = '';
 // expose globally
 window.TransactionManager = TransactionManager;
@@ -45,6 +44,7 @@ function giftWizard() {
         uiRenderer: null,
         backendClient: null,
         backendBaseUrl: '',
+        helpVideos: {},
         
         // Form state
         disclaimerAccepted: false,
@@ -120,8 +120,8 @@ if (!contentConfig || typeof contentConfig !== 'object') {
     throw new Error('Invalid bc1q21 content configuration.');
 }
 
-HELP_VIDEOS = contentConfig.helpVideos || {};
-
+this.helpVideos = contentConfig.helpVideos || {};
+            
 if (
     typeof window.BC1Q21_SERVICE_FEE_ADDRESS !== 'string' ||
     !window.BC1Q21_SERVICE_FEE_ADDRESS.trim()
@@ -733,11 +733,12 @@ if (!this.depositDetected) {
         },
         
         getHelpUrl() {
+            if (!this.navigationManager) return '';
             const step = this.navigationManager.currentStep;
             return (
-                HELP_VIDEOS[step] ||
-                HELP_VIDEOS[`group_${this.navigationManager.stepGroup}`] ||
-                HELP_VIDEOS.default ||
+                this.helpVideos[step] ||
+                this.helpVideos[`group_${this.navigationManager.stepGroup}`] ||
+                this.helpVideos.default ||
                 ''
             );
         }
