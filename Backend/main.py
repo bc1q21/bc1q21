@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List
 import os
 import math
+import re
 import httpx
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse
@@ -32,6 +33,33 @@ if missing:
 
 class RawTx(BaseModel):
     hex: str
+
+
+_TXID_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+_BASE58_ADDRESS_RE = re.compile(r"^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$")
+_BECH32_ADDRESS_RE = re.compile(r"^bc1[ac-hj-np-z02-9]{6,87}$", re.IGNORECASE)
+
+
+def _require_txid(txid: str) -> str:
+    """Accept only a canonical 32-byte transaction identifier."""
+    if not _TXID_RE.fullmatch(txid):
+        raise HTTPException(status_code=400, detail="Invalid transaction ID.")
+    return txid
+
+
+def _require_bitcoin_address(address: str) -> str:
+    """Accept only a syntactically valid mainnet Bitcoin address."""
+    is_base58 = _BASE58_ADDRESS_RE.fullmatch(address) is not None
+    is_bech32 = _BECH32_ADDRESS_RE.fullmatch(address) is not None
+    is_mixed_case_bech32 = (
+        address.lower().startswith("bc1")
+        and address != address.lower()
+        and address != address.upper()
+    )
+
+    if (not is_base58 and not is_bech32) or is_mixed_case_bech32:
+        raise HTTPException(status_code=400, detail="Invalid Bitcoin address.")
+    return address
 
 app = FastAPI(
     docs_url=None,
@@ -236,6 +264,7 @@ async def get_tx_hex(txid: str):
     """
     Proxy to fetch raw transaction hex from mempool.space.
     """
+    txid = _require_txid(txid)
     try:
         url = f"https://mempool.space/api/tx/{txid}/hex"
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -303,6 +332,7 @@ async def send_raw_transaction(raw: RawTx):
 
 @app.get("/bitcoin/scan-utxos")
 async def scan_utxos(address: str = Query(..., description="P2SH address to scan")):
+    address = _require_bitcoin_address(address)
     rpc_url = os.environ["BITCOIN_RPC_URL"]
     rpc_user = os.environ["RPC_USER"]
     rpc_password = os.environ["RPC_PASSWORD"]
@@ -684,6 +714,7 @@ async def get_address_utxos(address: str, response: Response):
         x-stale: "true" if upstream failed and we served a stale cached value
         x-fetched-at: ISO8601 timestamp of the cached fetch
     """
+    address = _require_bitcoin_address(address)
     now = datetime.utcnow()
     _prune_address_cache(_utxo_cache, now)
     cache = _utxo_cache.get(address)
@@ -871,6 +902,7 @@ async def get_address_txs(address: str, response: Response):
         x-stale: "true" if upstream failed and we served a stale cached value
         x-fetched-at: ISO8601 timestamp of the cached fetch
     """
+    address = _require_bitcoin_address(address)
     now = datetime.utcnow()
 
     # If later you add query params (pagination), include them in cache_key.
