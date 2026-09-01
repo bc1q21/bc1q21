@@ -9,8 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.concurrency import run_in_threadpool
 from pathlib import Path
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlsplit
 import io
+import json
+import logging
 import qrcode
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -912,6 +914,158 @@ async def get_address_txs(address: str, response: Response):
             status_code=502,
             detail="Unable to retrieve transaction information."
         )
+# ---------- CSP violation reporting ----------
+_CSP_MAX_REQUEST_BYTES = 16 * 1024
+_CSP_MAX_REPORTS_PER_REQUEST = 20
+_CSP_ALLOWED_CONTENT_TYPES = {
+    "application/reports+json",
+    "application/csp-report",
+}
+_CSP_ALLOWED_HOSTS = {
+    "bc1q21.com",
+    "www.bc1q21.com",
+}
+_CSP_LOGGER = logging.getLogger("gunicorn.error")
+
+
+def _csp_clean_token(value: Any, max_length: int = 100) -> str:
+    if not isinstance(value, str):
+        return "unknown"
+
+    cleaned = "".join(
+        character
+        for character in value.strip().lower()
+        if character.isalnum() or character in {"-", "_"}
+    )
+    return cleaned[:max_length] or "unknown"
+
+
+def _csp_page_path(value: Any) -> str:
+    if not isinstance(value, str):
+        return "unknown"
+
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return "unknown"
+
+    if not parsed.hostname or parsed.hostname.lower() not in _CSP_ALLOWED_HOSTS:
+        return "external"
+
+    path = parsed.path or "/"
+    cleaned = " ".join(path.split())
+    return cleaned[:256] or "/"
+
+
+def _csp_blocked_origin(value: Any) -> str:
+    if not isinstance(value, str):
+        return "unknown"
+
+    candidate = value.strip()
+    lowered = candidate.lower()
+
+    if lowered in {"inline", "eval", "self", "data", "blob"}:
+        return lowered
+
+    try:
+        parsed = urlsplit(candidate)
+    except ValueError:
+        return "unknown"
+
+    if parsed.scheme in {"http", "https"} and parsed.hostname:
+        return f"{parsed.scheme}://{parsed.hostname.lower()}"
+
+    return "other"
+
+
+def _normalize_csp_report(item: Any) -> Dict[str, str] | None:
+    if not isinstance(item, dict):
+        return None
+
+    legacy_body = item.get("csp-report")
+    modern_body = item.get("body")
+
+    if isinstance(legacy_body, dict):
+        report_body = legacy_body
+        directive = (
+            report_body.get("effective-directive")
+            or report_body.get("violated-directive")
+        )
+        blocked = report_body.get("blocked-uri")
+        document = report_body.get("document-uri")
+        disposition = report_body.get("disposition")
+    elif item.get("type") == "csp-violation" and isinstance(modern_body, dict):
+        report_body = modern_body
+        directive = report_body.get("effectiveDirective")
+        blocked = report_body.get("blockedURL")
+        document = report_body.get("documentURL")
+        disposition = report_body.get("disposition")
+    else:
+        return None
+
+    return {
+        "directive": _csp_clean_token(directive),
+        "blocked": _csp_blocked_origin(blocked),
+        "page": _csp_page_path(document),
+        "disposition": _csp_clean_token(disposition, max_length=20),
+    }
+
+
+@app.post("/bitcoin/csp-report", status_code=204)
+async def receive_csp_report(request: Request):
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > _CSP_MAX_REQUEST_BYTES:
+                raise HTTPException(
+                    status_code=413,
+                    detail="CSP report is too large."
+                )
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid Content-Length header."
+            )
+
+    content_type = (
+        request.headers.get("content-type", "")
+        .split(";", 1)[0]
+        .strip()
+        .lower()
+    )
+    if content_type not in _CSP_ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail="Unsupported CSP report format."
+        )
+
+    body = await request.body()
+    if not body:
+        raise HTTPException(status_code=400, detail="CSP report is empty.")
+    if len(body) > _CSP_MAX_REQUEST_BYTES:
+        raise HTTPException(status_code=413, detail="CSP report is too large.")
+
+    try:
+        payload = json.loads(body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise HTTPException(status_code=400, detail="Invalid CSP report.")
+
+    reports = payload if isinstance(payload, list) else [payload]
+    for item in reports[:_CSP_MAX_REPORTS_PER_REQUEST]:
+        normalized = _normalize_csp_report(item)
+        if normalized is None:
+            continue
+
+        _CSP_LOGGER.info(
+            "csp_violation directive=%s blocked=%s page=%s disposition=%s",
+            normalized["directive"],
+            normalized["blocked"],
+            normalized["page"],
+            normalized["disposition"],
+        )
+
+    return Response(status_code=204)
+
 # ---------- Contact form abuse protection ----------
 _CONTACT_MAX_REQUEST_BYTES = 16 * 1024
 _CONTACT_MAX_NAME_LENGTH = 100
