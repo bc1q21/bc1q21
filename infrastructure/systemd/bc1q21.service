@@ -1,0 +1,32 @@
+[Unit]
+Description=bc1q21 FastAPI backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bc1q21
+Group=bc1q21
+
+EnvironmentFile=/etc/bc1q21/bc1q21.env
+WorkingDirectory=/opt/bc1q21/repo/Backend
+
+# Recommended: gunicorn manages workers; uvicorn worker runs ASGI
+ExecStart=/opt/bc1q21/venv/bin/gunicorn main:app \
+  --worker-class uvicorn.workers.UvicornWorker \
+  --bind 127.0.0.1:8000 \
+  --workers 2 \
+  --timeout 60
+
+Restart=always
+RestartSec=3
+
+# Hardening (safe defaults)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/bc1q21
+
+[Install]
+WantedBy=multi-user.target
