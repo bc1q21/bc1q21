@@ -17,7 +17,7 @@ import logging
 import qrcode
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 from dotenv import load_dotenv
 import smtplib
 import ssl
