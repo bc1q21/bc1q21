@@ -1,4 +1,14 @@
 let GIFT_HELP_URL = 'https://youtu.be/WcSpTlghGUc';
+const CLAIM_FEE_RATE_FALLBACK_SAT_VB = 2;
+const CLAIM_RBF_SEQUENCE = 0xfffffffd;
+
+function selectClaimFeeRate(feeEstimate) {
+  const liveRate = Number(feeEstimate?.normal?.sat_vb);
+  return feeEstimate?.success && Number.isFinite(liveRate) && liveRate > 0
+    ? Math.ceil(liveRate)
+    : CLAIM_FEE_RATE_FALLBACK_SAT_VB;
+}
+
     function recipientPage() {
       return {
         // ---- Config ----
@@ -752,8 +762,7 @@ if (outputAddresses.has(legacyFirst.address)) {
           tx.lock_time = typeof lockTime === 'number' ? lockTime : 0;
 
           utxos.forEach((u) => {
-            const seq = typeof u.sequence === 'number' ? u.sequence : 0xfffffffe;
-            tx.addinput(u.txid, Number(u.vout), u.redeemScript, seq);
+            tx.addinput(u.txid, Number(u.vout), u.redeemScript, CLAIM_RBF_SEQUENCE);
           });
 
           const valueBtc = sendValue / 1e8;
@@ -944,8 +953,12 @@ childIndex: matchedRow?.childIndex ?? null
                 );
               }
             }
-              const totalValue = utxos.reduce((s, u) => s + (u.value || 0), 0);
-            const feeRate = 2; // sats/vbyte (conservative above min relay)
+            const totalValue = utxos.reduce((s, u) => s + (u.value || 0), 0);
+            const backendClient = new BtcBackendClient({
+              baseUrl: this.baseApi.replace(/\/bitcoin$/, '/')
+            });
+            const feeEstimate = await backendClient.fetchFeeEstimate();
+            const feeRate = selectClaimFeeRate(feeEstimate);
             const txLockTime = utxos.reduce((m, u) => Math.max(m, Number(u.locktime) || 0), 0);
 
             // First pass to estimate size and fee
@@ -1000,8 +1013,7 @@ childIndex: matchedRow?.childIndex ?? null
 
             // Try broadcast via backend
             try {
-              const client = new BtcBackendClient({ baseUrl: this.baseApi.replace(/\/bitcoin$/, '/') });
-              const res = await client.broadcastRawTx(signedFinal.hex);
+              const res = await backendClient.broadcastRawTx(signedFinal.hex);
               if (res?.success && res.txid) {
                 this.notice = `Release transaction broadcast. TXID: ${res.txid}`;
                 const readySet = new Set(readyRows.map(r => r.address));
