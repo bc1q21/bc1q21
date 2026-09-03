@@ -541,11 +541,57 @@
           </div>
       </article>
 
-      <!-- unified Back/Continue for Group 2 -->
+      <!-- Recovery words acknowledgement checkpoint -->
       <div class="wizard-actions" x-show="navigationState.stepGroup===2">
         <button class="btn-outline" @click="navigateBack()">Back</button>
         <span class="spacer"></span>
-        <button class="btn-primary" @click="navigateForward()" :disabled="!canContinue()">Continue</button>
+        <button class="btn-primary"
+                @click="openRecoveryConfirmation()"
+                :disabled="!canContinue()">
+          Continue
+        </button>
+      </div>
+
+      <div x-show="recoveryConfirmationOpen"
+           x-cloak
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="recovery-confirmation-title"
+           style="position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding:1rem; z-index:1000;">
+
+        <div class="card"
+             style="position:relative; max-width:560px; width:100%; margin:auto; background:white;">
+
+          <article>
+            <h3 id="recovery-confirmation-title">Did you write down your recovery words?</h3>
+
+            <p>
+              These <strong>12 recovery words</strong> are required to access this Bitcoin gift.
+              bc1q21 does not store them and cannot recover them for you.
+            </p>
+
+            <p class="small muted">
+              Before continuing, make sure you have written down all 12 words correctly
+              and stored them somewhere safe.
+            </p>
+
+            <p><strong>Have you written them down?</strong></p>
+
+            <div class="actions">
+              <button type="button"
+                      class="btn-outline"
+                      @click="closeRecoveryConfirmation()">
+                No, go back
+              </button>
+
+              <button type="button"
+                      class="btn-primary"
+                      @click="confirmRecoveryWordsSaved()">
+                Yes, I wrote them down
+              </button>
+            </div>
+          </article>
+        </div>
       </div>
     </div>
 
@@ -857,6 +903,6 @@ Download a printable gift card that includes the QR with this recipient link.
   <script type="text/javascript" src="CryptoManager.js" integrity="sha384-QlpkSZjE59JiAt68PPM3dxsJQDtyE5MraSABAbhKB4aEU8BoVsMs1f66fTqdMhnj" crossorigin="anonymous"></script>
 <script type="text/javascript" src="UIRenderer.js" integrity="sha384-jQQpsCfLynqzPUOgCxZ9PlVMJGfpGFLqU3mMTt0a8xt+YJaGfCeuQnAp6G9yw6dI" crossorigin="anonymous"></script>
 <script type="text/javascript" src="service-fee-address.js" integrity="sha384-+2E/fnypPfu4lNidhO89DxXrmkDB/C8T+MNPRMGmPt1SLOO6rp8Evy0b7oToGmOS" crossorigin="anonymous"></script>
-<script type="text/javascript" src="bc1q21-h08.js" integrity="sha384-rmXbPkURMlZ1cpZTLr930uEgGL55g2ji3D9lqc4qklaLBs9LElwHJqUCwruUItD4" crossorigin="anonymous"></script>
+<script type="text/javascript" src="bc1q21-h08.js" integrity="sha384-ztxQ+BnqeMOBG1GJ8OVE9nT2rYsq/C1bkNv67Qy7b1qJgAxgqhJbewnqN9AjtUL4" crossorigin="anonymous"></script>
 </body>  
 </html>
