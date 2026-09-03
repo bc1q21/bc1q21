@@ -340,8 +340,15 @@
 
     .option-card.selected {
       border: 5px solid var(--bc1q-blue);
-      /*background-color: var(--bc1q-blue);*/
+      background-color: var(--bc1q-blue);
+      color: #fff;
       box-shadow: 0 0 0 2px rgba(55, 91, 110, .15) inset;
+    }
+
+    .option-card.selected h4,
+    .option-card.selected p,
+    .option-card.selected summary {
+      color: #fff;
     }
 
     .option-card input[type="radio"] {
