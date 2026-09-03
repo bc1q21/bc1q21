@@ -77,6 +77,7 @@ function giftWizard() {
         giftCardPdfRecipient: '',
         mnemonicGenerated: false,
         processComplete: false,
+        recoveryConfirmationOpen: false,
         finalConfirmationOpen: false,
         _beforeUnloadHandler: null,
         networkFeeLowPriority: null,
@@ -230,6 +231,19 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
         
         getContinueText() {
             return this.navigationManager.stepGroup < 4 ? 'Continue' : 'Finish';
+        },
+
+        openRecoveryConfirmation() {
+            this.recoveryConfirmationOpen = true;
+        },
+
+        closeRecoveryConfirmation() {
+            this.recoveryConfirmationOpen = false;
+        },
+
+        confirmRecoveryWordsSaved() {
+            this.recoveryConfirmationOpen = false;
+            return this.navigateForward();
         },
 
         openFinalConfirmation() {
