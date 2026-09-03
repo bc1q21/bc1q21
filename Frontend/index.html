@@ -762,8 +762,7 @@ Download a printable gift card that includes the QR with this recipient link.
 <a :href="giftCardPdfUrl"
    download="giftcard.pdf"
    target="_blank"
-   rel="noopener noreferrer"
-   @click="markProcessComplete()">Download Gift Card</a>
+   rel="noopener noreferrer">Download Gift Card</a>
 </p>
             <div id="giftCardPreviewWrapper"
      :data-pdf-url="giftCardPdfUrl"
@@ -777,9 +776,51 @@ Download a printable gift card that includes the QR with this recipient link.
         </div>
       </article>
 
-      <!-- unified Back/Continue for Group 4 -->
+      <!-- Final acknowledgement checkpoint -->
       <div class="wizard-actions" x-show="navigationState.stepGroup===4">
-        <button class="btn-primary" @click="createNewGift()" x-text="getContinueText()"></button>
+        <button class="btn-primary" @click="openFinalConfirmation()">Continue</button>
+      </div>
+
+      <div x-show="finalConfirmationOpen"
+           x-cloak
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="final-confirmation-title"
+           style="position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding:1rem; z-index:1000;">
+
+        <div class="card"
+             style="position:relative; max-width:560px; width:100%; margin:auto; background:white;">
+
+          <article>
+            <h3 id="final-confirmation-title">Have you saved the recipient information?</h3>
+
+            <p>
+              Before leaving this page, make sure you have saved the
+              <strong>recipient link and QR code</strong>, or have
+              <strong>downloaded or printed the Gift Card</strong> containing this information.
+            </p>
+
+            <p class="small muted">
+              This information will be needed by the Gift Recipient.
+            </p>
+
+            <p><strong>Have you saved it?</strong></p>
+
+            <div class="actions">
+              <button type="button"
+                      class="btn-outline"
+                      @click="closeFinalConfirmation()">
+                No, not yet
+              </button>
+
+              <button type="button"
+                      class="btn-primary"
+                      @click="confirmRecipientInfoSaved()">
+                Yes, I have saved it
+              </button>
+            </div>
+          </article>
+        </div>
       </div>
     </div>
   </main>
@@ -816,6 +857,6 @@ Download a printable gift card that includes the QR with this recipient link.
   <script type="text/javascript" src="CryptoManager.js" integrity="sha384-QlpkSZjE59JiAt68PPM3dxsJQDtyE5MraSABAbhKB4aEU8BoVsMs1f66fTqdMhnj" crossorigin="anonymous"></script>
 <script type="text/javascript" src="UIRenderer.js" integrity="sha384-jQQpsCfLynqzPUOgCxZ9PlVMJGfpGFLqU3mMTt0a8xt+YJaGfCeuQnAp6G9yw6dI" crossorigin="anonymous"></script>
 <script type="text/javascript" src="service-fee-address.js" integrity="sha384-+2E/fnypPfu4lNidhO89DxXrmkDB/C8T+MNPRMGmPt1SLOO6rp8Evy0b7oToGmOS" crossorigin="anonymous"></script>
-<script type="text/javascript" src="bc1q21-h08.js" integrity="sha384-g9oknq5FEL9HKmbkws8k6rObEeeohbtE2iqn/XVZUv7nM4mEe99Va+IfyTSTigi4" crossorigin="anonymous"></script>
+<script type="text/javascript" src="bc1q21-h08.js" integrity="sha384-rmXbPkURMlZ1cpZTLr930uEgGL55g2ji3D9lqc4qklaLBs9LElwHJqUCwruUItD4" crossorigin="anonymous"></script>
 </body>  
 </html>

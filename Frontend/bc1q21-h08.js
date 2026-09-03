@@ -77,6 +77,7 @@ function giftWizard() {
         giftCardPdfRecipient: '',
         mnemonicGenerated: false,
         processComplete: false,
+        finalConfirmationOpen: false,
         _beforeUnloadHandler: null,
         networkFeeLowPriority: null,
         
@@ -228,13 +229,21 @@ this.giftCardPdfUrl = `${base}/bitcoin/giftcard.pdf?address=${encodeURIComponent
         },
         
         getContinueText() {
-            if (this.navigationManager.currentStep === 'finish_share') return 'Create a New Gift';
             return this.navigationManager.stepGroup < 4 ? 'Continue' : 'Finish';
         },
 
-        createNewGift() {
+        openFinalConfirmation() {
+            this.finalConfirmationOpen = true;
+        },
+
+        closeFinalConfirmation() {
+            this.finalConfirmationOpen = false;
+        },
+
+        confirmRecipientInfoSaved() {
+            this.finalConfirmationOpen = false;
             this.markProcessComplete();
-            window.location.reload();
+            window.location.href = 'https://www.bc1q21.com/';
         },
 
         markProcessComplete() {
