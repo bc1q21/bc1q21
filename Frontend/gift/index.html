@@ -145,6 +145,18 @@
             </button>-->
               </div>
 
+              <div x-show="hasPending()" class="callout small" style="margin-top:.75rem">
+                <strong>Waiting for blockchain confirmation.</strong><br>
+                Your release transaction has been broadcast successfully. Confirmation may take several minutes.
+                <button class="secondary" :disabled="loading" @click="refreshSpentStatuses()" style="margin-top:.75rem">
+                  Check Status
+                </button>
+                <div x-show="releaseTxid" style="margin-top:.5rem">
+                  <a :href="mempoolTxUrl(releaseTxid)" target="_blank" rel="noopener noreferrer">
+                    View transaction on mempool.space
+                  </a>
+                </div>
+              </div>
               <small x-show="error" style="color:#ef4444" x-text="error"></small>
 
 
@@ -199,7 +211,7 @@
                     <span
                       :class="['status-dot', o.spent ? 'dot-spent' : (o.pending ? 'dot-pending' : (o.ready ? 'dot-ready' : 'dot-pending'))]"></span>
                     <span
-                      x-text="o.spent ? 'Claimed' : (o.pending ? 'Pending...' : (o.ready ? 'Ready' : 'Locked'))"></span>
+                      x-text="o.spent ? 'Claimed' : (o.pending ? 'Pending confirmation' : (o.ready ? 'Ready' : 'Locked'))"></span>
                   </td>
                   <td x-text="o.releaseDate"></td>
                   <td class="mono" x-text="o.btc.toFixed(8)"></td>
@@ -262,7 +274,7 @@
   <script src="../CryptoManager.js" integrity="sha384-NmUwxsKQb8gHlDRMQMmqDouQmV/pJI5eIaxmbDnR3jjfWRZIXGdVHMzCtrtcRdNT" crossorigin="anonymous"></script>
   <script src="../BtcBackendClient.js" integrity="sha384-VIWHhR63/7H1B5Mmqv15R8UPb8kBHtsuQAjXyE8EhQoiuqNs1TKmgYxkz0XqHKli" crossorigin="anonymous"></script>
 
-  <script src="gift-h08.js" integrity="sha384-ECaAsqHMkSMtszsrK87by2AUNuy9zStkZUTbk2cQQRUTkwX9GGAZdvKD0tPcZGJs" crossorigin="anonymous"></script>
+  <script src="gift-h08.js" integrity="sha384-ok84Dtn9KrvEZQdwQSQH8vujjGf7QrGPa+0ynm2GcmY0Psk4NRncc95/xdNJf/90" crossorigin="anonymous"></script>
 </body>
 
 </html>
