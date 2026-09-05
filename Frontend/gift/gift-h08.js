@@ -53,6 +53,7 @@ giftTx: null,
           cltvKeyMode: '',
         readyCount: 0,
         releaseTxHex: '',
+        releaseTxid: '',
         utxoCache: new Map(),
 
         async init() {
@@ -1013,6 +1014,7 @@ childIndex: matchedRow?.childIndex ?? null
               const res = await backendClient.broadcastRawTx(signedFinal.hex);
               if (res?.success && res.txid) {
                 this.notice = `Release transaction broadcast. TXID: ${res.txid}`;
+                this.releaseTxid = res.txid;
                 const readySet = new Set(readyRows.map(r => r.address));
                 this.rows = this.rows.map(r => readySet.has(r.address) ? { ...r, pending: true, ready: false } : r);
                 this.updateReadyCount();
@@ -1134,6 +1136,9 @@ childIndex: matchedRow?.childIndex ?? null
             year: 'numeric', month: 'short', day: '2-digit',
             hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
           }).format(d) + ' UTC';
+        },
+        mempoolTxUrl(txid) {
+          return `https://mempool.space/tx/${encodeURIComponent(txid || '')}`;
         },
 
         // keep your existing bindings alive
