@@ -1140,6 +1140,9 @@ childIndex: matchedRow?.childIndex ?? null
         mempoolTxUrl(txid) {
           return `https://mempool.space/tx/${encodeURIComponent(txid || '')}`;
         },
+        hasPending() {
+          return this.rows.some(r => r.pending);
+        },
 
         // keep your existing bindings alive
         get createdAtForTemplate() { return this.createdAt; },
