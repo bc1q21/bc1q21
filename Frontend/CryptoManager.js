@@ -111,8 +111,6 @@ encryptionMaterial.set(
 this.opReturnEncryptionSecret = this.bytesToHex(
     window.nobleHashes.sha256(encryptionMaterial)
 );
-            console.log('fundingAddress', this.fundingAddress);
-            console.log('releaseAddress', this.releaseAddress);
             return { success: true };
         } catch (error) {
             console.error('Key derivation failed:', error);
