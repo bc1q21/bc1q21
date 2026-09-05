@@ -393,7 +393,6 @@ this.priceHistory = selectedPriceList;
 
 this.buildRowsWithoutSchedule();
             // 2) decrypt OP_RETURN to get first release date
-            console.log("opReturnCipherHex", this.opReturnCipherHex);
             if (!window.__decryptShortHex) throw new Error('AESHelper decryptShortHex not loaded.');
             const currentEncryptionSecret = cm.opReturnEncryptionSecret || '';
 
@@ -403,7 +402,6 @@ let firstDate = await window.__decryptShortHex(
   currentEncryptionSecret
 );
 
-            console.log("firstDate", firstDate);
 
             // If decrypt returns hex (like 3230...), convert hex -> UTF-8 text
             if (/^[0-9a-fA-F]+$/.test(firstDate) && firstDate.length % 2 === 0) {
@@ -466,7 +464,6 @@ if (outputAddresses.has(legacyFirst.address)) {
 
             await this.refreshSpentStatuses();
           } catch (e) {
-            console.log(e);
             this.error = e?.message || String(e);
           } finally {
             this.loading = false;
@@ -1050,7 +1047,6 @@ childIndex: matchedRow?.childIndex ?? null
               return rd <= tomorrowUtc;
             });
 
-            console.log("refreshSpentStatuses dueRows", dueRows);
             const checks = dueRows.map(async (r) => {
               const url = `${this.baseApi}/address/${r.address}/txs`;
               const data = await fetch(url).then(resp => resp.json());
