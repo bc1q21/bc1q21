@@ -627,25 +627,33 @@ if (outputAddresses.has(legacyFirst.address)) {
             if (!searchFrom) continue;
 
             const [y, m, d] = searchFrom.split('-').map(Number);
-            let cursor = new Date(Date.UTC(y, m - 1, d));
-            const MAX_DAYS = 366 * 10;
+let cursor = new Date(Date.UTC(y, m - 1, d));
+const maxDate = new Date(Date.UTC(2105, 11, 31));
 
-            for (let step = 0; step < MAX_DAYS; step++) {
-              cursor = new Date(cursor.getTime() + 86400000);
-              const dateISO = cursor.toISOString().slice(0, 10);
+// For per-output keys, derive the child key once and reuse it
+// while testing candidate dates.
+let fallbackPublicKeyHex = cm.publicKeyHex;
 
-              const cltv = await this.computeCltvForDate(
-                dateISO,
-                cm,
-                i,
-                useChildKey
-              );
+if (useChildKey) {
+  const childKey = await cm.deriveCltvChild(i);
+  fallbackPublicKeyHex = childKey.publicKeyHex;
+}
 
-              if (cltv.address === outputAddrs[i]) {
-                resolvedDates[i] = dateISO;
-                break;
-              }
-            }
+while (cursor < maxDate) {
+  cursor = new Date(cursor.getTime() + 86400000);
+
+  if (cursor > maxDate) break;
+
+  const dateISO = cursor.toISOString().slice(0, 10);
+  const locktime = Math.floor(cursor.getTime() / 1000);
+  const script = cm.buildCLTVScript(locktime, fallbackPublicKeyHex);
+  const address = await cm.createP2SHAddress(script);
+
+  if (address === outputAddrs[i]) {
+    resolvedDates[i] = dateISO;
+    break;
+  }
+}
           }
 
           // Derive interval from resolved dates
