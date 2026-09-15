@@ -52,6 +52,18 @@ This project is open source. Anyone is free to review, use, or build upon this c
 
 ---
 
+## Independent Security Review
+
+bc1q21 engaged **sovtech.pro (Sovereign Technology S.A.S. de C.V.)** to perform independent security scanning and reporting on the project.
+
+The findings from this review were used to inform a comprehensive internal remediation and hardening process across the application, backend, offline tools, deployment process, and server configuration.
+
+sovtech.pro's engagement was limited to the security scanning and reporting phase. The subsequent remediation work was performed internally and has not been reviewed or verified by sovtech.pro.
+
+Accordingly, this acknowledgement of past security review services does not constitute an endorsement, certification, or verification of the current security posture of bc1q21 by sovtech.pro.
+
+---
+
 ## Credits
 
 Project created and directed by Dale Wells
