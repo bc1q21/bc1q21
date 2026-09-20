@@ -51,8 +51,10 @@ document.addEventListener('alpine:init', () => {
             };
 
             component.manualScheduleTotalsMatch = function () {
-                return Math.abs(this.manualScheduleTotalBTC() - (this.btcAmount || 0)) < 0.00000001;
-            };
+    const manualSats = Math.round(Number(this.manualScheduleTotalBTC()) * 1e8);
+    const targetSats = Math.round(Number(this.btcAmount || 0) * 1e8);
+    return manualSats === targetSats;
+};
 
             component.manualScheduleTotalClass = function () {
                 return this.manualScheduleTotalsMatch() ? '' : 'accent';
