@@ -85,6 +85,20 @@ document.addEventListener('alpine:init', () => {
                 return (Number(this.totalGiftWithFees) || 0).toFixed(8) + ' BTC';
             };
 
+            component.openFinalConfirmation = function () {
+                this.finalConfirmationOpen = true;
+            };
+
+            component.closeFinalConfirmation = function () {
+                this.finalConfirmationOpen = false;
+            };
+
+            component.confirmRecipientInfoSaved = function () {
+                this.finalConfirmationOpen = false;
+                this.markProcessComplete();
+                window.location.href = 'https://www.bc1q21.com/';
+            };
+            
             return component;
         });
     }
