@@ -1,6 +1,6 @@
 // Build a single-file offline QR receiver for the synthetic Jade fixture.
 // It does not sign, finalize or broadcast Bitcoin.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { build } from 'esbuild';
@@ -14,7 +14,7 @@ const p2sh=Buffer.concat([Buffer.from([0xa9,20]),hash('ripemd160',hash('sha256',
 const funding=Buffer.concat([u32(2),Buffer.from([1]),Buffer.alloc(32,1),u32(0),Buffer.from([0]),u32(0xffffffff),Buffer.from([1]),u64(100000),Buffer.from([23]),p2sh,u32(0)]);
 const txid=Buffer.from(hash('sha256',hash('sha256',funding))).reverse().toString('hex');
 const fixture=buildUnsignedCltvPsbt({fundingTxHex:funding.toString('hex'),vout:0,expectedTxid:txid,expectedSats:100000,redeemScriptHex:redeem.toString('hex'),signerPubkeyHex:pub.toString('hex'),masterFingerprintHex:'e29ac13c',derivationPath:[0x80000054,0x80000000,0x80000000,1,10],locktime:110,destinationScriptHex:'0014'+'ab'.repeat(20),destinationSats:99000});
-const result=await build({entryPoints:['Professional/signed-qr-receiver.browser.mjs'],bundle:true,write:false,platform:'browser',format:'iife',target:'es2022',minify:true,define:{'process.env.NODE_ENV':'"production"'},logLevel:'warning'});
+const result=await build({entryPoints:['Professional/signed-qr-receiver.browser.mjs'],bundle:true,write:false,platform:'browser',format:'iife',target:'es2022',minify:true,define:{'process.env.NODE_ENV':'"production"','process.browser':'true'},inject:['Professional/browser-process-shim.cjs'],logLevel:'warning'});
 const js=result.outputFiles[0].text.replaceAll('</script', '<\\/script');
 const safe=x=>JSON.stringify(x).replace(/</g,'\\u003c');
 const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>bc1q21 Professional — Jade signed QR receiver</title>
