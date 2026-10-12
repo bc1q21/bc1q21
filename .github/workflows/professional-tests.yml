@@ -28,3 +28,7 @@ jobs:
           node-version: '22'
       - name: Run isolated tests
         run: node --test Professional/*.test.mjs
+      - name: Install independent compatibility checker (test-only)
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+      - name: Verify PSBT with independent Bitcoin library
+        run: node --test Professional/bitcoinjs-compatibility.check.mjs
