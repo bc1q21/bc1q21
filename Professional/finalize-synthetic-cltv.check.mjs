@@ -33,6 +33,8 @@ test('tampered signature fails before finalization',()=>{
 });
 test('changed transaction locktime is rejected',()=>{
  const p=bitcoin.Psbt.fromBuffer(signed);
- p.setLocktime(111);
+ const unsignedTx=bitcoin.Transaction.fromBuffer(p.data.globalMap.unsignedTx.toBuffer());
+ unsignedTx.locktime=111;
+ p.data.globalMap.unsignedTx.tx=unsignedTx;
  assert.throws(()=>finalize(p.toBuffer()),/Unsigned transaction changed/);
 });
