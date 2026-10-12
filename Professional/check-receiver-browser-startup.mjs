@@ -2,6 +2,7 @@
 // This catches missing browser globals before distributing an artifact.
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { Buffer } from 'node:buffer';
 import assert from 'node:assert/strict';
 const html = readFileSync('Professional/synthetic-jade-signed-qr-receiver.html','utf8');
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
@@ -11,7 +12,7 @@ const nodes = Object.fromEntries(ids.map(id=>[id,{textContent:'',hidden:false,di
 const fixtureMatch=html.match(/<script type="application\/json" id="fixture">([\s\S]*?)<\/script>/);
 assert.ok(fixtureMatch,'Fixture JSON missing');
 nodes.fixture.textContent=fixtureMatch[1];
-const context={document:{getElementById:id=>nodes[id]},console,Buffer:undefined,Uint8Array,Uint8ClampedArray,DataView,ArrayBuffer,TextEncoder,TextDecoder,setTimeout(){},clearTimeout(){},queueMicrotask,crypto:globalThis.crypto, navigator:{},Blob,URL,atob,btoa};
+const context={document:{getElementById:id=>nodes[id]},console,Buffer,Uint8Array,Uint8ClampedArray,DataView,ArrayBuffer,TextEncoder,TextDecoder,setTimeout(){},clearTimeout(){},queueMicrotask,crypto:globalThis.crypto, navigator:{},Blob,URL,atob,btoa};
 try { vm.runInNewContext(scripts[1][1],context,{timeout:5000,filename:'signed-qr-receiver-inline.js'}); } catch (e) { console.error('Browser startup failure:',e.name,e.message); process.exitCode=1; process.exit(); }
 assert.equal(typeof nodes.start.onclick,'function','Start camera handler not attached');
 assert.match(nodes.status.textContent,/Ready to scan signed QR frames/);
