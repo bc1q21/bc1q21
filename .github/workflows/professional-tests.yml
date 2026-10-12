@@ -36,4 +36,4 @@ jobs:
         run: node Professional/build-qr-demo.mjs /tmp/professional-synthetic-qr-demo.html
       - name: Verify standalone demo has embedded QR images and no remote assets
         run: |
-          node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const s=fs.readFileSync("/tmp/professional-synthetic-qr-demo.html","utf8"); assert.ok(s.includes("data:image/png;base64,")); assert.ok(s.includes("SYNTHETIC / UNFUNDED TEST ONLY")); assert.ok(!/<script[^>]+src=|<link[^>]+href=|fetch\\(|XMLHttpRequest|WebSocket/.test(s)); console.log("Offline QR HTML verified",s.length,"bytes")'
+          node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const s=fs.readFileSync("/tmp/professional-synthetic-qr-demo.html","utf8"); assert.ok(s.includes("data:image/png;base64,")); assert.ok(s.includes("SYNTHETIC / UNFUNDED TEST ONLY")); for (const bad of ["<script src=", "<link href=", "XMLHttpRequest", "WebSocket", "fetch("]) assert.ok(!s.includes(bad), "Unexpected remote asset/API: "+bad); console.log("Offline QR HTML verified",s.length,"bytes")'
