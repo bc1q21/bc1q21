@@ -12,7 +12,7 @@ const fixtureMatch=html.match(/<script type="application\/json" id="fixture">([\
 assert.ok(fixtureMatch,'Fixture JSON missing');
 nodes.fixture.textContent=fixtureMatch[1];
 const context={document:{getElementById:id=>nodes[id]},console,Buffer:undefined,Uint8Array,Uint8ClampedArray,DataView,ArrayBuffer,TextEncoder,TextDecoder,setTimeout(){},clearTimeout(){},queueMicrotask,crypto:globalThis.crypto, navigator:{},Blob,URL,atob,btoa};
-vm.runInNewContext(scripts[1][1],context,{timeout:5000,filename:'signed-qr-receiver-inline.js'});
+try { vm.runInNewContext(scripts[1][1],context,{timeout:5000,filename:'signed-qr-receiver-inline.js'}); } catch (e) { console.error('Browser startup failure:',e.name,e.message); process.exitCode=1; process.exit(); }
 assert.equal(typeof nodes.start.onclick,'function','Start camera handler not attached');
 assert.match(nodes.status.textContent,/Ready to scan signed QR frames/);
 console.log('Offline signed QR receiver initialized and controls attached');
