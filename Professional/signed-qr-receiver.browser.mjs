@@ -8,7 +8,7 @@ import { verifySyntheticSignedPsbt } from './verify-synthetic-signed-psbt.mjs';
 
 const $ = id => document.getElementById(id);
 const status = message => { $('status').textContent = message; };
-let stream, running = false, decoder, seen, expected;
+let stream, running = false, decoder, seen, expected, downloadUrl;
 function stopCamera() {
   running = false;
   if (stream) stream.getTracks().forEach(t => t.stop());
@@ -19,6 +19,7 @@ function stopCamera() {
 function reset() {
   decoder = new URDecoder();
   seen = new Set();
+  if (downloadUrl) { URL.revokeObjectURL(downloadUrl); downloadUrl = undefined; }
   $('download').hidden = true;
   $('download').removeAttribute('href');
   $('summary').textContent = '';
@@ -28,6 +29,29 @@ function verifyEnvelope(raw) {
   return verifySyntheticSignedPsbt(raw, expected.psbtBase64, expected.signerPubkeyHex);
 }
 
+function acceptVerified(raw) {
+  const { signatureCount } = verifyEnvelope(raw);
+  if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+  downloadUrl = URL.createObjectURL(new Blob([raw], { type: 'application/octet-stream' }));
+  const a = $('download');
+  a.href = downloadUrl; a.hidden = false;
+  $('summary').textContent = 'Matching synthetic transaction; ' + signatureCount +
+    ' ECDSA signature cryptographically VERIFIED. No broadcast performed.';
+  status('Signed PSBT accepted: ECDSA signature verified. Download for recordkeeping.');
+}
+async function verifySavedFile(file) {
+  stopCamera();
+  reset();
+  try {
+    if (!file) return;
+    if (file.size > 100000) throw Error('File too large');
+    const raw = Buffer.from(await file.arrayBuffer());
+    if (raw.subarray(0,5).toString('hex') !== '70736274ff') throw Error('Invalid PSBT header');
+    acceptVerified(raw);
+  } catch (err) {
+    status('REJECTED: ' + err.message);
+  }
+}
 function finish() {
   stopCamera();
   if (!decoder.isSuccess()) { status('UR decoding failed. Reset and retry.'); return; }
@@ -37,15 +61,8 @@ function finish() {
     const raw = Buffer.from(ur.decodeCBOR());
     if (raw.length > 100000 || raw.subarray(0, 5).toString('hex') !== '70736274ff')
       throw Error('Invalid PSBT payload');
-    const { signatureCount } = verifyEnvelope(raw);
-    const blob = new Blob([raw], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const a = $('download');
-    a.href = url; a.hidden = false;
-    a.onclick = () => setTimeout(() => URL.revokeObjectURL(url), 15000);
-    $('summary').textContent = 'Matching synthetic transaction; ' + signatureCount +
-      ' ECDSA signature cryptographically VERIFIED. No broadcast performed.';
-    status('Signed PSBT captured and ECDSA signature verified. Download for recordkeeping.');
+    acceptVerified(raw);
+
   } catch (err) {
     status('REJECTED: ' + err.message);
   }
@@ -92,3 +109,5 @@ reset();
 $('start').onclick = start;
 $('stop').onclick = () => { stopCamera(); status('Camera stopped.'); };
 $('reset').onclick = () => { stopCamera(); reset(); };
+
+$('signed-file').onchange = () => verifySavedFile($('signed-file').files?.[0]);
