@@ -29,6 +29,11 @@ jobs:
       - name: Run isolated tests
         run: node --test Professional/*.test.mjs
       - name: Install independent compatibility checker (test-only)
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 qrcode@1.5.4
       - name: Verify PSBT with independent Bitcoin library
         run: node --test Professional/bitcoinjs-compatibility.check.mjs Professional/qr-handoff.check.mjs Professional/crypto-psbt-frames.check.mjs
+      - name: Generate standalone offline synthetic animated QR page
+        run: node Professional/build-qr-demo.mjs /tmp/professional-synthetic-qr-demo.html
+      - name: Verify standalone demo has embedded QR images and no remote assets
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const s=fs.readFileSync("/tmp/professional-synthetic-qr-demo.html","utf8"); assert.ok(s.includes("data:image/png;base64,")); assert.ok(s.includes("SYNTHETIC / UNFUNDED TEST ONLY")); assert.ok(!/<script[^>]+src=|<link[^>]+href=|fetch\\(|XMLHttpRequest|WebSocket/.test(s)); console.log("Offline QR HTML verified",s.length,"bytes")'
