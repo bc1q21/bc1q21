@@ -13,7 +13,7 @@ export function makeCryptoPsbtFrames(psbtBytes, { fragmentLength = 120, frameCou
     throw new Error('Invalid frame count');
   // Blockchain Commons crypto-psbt is CBOR byte string of the raw PSBT.
   // UR.fromBuffer wraps bytes as a CBOR byte string and takes the UR type.
-  const ur = UR.fromBuffer(psbtBytes, 'crypto-psbt');
+  const ur = new UR(psbtBytes, 'crypto-psbt');
   const encoder = new UREncoder(ur, fragmentLength, 0);
   const frames = Array.from({ length: frameCount }, () => encoder.nextPart());
   if (!frames.every(frame => /^ur:crypto-psbt\//i.test(frame)))
