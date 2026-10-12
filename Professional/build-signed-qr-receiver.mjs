@@ -26,7 +26,7 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
 <video id="video" autoplay muted playsinline></video><canvas id="canvas" hidden></canvas>
 <div><button id="start">Start camera</button><button id="stop" disabled>Stop camera</button><button id="reset">Reset</button></div>
 <p id="status" role="status"></p><p id="summary"></p><a id="download" download="jade-synthetic-signed.psbt" hidden>Download captured PSBT</a>
-<p><small>Offline self-contained HTML; no remote assets or network calls. Captured PSBT is not broadcast. Cryptographic signature verification remains a separate step.</small></p>
+<p><small>Offline self-contained HTML; no remote assets or network calls. Captured PSBT is not broadcast. Returned ECDSA signatures are verified against the synthetic transaction before acceptance.</small></p>
 </main><script type="application/json" id="fixture">${safe({psbtBase64:fixture.psbtBase64,signerPubkeyHex:fixture.summary.signerPubkeyHex})}</script>
 <script>${js}</script></body></html>`;
 const output=resolve(process.argv[2]??'Professional/synthetic-jade-signed-qr-receiver.html');
