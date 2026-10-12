@@ -29,6 +29,6 @@ jobs:
       - name: Run isolated tests
         run: node --test Professional/*.test.mjs
       - name: Install independent compatibility checker (test-only)
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13
       - name: Verify PSBT with independent Bitcoin library
-        run: node --test Professional/bitcoinjs-compatibility.check.mjs Professional/qr-handoff.check.mjs
+        run: node --test Professional/bitcoinjs-compatibility.check.mjs Professional/qr-handoff.check.mjs Professional/crypto-psbt-frames.check.mjs
