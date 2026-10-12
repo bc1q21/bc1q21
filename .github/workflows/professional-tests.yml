@@ -49,6 +49,8 @@ jobs:
       - name: Verify offline signed QR receiver packaging
         run: |
           node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const s=fs.readFileSync("Professional/synthetic-jade-signed-qr-receiver.html","utf8"); for (const good of ["Start camera","getUserMedia","jade-synthetic-signed.psbt","SYNTHETIC / UNFUNDED TEST ONLY"]) assert.ok(s.includes(good),good); for (const bad of ["<script src=","<link href=","XMLHttpRequest","WebSocket"]) assert.ok(!s.includes(bad),bad); console.log("Signed QR receiver packaged",s.length,"bytes")'
+      - name: Smoke-test receiver browser initialization
+        run: node Professional/check-receiver-browser-startup.mjs
       - name: Publish synthetic signed Jade QR receiver
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
