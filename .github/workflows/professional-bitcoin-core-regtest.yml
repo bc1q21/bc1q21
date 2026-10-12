@@ -1,0 +1,35 @@
+name: Professional Bitcoin Core regtest validation
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - 'Professional/bitcoin-core-regtest-acceptance.mjs'
+      - '.github/workflows/professional-bitcoin-core-regtest.yml'
+permissions:
+  contents: read
+jobs:
+  regtest-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install test-only libraries
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @noble/curves@1.9.7
+      - name: Start disposable Bitcoin Core regtest (no mainnet network)
+        run: |
+          docker run -d --name professional-bitcoin-regtest --network none \
+            -v "$PWD/Professional:/fixture:ro" \
+            ruimarinho/bitcoin-core:28.1 \
+            -regtest -server -txindex=0 -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
+          # Docker --network none prevents host RPC; this configuration needs
+          # a runner-internal RPC client. See next step.
+      - name: Execute Bitcoin Core script acceptance tests
+        run: node Professional/bitcoin-core-regtest-acceptance.mjs
