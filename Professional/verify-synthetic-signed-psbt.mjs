@@ -1,6 +1,6 @@
 // Isolated synthetic CLTV signed-PSBT verification. No signing, finalization or broadcast.
 import bitcoin from 'bitcoinjs-lib';
-import * as ecc from 'tiny-secp256k1';
+import { secp256k1 } from '@noble/curves/secp256k1';
 import { Buffer } from 'buffer';
 
 export function verifySyntheticSignedPsbt(raw, expectedBase64, expectedPubkeyHex) {
@@ -32,7 +32,7 @@ export function verifySyntheticSignedPsbt(raw, expectedBase64, expectedPubkeyHex
   if (signature.length < 9 || signature.at(-1) !== bitcoin.Transaction.SIGHASH_ALL)
     throw Error('Unexpected signature hash type');
   const valid = signed.validateSignaturesOfInput(0, (pubkey, digest, compactSig) =>
-    ecc.verify(Buffer.from(digest), Buffer.from(pubkey), Buffer.from(compactSig)));
+    secp256k1.verify(Buffer.from(compactSig), Buffer.from(digest), Buffer.from(pubkey), { lowS: false, prehash: false }));
   if (!valid) throw Error('ECDSA signature verification failed');
   return { signed, signatureCount: sigs.length };
 }
