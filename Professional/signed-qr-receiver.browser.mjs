@@ -7,7 +7,7 @@ import { Buffer } from 'buffer';
 
 const $ = id => document.getElementById(id);
 const status = message => { $('status').textContent = message; };
-let stream, running = false, decoder, seen, lastRead = 0, expected;
+let stream, running = false, decoder, seen, expected;
 function stopCamera() {
   running = false;
   if (stream) stream.getTracks().forEach(t => t.stop());
@@ -19,6 +19,7 @@ function reset() {
   decoder = new URDecoder();
   seen = new Set();
   $('download').hidden = true;
+  $('download').removeAttribute('href');
   $('summary').textContent = '';
   status('Ready to scan signed QR frames.');
 }
@@ -27,7 +28,7 @@ function verifyEnvelope(raw) {
   const original = bitcoin.Psbt.fromBase64(expected.psbtBase64);
   if (psbt.txInputs.length !== 1 || psbt.txOutputs.length !== 1)
     throw Error('Unexpected transaction input/output count');
-  if (!psbt.data.globalMap.unsignedTx.toBuffer().equals(original.data.globalMap.unsignedTx.toBuffer()))
+  if (!Buffer.from(psbt.data.globalMap.unsignedTx.toBuffer()).equals(Buffer.from(original.data.globalMap.unsignedTx.toBuffer())))
     throw Error('Unsigned transaction changed: reject signed PSBT');
   const meta = psbt.data.inputs[0], base = original.data.inputs[0];
   if (!meta.nonWitnessUtxo || !Buffer.from(meta.nonWitnessUtxo).equals(Buffer.from(base.nonWitnessUtxo)))
@@ -87,6 +88,7 @@ async function scan() {
 async function start() {
   reset();
   try {
+    if (!navigator.mediaDevices?.getUserMedia) throw Error('Camera access unavailable in this browser context. A secure localhost or HTTPS origin may be required.');
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
     $('video').srcObject = stream;
     await $('video').play();
