@@ -31,6 +31,6 @@ test('invalid DER signature is rejected',()=>{
   assert.throws(()=>check(p));
 });
 test('changed redeem script is rejected',()=>{
-  const p=base();p.updateInput(0,{redeemScript:Buffer.from('51','hex')});
+  const p=base();p.data.inputs[0].redeemScript=Buffer.from('51','hex');
   assert.throws(()=>check(p),/redeemScript/i);
 });
