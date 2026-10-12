@@ -77,9 +77,9 @@ function parseLegacyTx(b) {
 function scriptLocktime(redeem, pubkey) {
   // Template: minimally encoded script-number push, OP_CLTV OP_DROP, 33-byte pubkey, OP_CHECKSIG.
   const len = redeem[0];
-  if (len < 1 || len > 5 || redeem.length !== len + 37 ||
+  if (len < 1 || len > 5 || redeem.length !== len + 38 ||
       redeem[1 + len] !== 0xb1 || redeem[2 + len] !== 0x75 ||
-      redeem[3 + len] !== 0x21 || redeem[37 + len - 1] !== 0xac)
+      redeem[3 + len] !== 0x21 || redeem[37 + len] !== 0xac)
     fail('Unsupported CLTV redeemScript template');
   if (!redeem.subarray(4 + len, 37 + len).equals(pubkey)) fail('CLTV public key mismatch');
   const number = redeem.subarray(1, 1 + len);
