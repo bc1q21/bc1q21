@@ -26,7 +26,7 @@ jobs:
         run: |
           docker run -d --name professional-bitcoin-regtest --network host \
             -v "$PWD/Professional:/fixture:ro" \
-            ruimarinho/bitcoin-core:28.1 \
+            ruimarinho/bitcoin-core:28 \
             -regtest -server -txindex=0 -rpcuser=professional -rpcpassword=synthetic-only \
             -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
           # Runner is ephemeral; RPC is bound only to localhost, never publicly exposed.
