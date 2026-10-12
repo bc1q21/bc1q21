@@ -25,7 +25,7 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
 <p>Use a camera connected to this computer to read the Jade Plus animated response. Camera permission may require a secure localhost browser context.</p>
 <video id="video" autoplay muted playsinline></video><canvas id="canvas" hidden></canvas>
 <div><button id="start">Start camera</button><button id="stop" disabled>Stop camera</button><button id="reset">Reset</button></div>
-<p id="status" role="status"></p><p id="summary"></p><a id="download" download="jade-synthetic-signed.psbt" hidden>Download captured PSBT</a>
+<p><label for="signed-file">Or verify a previously saved synthetic signed PSBT:</label> <input id="signed-file" type="file" accept=".psbt,application/octet-stream"></p>\n<p id="status" role="status"></p><p id="summary"></p><a id="download" download="jade-synthetic-signed.psbt" hidden>Download captured PSBT</a>
 <p><small>Offline self-contained HTML; no remote assets or network calls. Captured PSBT is not broadcast. Returned ECDSA signatures are verified against the synthetic transaction before acceptance.</small></p>
 </main><script type="application/json" id="fixture">${safe({psbtBase64:fixture.psbtBase64,signerPubkeyHex:fixture.summary.signerPubkeyHex})}</script>
 <script>${js}</script></body></html>`;
