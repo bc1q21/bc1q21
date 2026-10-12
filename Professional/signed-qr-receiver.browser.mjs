@@ -4,6 +4,7 @@ import jsQR from 'jsqr';
 import { URDecoder } from '@ngraveio/bc-ur';
 import bitcoin from 'bitcoinjs-lib';
 import { Buffer } from 'buffer';
+import { verifySyntheticSignedPsbt } from './verify-synthetic-signed-psbt.mjs';
 
 const $ = id => document.getElementById(id);
 const status = message => { $('status').textContent = message; };
@@ -24,24 +25,9 @@ function reset() {
   status('Ready to scan signed QR frames.');
 }
 function verifyEnvelope(raw) {
-  const psbt = bitcoin.Psbt.fromBuffer(raw);
-  const original = bitcoin.Psbt.fromBase64(expected.psbtBase64);
-  if (psbt.txInputs.length !== 1 || psbt.txOutputs.length !== 1)
-    throw Error('Unexpected transaction input/output count');
-  if (!Buffer.from(psbt.data.globalMap.unsignedTx.toBuffer()).equals(Buffer.from(original.data.globalMap.unsignedTx.toBuffer())))
-    throw Error('Unsigned transaction changed: reject signed PSBT');
-  const meta = psbt.data.inputs[0], base = original.data.inputs[0];
-  if (!meta.nonWitnessUtxo || !Buffer.from(meta.nonWitnessUtxo).equals(Buffer.from(base.nonWitnessUtxo)))
-    throw Error('Funding transaction changed');
-  if (!meta.redeemScript || !Buffer.from(meta.redeemScript).equals(Buffer.from(base.redeemScript)))
-    throw Error('Redeem script changed');
-  const sigs = meta.partialSig || [];
-  if (sigs.length !== 1 || !Buffer.from(sigs[0].pubkey).equals(Buffer.from(expected.signerPubkeyHex, 'hex')))
-    throw Error('Missing or unexpected signer partial signature');
-  if (!Buffer.from(sigs[0].signature).length)
-    throw Error('Empty signature');
-  return { psbt, sigs };
+  return verifySyntheticSignedPsbt(raw, expected.psbtBase64, expected.signerPubkeyHex);
 }
+
 function finish() {
   stopCamera();
   if (!decoder.isSuccess()) { status('UR decoding failed. Reset and retry.'); return; }
@@ -51,15 +37,15 @@ function finish() {
     const raw = Buffer.from(ur.decodeCBOR());
     if (raw.length > 100000 || raw.subarray(0, 5).toString('hex') !== '70736274ff')
       throw Error('Invalid PSBT payload');
-    const { sigs } = verifyEnvelope(raw);
+    const { signatureCount } = verifyEnvelope(raw);
     const blob = new Blob([raw], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     const a = $('download');
     a.href = url; a.hidden = false;
     a.onclick = () => setTimeout(() => URL.revokeObjectURL(url), 15000);
-    $('summary').textContent = 'Matching synthetic transaction; ' + sigs.length +
-      ' partial signature detected. Signature authenticity NOT YET verified. No broadcast performed.';
-    status('Captured signed PSBT. Download for independent cryptographic verification.');
+    $('summary').textContent = 'Matching synthetic transaction; ' + signatureCount +
+      ' ECDSA signature cryptographically VERIFIED. No broadcast performed.';
+    status('Signed PSBT captured and ECDSA signature verified. Download for recordkeeping.');
   } catch (err) {
     status('REJECTED: ' + err.message);
   }
