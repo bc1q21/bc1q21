@@ -23,7 +23,7 @@ assert.equal(result.signatureCryptographicallyVerified,true);
 assert.equal(result.finalized,false);assert.equal(result.broadcast,false);
 const wrong=bitcoin.Psbt.fromBase64(original);
 const wrongHash=Buffer.from(hash);wrongHash[0]^=1;
-const wrongDer=Buffer.from(secp256k1.sign(wrongHash,secret,{lowS:true}).toDERRawBytes());
+const wrongDer=Buffer.from(secp256k1.sign(wrongHash,secret,{lowS:true}).toCompactRawBytes());
 wrong.updateInput(0,{partialSig:[{pubkey:pub,signature:bitcoin.script.signature.encode(wrongDer,bitcoin.Transaction.SIGHASH_ALL)}]});
 assert.throws(()=>verifyProfessionalReturnedSignature(original,wrong.toBase64(),digest),/Invalid Bitcoin transaction signature/);
 assert.throws(()=>verifyProfessionalReturnedSignature(original,original,digest),/no signing material/);
