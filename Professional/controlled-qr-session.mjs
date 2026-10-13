@@ -8,7 +8,9 @@ import { createOneTimeApprovedHandoff } from './one-time-approved-handoff.mjs';
 import { makeCryptoPsbtFrames } from './crypto-psbt-frames.mjs';
 import { finalizeAndAuditProfessionalRelease } from './finalize-and-audit-release.mjs';
 const fail=m=>{throw Error('Professional controlled QR: '+m)};
-export function prepareControlledProfessionalQrSession(publicHandoff,funding,approvedIntent){
+export function prepareControlledProfessionalQrSession(publicHandoff,funding,approvedIntent,replayGuard){
+ if(replayGuard!==undefined&&(!replayGuard||typeof replayGuard.claim!=='function'))
+  fail('Invalid shared replay guard');
  const record=createProfessionalTransactionConfirmation(publicHandoff,funding,approvedIntent);
  const release=prepareApprovedProfessionalRelease(publicHandoff,funding,approvedIntent);
  const coordinator=createOneTimeApprovedHandoff(record,release);
@@ -41,6 +43,9 @@ export function prepareControlledProfessionalQrSession(publicHandoff,funding,app
    if(returnAttempted)fail('Signed return attempt already consumed; start a new approved session');
    // Fail closed: even an invalid signed return consumes this session's return slot.
    returnAttempted=true;
+   // Shared in-process guard claims the public UTXO before processing signed data.
+   // The claim is deliberately not rolled back on failure.
+   if(replayGuard)replayGuard.claim(approvedTransaction.fundingTxid,approvedTransaction.fundingVout);
    const result=finalizeAndAuditProfessionalRelease(release.unsignedPsbtBase64,
     signedPsbtBase64,record.psbtSha256,approvedTransaction);
    returnCompleted=true;
