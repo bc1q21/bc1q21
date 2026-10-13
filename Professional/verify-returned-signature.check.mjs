@@ -27,4 +27,12 @@ const wrongDer=Buffer.from(secp256k1.sign(wrongHash,secret,{lowS:true}).toCompac
 wrong.updateInput(0,{partialSig:[{pubkey:pub,signature:bitcoin.script.signature.encode(wrongDer,bitcoin.Transaction.SIGHASH_ALL)}]});
 assert.throws(()=>verifyProfessionalReturnedSignature(original,wrong.toBase64(),digest),/Invalid Bitcoin transaction signature/);
 assert.throws(()=>verifyProfessionalReturnedSignature(original,original,digest),/no signing material/);
+const permissive=bitcoin.Psbt.fromBase64(original);
+const permissiveHash=tx.hashForSignature(0,redeem,bitcoin.Transaction.SIGHASH_NONE);
+const permissiveSig=Buffer.from(secp256k1.sign(permissiveHash,secret,{lowS:true}).toCompactRawBytes());
+permissive.updateInput(0,{partialSig:[{pubkey:pub,signature:bitcoin.script.signature.encode(permissiveSig,bitcoin.Transaction.SIGHASH_NONE)}]});
+assert.throws(()=>verifyProfessionalReturnedSignature(original,permissive.toBase64(),digest),/Only SIGHASH_ALL is permitted/);
+const inconsistent=bitcoin.Psbt.fromBase64(signed.toBase64());
+inconsistent.updateInput(0,{sighashType:bitcoin.Transaction.SIGHASH_NONE});
+assert.throws(()=>verifyProfessionalReturnedSignature(original,inconsistent.toBase64(),digest),/PSBT sighash metadata is not SIGHASH_ALL/);
 console.log('PASS: valid synthetic CLTV ECDSA signature accepted, incorrect signature rejected; no finalize/broadcast');
