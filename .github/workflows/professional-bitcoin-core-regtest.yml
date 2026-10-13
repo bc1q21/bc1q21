@@ -6,6 +6,7 @@ on:
       - professional/isolated-release-prototype
     paths:
       - 'Professional/bitcoin-core-regtest-acceptance.mjs'
+      - 'Professional/integrated-public-regtest-acceptance.mjs'
       - '.github/workflows/professional-bitcoin-core-regtest.yml'
 permissions:
   contents: read
@@ -32,3 +33,12 @@ jobs:
           # Runner is ephemeral; RPC is bound only to localhost, never publicly exposed.
       - name: Execute Bitcoin Core script acceptance tests
         run: node Professional/bitcoin-core-regtest-acceptance.mjs
+      - name: Restart disposable regtest with fresh chain for integrated public-only test
+        run: |
+          docker rm -f professional-bitcoin-regtest
+          docker run -d --name professional-bitcoin-regtest --network host \
+            ruimarinho/bitcoin-core:28 \
+            -regtest -server -txindex=0 -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
+      - name: Execute integrated Professional public-only funded regtest acceptance
+        run: node Professional/integrated-public-regtest-acceptance.mjs
