@@ -32,6 +32,12 @@ test('actual disposable Jade public xpub derives coherent regtest CLTV handoff a
  assert.equal(r.transactionSummary.feeSats,1000);
  assert.equal(r.signed,false);assert.equal(r.broadcast,false);
 });
+test('Jade-derived child public key matches previously signed synthetic PSBT fixture',()=>{
+ const h=deriveJadePublicCltvHandoff(input);
+ const signedFixturePubkey='032608573c95e22ac1b2fb4094d5fd7c79a3dd8aeacb3293e6b120dc830deeffbd';
+ assert.equal(h.signerPubkeyHex,signedFixturePubkey,
+  'Jade-derived key differs from prior signed fixture: do not claim hardware signing proves this derivation');
+});
 test('reject malformed or private account material and tampered metadata',()=>{
  for(const bad of ['xprv'+accountXpub.slice(4),'',accountXpub.slice(0,-1)+'1']){
   assert.throws(()=>deriveJadePublicCltvHandoff({...input,accountXpub:bad}));
