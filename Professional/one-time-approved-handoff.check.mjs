@@ -5,7 +5,7 @@ import { createOneTimeApprovedHandoff } from './one-time-approved-handoff.mjs';
 const tx=new bitcoin.Transaction();tx.addInput(Buffer.alloc(32,1),0);tx.addOutput(Buffer.from('0014'+'aa'.repeat(20),'hex'),100000);
 const psbt=new bitcoin.Psbt({network:bitcoin.networks.regtest});
 psbt.addInput({hash:tx.getId(),index:0,sequence:0xfffffffe,nonWitnessUtxo:tx.toBuffer()});
-psbt.addOutput({script:Buffer.from('0014'+'bb'.repeat(20),'hex'),99000});
+psbt.addOutput({script:Buffer.from('0014'+'bb'.repeat(20),'hex'),value:99000});
 const b64=psbt.toBase64(),hash=createHash('sha256').update(Buffer.from(b64,'base64')).digest('hex');
 const record={network:'regtest',psbtSha256:hash,approvalVerified:true,signed:false,broadcast:false};
 const release={network:'regtest',unsignedPsbtBase64:b64,signed:false,broadcast:false};
