@@ -30,4 +30,17 @@ const changed=altered.toBase64();assert.notEqual(changed,b64);
 assert.throws(()=>createOneTimeApprovedHandoff(record,{...release,unsignedPsbtBase64:changed}),/does not match PSBT/);
 const b=make();b.approve({confirmedDigest:hash,acknowledged:true});
 assert.throws(()=>createOneTimeApprovedHandoff({...record,psbtSha256:'00'.repeat(32)},release),/does not match PSBT/);
+// A caller may mutate the release object after acknowledgment; recheck at handoff.
+const mutable={...release};
+const c=createOneTimeApprovedHandoff(record,mutable);
+c.approve({confirmedDigest:hash,acknowledged:true});
+mutable.unsignedPsbtBase64=changed;
+assert.throws(()=>c.handoff(),/PSBT changed after approval/);
+assert.equal(c.view().approvalConsumed,false,'Rejected handoff must not be marked consumed');
+c.invalidate();
+mutable.unsignedPsbtBase64=b64;
+assert.throws(()=>c.handoff(),/Explicit approval required/,'Restoring bytes must not restore revoked approval');
+const d=createOneTimeApprovedHandoff(record,{...release});
+d.approve({confirmedDigest:hash,acknowledged:true});
+assert.equal(d.handoff().psbtSha256,hash,'Independent approval session can complete once');
 console.log('PASS: exact PSBT approval is revoked, cannot be reused, and mismatched PSBT is rejected');
