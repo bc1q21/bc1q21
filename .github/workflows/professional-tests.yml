@@ -56,6 +56,18 @@ jobs:
           path: Professional/synthetic-public-handoff-demo.html
           if-no-files-found: error
           retention-days: 7
+      - name: Generate offline regtest transaction confirmation demonstration
+        run: node Professional/build-transaction-confirmation-demo.mjs Professional/synthetic-transaction-confirmation.html
+      - name: Verify offline confirmation requires explicit acknowledgment
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const s=fs.readFileSync("Professional/synthetic-transaction-confirmation.html","utf8"); for (const good of ["DISPOSABLE REGTEST DEMO ONLY","Not approved.","button.disabled","ack.checked","digest.value.trim()===expected","No signing or broadcasting performed."]) assert.ok(s.includes(good),good); for (const bad of ["<script src=","<link href=","XMLHttpRequest","WebSocket","fetch("]) assert.ok(!s.includes(bad),bad); console.log("Offline confirmation demo verified",s.length,"bytes")'
+      - name: Publish offline transaction confirmation demonstration
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: professional-regtest-transaction-confirmation
+          path: Professional/synthetic-transaction-confirmation.html
+          if-no-files-found: error
+          retention-days: 7
       - name: Generate standalone offline synthetic animated QR page
         run: node Professional/build-qr-demo.mjs Professional/synthetic-jade-qr-demo.html
       - name: Verify standalone demo has embedded QR images and no remote assets
