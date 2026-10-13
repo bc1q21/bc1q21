@@ -18,6 +18,7 @@ assert.throws(()=>releaseExactlyApprovedUnsignedPsbt(release,{...approval,psbtSh
 assert.throws(()=>releaseExactlyApprovedUnsignedPsbt({...release,network:'bitcoin'},approval),/Explicit unsigned regtest approval/);
 assert.throws(()=>releaseExactlyApprovedUnsignedPsbt({...release,unsignedPsbtBase64:'bad'},approval),/Invalid PSBT encoding/);
 const altered=bitcoin.Psbt.fromBase64(b64);
-altered.updateOutput(0,{unknownKeyVals:[{key:Buffer.from('fc01','hex'),value:Buffer.from('01','hex')}]});
+altered.addUnknownKeyValToOutput(0,{key:Buffer.from('fc01','hex'),value:Buffer.from('01','hex')});
+assert.notEqual(altered.toBase64(),b64,'Tamper fixture must actually change serialized PSBT bytes');
 assert.throws(()=>releaseExactlyApprovedUnsignedPsbt({...release,unsignedPsbtBase64:altered.toBase64()},approval),/PSBT changed after approval/);
 console.log('PASS: exact approved PSBT bytes only; altered PSBT and absent approval fail closed');
