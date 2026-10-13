@@ -33,6 +33,9 @@ export function verifyProfessionalReturnedSignature(originalBase64,signedBase64,
  let decoded;
  try{decoded=bitcoin.script.signature.decode(signature.signature)}
  catch{fail('Malformed DER Bitcoin signature')}
+ if(decoded.hashType!==bitcoin.Transaction.SIGHASH_ALL)fail('Only SIGHASH_ALL is permitted');
+ if(meta.sighashType!==undefined&&meta.sighashType!==bitcoin.Transaction.SIGHASH_ALL)
+  fail('PSBT sighash metadata is not SIGHASH_ALL');
  const hash=tx.hashForSignature(0,meta.redeemScript,decoded.hashType);
  if(!secp256k1.verify(decoded.signature,hash,signature.pubkey,{lowS:true}))
   fail('Invalid Bitcoin transaction signature');
