@@ -40,8 +40,12 @@ const handoff={version:1,network:'regtest',signerPubkeyHex:pubkey.toString('hex'
  redeemScriptHex:redeem.toString('hex'),fundingAddress:p2sh.address};
 const txid=await rpc('sendtoaddress',[p2sh.address,0.001],wallet);
 await rpc('generatetoaddress',[1,miningAddress]);
-const fundingHex=(await rpc('gettransaction',[txid],wallet)).hex;
-const funding=bitcoin.Transaction.fromHex(fundingHex);
+const fundingWithWitnessHex=(await rpc('gettransaction',[txid],wallet)).hex;
+const funding=bitcoin.Transaction.fromHex(fundingWithWitnessHex);
+// The prototype's nonWitnessUtxo parser accepts legacy transaction serialization only.
+// Strip witness serialization without changing the transaction ID or output scripts.
+const fundingHex=funding.toBuffer(undefined,undefined,false).toString('hex');
+assert.equal(bitcoin.Transaction.fromHex(fundingHex).getId(),txid);
 const vout=funding.outs.findIndex(o=>Buffer.from(o.script).equals(Buffer.from(p2sh.output)));
 assert.ok(vout>=0);
 const inputSats=funding.outs[vout].value;
