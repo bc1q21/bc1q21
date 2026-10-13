@@ -68,7 +68,6 @@ const signedTx=(opts={})=>{
  const tx=bitcoin.Transaction.fromBuffer(baseTx.toBuffer());
  tx.locktime=opts.locktime??tx.locktime;
  tx.ins[0].sequence=opts.sequence??tx.ins[0].sequence;
- if(opts.modifyOutput)tx.outs[0].value--;
  const signingScript=opts.wrongScript?bitcoin.script.compile([bitcoin.script.number.encode(111),
   bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,bitcoin.opcodes.OP_DROP,pubkey,bitcoin.opcodes.OP_CHECKSIG]):redeem;
  const digest=tx.hashForSignature(0,signingScript,bitcoin.Transaction.SIGHASH_ALL);
@@ -76,6 +75,8 @@ const signedTx=(opts={})=>{
   Buffer.from(secp256k1.sign(digest,privateKey).toCompactRawBytes()),bitcoin.Transaction.SIGHASH_ALL));
  if(opts.corruptSignature)signature[10]^=1;
  tx.ins[0].script=bitcoin.script.compile([signature,signingScript]);
+ // Mutate AFTER signing: this must invalidate the SIGHASH_ALL signature.
+ if(opts.modifyOutput)tx.outs[0].value--;
  return tx.toHex();
 };
 async function check(label,raw,allowed){
