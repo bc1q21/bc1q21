@@ -42,7 +42,7 @@ export function verifyReturnedSignedProfessionalPsbt(approvedUnsignedBase64,retu
  const before=original.data.inputs[0],after=returned.data.inputs[0];
  if(after.sighashType!==before.sighashType)
   fail('Returned sighash metadata differs from approved PSBT');
- if(after.partialSig?.length!==1)fail('Exactly one partial signature required');
+ if(after.partialSig?.length>1)fail('Exactly one partial signature required');
  if(before.partialSig?.length||before.finalScriptSig||before.finalScriptWitness||before.tapKeySig)
   fail('Original PSBT must be unsigned');
  if(!after.partialSig?.length&&!after.finalScriptSig&&!after.finalScriptWitness&&!after.tapKeySig)
