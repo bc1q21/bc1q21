@@ -15,7 +15,7 @@ psbt.addOutput({script:Buffer.from('0014'+'bb'.repeat(20),'hex'),value:99000});
 const original=psbt.toBase64(),digest=createHash('sha256').update(Buffer.from(original,'base64')).digest('hex');
 const tx=bitcoin.Transaction.fromBuffer(psbt.data.globalMap.unsignedTx.toBuffer());
 const hash=tx.hashForSignature(0,redeem,bitcoin.Transaction.SIGHASH_ALL);
-const der=Buffer.from(secp256k1.sign(hash,secret,{lowS:true}).toDERRawBytes());
+const der=Buffer.from(secp256k1.sign(hash,secret,{lowS:true}).toCompactRawBytes());
 const signed=bitcoin.Psbt.fromBase64(original);
 signed.updateInput(0,{partialSig:[{pubkey:pub,signature:bitcoin.script.signature.encode(der,bitcoin.Transaction.SIGHASH_ALL)}]});
 const result=verifyProfessionalReturnedSignature(original,signed.toBase64(),digest);
