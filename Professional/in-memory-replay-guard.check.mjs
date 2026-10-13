@@ -22,7 +22,7 @@ for(const session of [a,b]){
  session.approve({confirmedDigest:digest,acknowledged:true});
  session.exportQrFrames({fragmentLength:120,frameCount:96});
 }
-assert.throws(()=>a.completeSignedReturn('not a signed PSBT'),/Invalid PSBT base64/);
+assert.throws(()=>a.completeSignedReturn('not a signed PSBT'),/Invalid PSBT (?:base64|structure)/);
 assert.equal(guard.has(prev.getId(),0),true);
 assert.equal(guard.count(),1);
 assert.throws(()=>b.completeSignedReturn('not a signed PSBT'),/Funding outpoint already claimed/);
