@@ -62,5 +62,7 @@ assert.throws(()=>verifyAgainstApprovedIntent(reduced.psbt,approved),/Amount dif
 assert.throws(()=>prepareProfessionalReleaseFromPublicHandoff(handoff,{...details,destinationSats:100000}),/Invalid payout or fee/);
 assert.throws(()=>prepareProfessionalReleaseFromPublicHandoff(handoff,{...details,destinationSats:1}),/Invalid payout or fee/);
 assert.throws(()=>prepareProfessionalReleaseFromPublicHandoff(handoff,{...details,destinationSats:100}),/Invalid payout or fee/);
-assert.throws(()=>prepareProfessionalReleaseFromPublicHandoff(handoff,{...details,destinationSats:1000}),/fee safety ceiling/);
+// With a 100,000-sat input, the maximum possible fee is under the 100,000-sat ceiling.
+// Test the actual lower-bound safety rule instead of expecting an unreachable fee rejection.
+assert.throws(()=>prepareProfessionalReleaseFromPublicHandoff(handoff,{...details,destinationSats:545}),/Invalid payout or fee/);
 console.log('PASS: independent approved-intent check detects redirected destination and changed payout; no signing/broadcast');
