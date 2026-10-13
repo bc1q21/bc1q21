@@ -19,6 +19,7 @@ export function prepareControlledProfessionalQrSession(publicHandoff,funding,app
   redeemScriptHex:publicHandoff.redeemScriptHex});
  let qrExported=false;
  let returnCompleted=false;
+ let returnAttempted=false;
  return Object.freeze({
   confirmation:()=>coordinator.view(),
   approve:confirmation=>coordinator.approve(confirmation),
@@ -37,6 +38,9 @@ export function prepareControlledProfessionalQrSession(publicHandoff,funding,app
   completeSignedReturn:signedPsbtBase64=>{
    if(!qrExported)fail('Approved QR handoff required before signed return');
    if(returnCompleted)fail('Signed return already completed');
+   if(returnAttempted)fail('Signed return attempt already consumed; start a new approved session');
+   // Fail closed: even an invalid signed return consumes this session's return slot.
+   returnAttempted=true;
    const result=finalizeAndAuditProfessionalRelease(release.unsignedPsbtBase64,
     signedPsbtBase64,record.psbtSha256,approvedTransaction);
    returnCompleted=true;
