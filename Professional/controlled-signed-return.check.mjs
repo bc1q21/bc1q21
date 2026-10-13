@@ -36,4 +36,5 @@ const second=prepareControlledProfessionalQrSession(handoff,funding,intent);
 second.approve({confirmedDigest:second.confirmation().psbtSha256,acknowledged:true});
 second.exportQrFrames({fragmentLength:120,frameCount:96});
 assert.throws(()=>second.completeSignedReturn(unsigned.toBase64()),/no signing material/);
+assert.throws(()=>second.completeSignedReturn(signed.toBase64()),/attempt already consumed/,'Rejected return must close this session');
 console.log('PASS: controlled QR session requires approved handoff and independently audited valid signature before finalization; no broadcast');
