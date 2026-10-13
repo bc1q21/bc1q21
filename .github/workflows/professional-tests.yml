@@ -31,7 +31,7 @@ jobs:
       - name: Install independent compatibility checker (test-only)
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 qrcode@1.5.4 esbuild@0.25.12 jsqr@1.4.0 buffer@6.0.3 @noble/curves@1.9.7
       - name: Verify PSBT with independent Bitcoin library
-        run: node --test Professional/bitcoinjs-compatibility.check.mjs Professional/qr-handoff.check.mjs Professional/crypto-psbt-frames.check.mjs Professional/verify-synthetic-signed-psbt.check.mjs Professional/finalize-synthetic-cltv.check.mjs Professional/independent-cltv-script-validation.check.mjs Professional/public-handoff.check.mjs
+        run: node --test Professional/bitcoinjs-compatibility.check.mjs Professional/qr-handoff.check.mjs Professional/crypto-psbt-frames.check.mjs Professional/verify-synthetic-signed-psbt.check.mjs Professional/finalize-synthetic-cltv.check.mjs Professional/independent-cltv-script-validation.check.mjs Professional/public-handoff.check.mjs Professional/public-funding-release-integration.check.mjs
       - name: Generate standalone offline synthetic animated QR page
         run: node Professional/build-qr-demo.mjs Professional/synthetic-jade-qr-demo.html
       - name: Verify standalone demo has embedded QR images and no remote assets
