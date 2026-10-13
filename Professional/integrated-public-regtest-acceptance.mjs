@@ -44,7 +44,9 @@ const fundingWithWitnessHex=(await rpc('gettransaction',[txid],wallet)).hex;
 const funding=bitcoin.Transaction.fromHex(fundingWithWitnessHex);
 // The prototype's nonWitnessUtxo parser accepts legacy transaction serialization only.
 // Strip witness serialization without changing the transaction ID or output scripts.
-const fundingHex=funding.toBuffer(undefined,undefined,false).toString('hex');
+// bitcoinjs-lib v6 toBuffer() always includes witness; __toBuffer(..., false) serializes stripped tx.
+const fundingHex=funding.__toBuffer(undefined,undefined,false).toString('hex');
+assert.notEqual(fundingHex.slice(8,12),'0001','Funding must not contain a SegWit marker');
 assert.equal(bitcoin.Transaction.fromHex(fundingHex).getId(),txid);
 const vout=funding.outs.findIndex(o=>Buffer.from(o.script).equals(Buffer.from(p2sh.output)));
 assert.ok(vout>=0);
