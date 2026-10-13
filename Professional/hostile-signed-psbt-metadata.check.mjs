@@ -23,7 +23,7 @@ for(const [name,mutate,pattern] of cases){
  assert.notEqual(p.toBase64(),signed().toBase64(),name+' must change PSBT bytes');
  assert.throws(()=>verifyReturnedSignedProfessionalPsbt(original,p.toBase64(),digest),pattern,name);
 }
-const two=signed();
+const two=bitcoin.Psbt.fromBase64(original);
 two.updateInput(0,{partialSig:[{pubkey,signature},{pubkey:Buffer.from('03'+'22'.repeat(32),'hex'),signature}]});
 assert.throws(()=>verifyReturnedSignedProfessionalPsbt(original,two.toBase64(),digest),/Exactly one partial signature required/);
 console.log('PASS: unexpected global/input/output PSBT fields, unapproved sighash metadata and multiple signatures rejected');
