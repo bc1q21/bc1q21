@@ -11,6 +11,14 @@ const canonical=b64=>{
  if(bytes.toString('base64')!==b64||bytes.length>100000)fail('Noncanonical or oversized PSBT');
  return bytes;
 };
+const exactFields=(object,allowed,where)=>{
+ for(const key of Object.keys(object)){
+  if(!allowed.has(key))fail('Unsupported '+where+' PSBT field: '+key);
+ }
+};
+const GLOBAL_FIELDS=new Set(['unsignedTx']);
+const INPUT_FIELDS=new Set(['nonWitnessUtxo','redeemScript','bip32Derivation','sighashType','partialSig']);
+const OUTPUT_FIELDS=new Set(['bip32Derivation']);
 const txShape=psbt=>{
  const tx=psbt.data.globalMap.unsignedTx.toBuffer();
  return Buffer.from(tx);
@@ -25,7 +33,16 @@ export function verifyReturnedSignedProfessionalPsbt(approvedUnsignedBase64,retu
  if(original.txInputs.length!==1||original.txOutputs.length!==1||
     returned.txInputs.length!==1||returned.txOutputs.length!==1)fail('Unexpected transaction shape');
  if(!txShape(original).equals(txShape(returned)))fail('Returned unsigned transaction differs from approved transaction');
+ exactFields(original.data.globalMap,GLOBAL_FIELDS,'approved global');
+ exactFields(returned.data.globalMap,GLOBAL_FIELDS,'returned global');
+ exactFields(original.data.inputs[0],INPUT_FIELDS,'approved input');
+ exactFields(returned.data.inputs[0],INPUT_FIELDS,'returned input');
+ exactFields(original.data.outputs[0],OUTPUT_FIELDS,'approved output');
+ exactFields(returned.data.outputs[0],OUTPUT_FIELDS,'returned output');
  const before=original.data.inputs[0],after=returned.data.inputs[0];
+ if(after.sighashType!==before.sighashType)
+  fail('Returned sighash metadata differs from approved PSBT');
+ if(after.partialSig?.length!==1)fail('Exactly one partial signature required');
  if(before.partialSig?.length||before.finalScriptSig||before.finalScriptWitness||before.tapKeySig)
   fail('Original PSBT must be unsigned');
  if(!after.partialSig?.length&&!after.finalScriptSig&&!after.finalScriptWitness&&!after.tapKeySig)
