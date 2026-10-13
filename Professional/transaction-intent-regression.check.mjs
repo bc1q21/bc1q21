@@ -26,7 +26,7 @@ function parse(funding){
  assert.equal(psbt.txOutputs.length,1);
  assert.equal(psbt.locktime,110);
  assert.equal(psbt.txInputs[0].sequence,0xfffffffe);
- assert.equal(psbt.txInputs[0].hash.toString('hex'),Buffer.from(prev.getHash()).reverse().toString('hex'));
+ assert.equal(psbt.txInputs[0].hash.toString('hex'),Buffer.from(prev.getHash()).toString('hex'));
  assert.equal(psbt.txInputs[0].index,0);
  assert.equal(psbt.data.inputs[0].redeemScript.toString('hex'),redeem.toString('hex'));
  return {result,psbt};
