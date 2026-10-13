@@ -34,5 +34,5 @@ permissive.updateInput(0,{partialSig:[{pubkey:pub,signature:bitcoin.script.signa
 assert.throws(()=>verifyProfessionalReturnedSignature(original,permissive.toBase64(),digest),/Only SIGHASH_ALL is permitted/);
 const inconsistent=bitcoin.Psbt.fromBase64(signed.toBase64());
 inconsistent.updateInput(0,{sighashType:bitcoin.Transaction.SIGHASH_NONE});
-assert.throws(()=>verifyProfessionalReturnedSignature(original,inconsistent.toBase64(),digest),/PSBT sighash metadata is not SIGHASH_ALL/);
+assert.throws(()=>verifyProfessionalReturnedSignature(original,inconsistent.toBase64(),digest),/Returned sighash metadata differs from approved PSBT/);
 console.log('PASS: valid synthetic CLTV ECDSA signature accepted, incorrect signature rejected; no finalize/broadcast');
