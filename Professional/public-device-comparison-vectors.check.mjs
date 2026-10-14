@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import bitcoin from 'bitcoinjs-lib';
 import {buildPublicDeviceComparisonVectors} from './public-device-comparison-vectors.mjs';
-const accountXpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZg78';
 const fixtureXpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZqxDEvpqTnNmMXp2HjinP9Sqakg78';
 const args=()=>({accountXpub:fixtureXpub,masterFingerprintHex:'e29ac13c',
  releaseDates:['2031-01-15','2031-02-15','2031-03-15','2031-04-15']});
