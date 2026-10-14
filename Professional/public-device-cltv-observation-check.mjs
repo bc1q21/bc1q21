@@ -4,7 +4,7 @@ import {buildPublicDeviceComparisonVectors} from './public-device-comparison-vec
 
 const exact=(obj,keys)=>obj&&typeof obj==='object'&&!Array.isArray(obj)&&
  Object.keys(obj).length===keys.length&&Object.keys(obj).every(k=>keys.includes(k));
-const fields=['date','childIndex','derivationPath','signerPubkeyHex','redeemScriptHex','fundingAddress','fundingScriptPubKeyHex'];
+const fields=['date','childIndex','locktime','derivationPath','signerPubkeyHex','redeemScriptHex','fundingAddress','fundingScriptPubKeyHex'];
 
 export function comparePublicDeviceCltvObservations(fixture, observations) {
  const expected=buildPublicDeviceComparisonVectors(fixture);
