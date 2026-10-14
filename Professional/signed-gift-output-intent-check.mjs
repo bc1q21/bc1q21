@@ -12,6 +12,9 @@ export function checkSignedGiftDistributionOutputs(envelope, fundingInputs, sign
       !Number.isInteger(i.vout) || i.vout < 0 || i.vout > 0xffffffff ||
       !Number.isSafeInteger(i.valueSats) || i.valueSats <= 0))
     throw Error('Invalid public funding outpoints');
+  const outpointKeys = fundingInputs.map(i => `${i.txid.toLowerCase()}:${i.vout}`);
+  if (new Set(outpointKeys).size !== outpointKeys.length)
+    throw Error('Duplicate funding outpoint');
   const totals = reconcilePublicGiftDistribution(envelope, fundingInputs.map(i=>i.valueSats));
   if (typeof signedTxHex !== 'string' || !/^(?:[0-9a-f]{2})+$/i.test(signedTxHex) ||
       signedTxHex.length > 400000) throw Error('Invalid transaction hex');
