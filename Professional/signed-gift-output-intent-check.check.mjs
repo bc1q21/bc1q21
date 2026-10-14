@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import bitcoin from 'bitcoinjs-lib';
+import {checkSignedGiftDistributionOutputs} from './signed-gift-output-intent-check.mjs';
+const script='0014'+'ab'.repeat(20);
+const inputTxid='11'.repeat(32);
+const envelope=()=>({operation:'gift-distribution',network:'regtest',
+ giftReference:'22'.repeat(32),publicPayload:{
+ giftOutputs:[{scriptPubKeyHex:script,valueSats:7000},{scriptPubKeyHex:script,valueSats:5000}],
+ serviceFeeOutput:{scriptPubKeyHex:script,valueSats:500},changeOutput:null,minerFeeSats:100}});
+const inputs=[{txid:inputTxid,vout:0,valueSats:12600}];
+function syntheticTx(values=[7000,5000,500],txid=inputTxid){
+ const tx=new bitcoin.Transaction();
+ tx.addInput(Buffer.from(txid,'hex').reverse(),0);
+ for(const n of values) tx.addOutput(Buffer.from(script,'hex'),n);
+ return tx.toHex();
+}
+test('checks exact output amounts and ordering without claiming signatures verified',()=>{
+ const r=checkSignedGiftDistributionOutputs(envelope(),inputs,syntheticTx());
+ assert.equal(r.outputsMatch,true);
+ assert.equal(r.signaturesVerified,false);
+ assert.equal(r.utxosVerified,false);
+ assert.equal(r.broadcast,false);
+});
+test('rejects changed gift amount, missing fee output, changed outpoint',()=>{
+ assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),inputs,syntheticTx([7001,4999,500])),/changed/);
+ assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),inputs,syntheticTx([7000,5000])),/count/);
+ assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),inputs,syntheticTx([7000,5000,500],'33'.repeat(32))),/input changed/);
+});
