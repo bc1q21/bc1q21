@@ -8,7 +8,7 @@ const envelope=()=>({operation:'gift-distribution',network:'regtest',
  giftReference:'22'.repeat(32),publicPayload:{
  giftOutputs:[{scriptPubKeyHex:script,valueSats:7000},{scriptPubKeyHex:script,valueSats:5000}],
  serviceFeeOutput:{scriptPubKeyHex:script,valueSats:500},changeOutput:null,minerFeeSats:100,encryptedFirstDateHex:'4243315132314731'}});
-const inputs=[{txid:inputTxid,vout:0,valueSats:12600}];
+const inputs=[{txid:inputTxid,vout:0,valueSats:12600,scriptPubKeyHex:script}];
 function syntheticTx(values=[7000,5000,500],txid=inputTxid){
  const tx=new bitcoin.Transaction();
  tx.addInput(Buffer.from(txid,'hex').reverse(),0);
@@ -38,4 +38,10 @@ test('rejects modified encrypted first-date OP_RETURN',()=>{
 test('rejects duplicate funding outpoints before transaction review',()=>{
  const duplicate=[inputs[0],inputs[0]];
  assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),duplicate,syntheticTx()),/Duplicate funding outpoint/);
+});
+
+test('rejects absent funding scripts and mixed funding scripts',()=>{
+ assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),[{txid:inputTxid,vout:0,valueSats:12600}],syntheticTx()),/funding outpoints/);
+ const other={txid:'44'.repeat(32),vout:1,valueSats:100,scriptPubKeyHex:'0014'+'cd'.repeat(20)};
+ assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),[{...inputs[0],valueSats:12500},other],syntheticTx()),/Mixed funding scripts/);
 });
