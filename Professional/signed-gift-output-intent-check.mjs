@@ -27,7 +27,7 @@ export function checkSignedGiftDistributionOutputs(envelope, fundingInputs, sign
   const outputs = [...p.giftOutputs,p.serviceFeeOutput,
     ...(p.changeOutput === null ? [] : [p.changeOutput])];
   if (tx.outs.length !== outputs.length + 1) throw Error('Gift output count changed');
-  tx.outs.forEach((output, index) => {
+  tx.outs.slice(0, outputs.length).forEach((output, index) => {
     const expected = outputs[index];
     if (output.value !== expected.valueSats ||
         output.script.toString('hex') !== expected.scriptPubKeyHex.toLowerCase())
