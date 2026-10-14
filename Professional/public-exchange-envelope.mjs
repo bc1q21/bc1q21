@@ -27,7 +27,7 @@ function validatePublicPayload(value, depth = 0) {
   throw new Error('Unsupported public payload value');
 }
 function validateGiftDistributionPayload(payload) {
-  const keys = ['giftOutputs', 'serviceFeeOutput', 'changeOutput', 'minerFeeSats'];
+  const keys = ['giftOutputs', 'serviceFeeOutput', 'changeOutput', 'minerFeeSats', 'encryptedFirstDateHex'];
   if (Object.keys(payload).length !== keys.length ||
       Object.keys(payload).some(key => !keys.includes(key)))
     throw new Error('Unexpected gift distribution field');
@@ -38,6 +38,8 @@ function validateGiftDistributionPayload(payload) {
     /^(?:[0-9a-f]{2})+$/i.test(output.scriptPubKeyHex) &&
     output.scriptPubKeyHex.length <= 20000 &&
     Number.isSafeInteger(output.valueSats) && output.valueSats >= 0;
+  if (typeof payload.encryptedFirstDateHex !== 'string' || !/^(?:[0-9a-f]{2})+$/i.test(payload.encryptedFirstDateHex) || payload.encryptedFirstDateHex.length > 160 || payload.encryptedFirstDateHex.length < 2)
+    throw new Error('Invalid encrypted first-date bytes');
   if (!Array.isArray(payload.giftOutputs) || payload.giftOutputs.length < 1 ||
       payload.giftOutputs.length > 120 ||
       !payload.giftOutputs.every(validOutput) ||
