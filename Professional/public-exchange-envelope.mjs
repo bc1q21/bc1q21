@@ -4,6 +4,7 @@ const fields = ['operation', 'network', 'giftReference', 'publicPayload'];
 const operations = new Set(['gift-public-data', 'gift-distribution', 'gift-unlock', 'gift-release']);
 const secretField = /(?:mnemonic|seed|recoverywords|privatekey|privatewif|wif|passphrase|encryptionsecret|masterkey)/i;
 function validatePublicPayload(value, depth = 0) {
+  if (value === null) return null;
   if (depth > 12) throw new Error('Public payload nesting limit exceeded');
   if (Array.isArray(value)) {
     if (value.length > 256) throw new Error('Public payload array too large');
