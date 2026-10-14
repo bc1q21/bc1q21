@@ -30,7 +30,7 @@ function child(node,index){
 export function deriveJadePublicCltvHandoff({accountXpub,masterFingerprintHex,childIndex,locktime}){
  if(typeof masterFingerprintHex!=='string'||!/^[a-f0-9]{8}$/i.test(masterFingerprintHex))throw Error('Verified fingerprint required');
  if(!Number.isSafeInteger(childIndex)||childIndex<0||childIndex>100000)throw Error('Invalid child index');
- if(!Number.isSafeInteger(locktime)||locktime<17||locktime>=500000000)throw Error('Prototype locktime must be a block height >=17');
+ if(!Number.isSafeInteger(locktime)||locktime<17||locktime>0xffffffff)throw Error('Prototype CLTV locktime out of range');
  const data=decodeBase58Check(accountXpub);
  if(data.readUInt32BE(0)!==0x0488b21e||data[4]!==3||data.readUInt32BE(9)!==0x80000000)
   throw Error('Expected mainnet account-level xpub, depth 3, account index 0');
