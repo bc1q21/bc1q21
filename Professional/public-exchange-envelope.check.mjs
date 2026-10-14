@@ -6,7 +6,7 @@ const valid = () => ({
   operation:'gift-distribution',
   network:'regtest',
   giftReference:'a'.repeat(64),
-  publicPayload:{giftOutputs:[{scriptPubKeyHex:'a914'+'ab'.repeat(20)+'87',valueSats:12000}],serviceFeeOutput:{scriptPubKeyHex:'0014'+'cd'.repeat(20),valueSats:500},changeOutput:null,minerFeeSats:100}
+  publicPayload:{giftOutputs:[{scriptPubKeyHex:'a914'+'ab'.repeat(20)+'87',valueSats:12000}],serviceFeeOutput:{scriptPubKeyHex:'0014'+'cd'.repeat(20),valueSats:500},changeOutput:null,minerFeeSats:100,encryptedFirstDateHex:'4243315132314731'}
 });
 
 test('accepts a minimal hardware-neutral exchange envelope', () => {
