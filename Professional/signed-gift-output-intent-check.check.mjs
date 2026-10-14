@@ -7,7 +7,7 @@ const inputTxid='11'.repeat(32);
 const envelope=()=>({operation:'gift-distribution',network:'regtest',
  giftReference:'22'.repeat(32),publicPayload:{
  giftOutputs:[{scriptPubKeyHex:script,valueSats:7000},{scriptPubKeyHex:script,valueSats:5000}],
- serviceFeeOutput:{scriptPubKeyHex:script,valueSats:500},changeOutput:null,minerFeeSats:100}});
+ serviceFeeOutput:{scriptPubKeyHex:script,valueSats:500},changeOutput:null,minerFeeSats:100,encryptedFirstDateHex:'4243315132314731'}});
 const inputs=[{txid:inputTxid,vout:0,valueSats:12600}];
 function syntheticTx(values=[7000,5000,500],txid=inputTxid){
  const tx=new bitcoin.Transaction();
