@@ -33,3 +33,14 @@ test('handoff requires every expected field',()=>{
   assert.throws(()=>verifyProfessionalPublicHandoff(copy));
  }
 });
+
+test('retail-compatible timestamp CLTV public handoff validates without private material',()=>{
+ const timestamp=1798761600;
+ const script=bitcoin.script.compile([bitcoin.script.number.encode(timestamp),bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,
+  bitcoin.opcodes.OP_DROP,Buffer.from(pub,'hex'),bitcoin.opcodes.OP_CHECKSIG]);
+ const address=bitcoin.payments.p2sh({redeem:{output:script},network:bitcoin.networks.regtest}).address;
+ const result=verifyProfessionalPublicHandoff({...valid,locktime:timestamp,redeemScriptHex:script.toString('hex'),fundingAddress:address});
+ assert.equal(result.locktime,timestamp);
+ assert.equal(result.secretsReceived,false);
+ assert.throws(()=>verifyProfessionalPublicHandoff({...valid,locktime:timestamp}));
+});
