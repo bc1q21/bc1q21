@@ -43,6 +43,16 @@ test('reject malformed or private account material and tampered metadata',()=>{
   assert.throws(()=>deriveJadePublicCltvHandoff({...input,accountXpub:bad}));
  }
  for(const bad of [-1,100001,1.5])assert.throws(()=>deriveJadePublicCltvHandoff({...input,childIndex:bad}));
- for(const bad of [0,16,500000000])assert.throws(()=>deriveJadePublicCltvHandoff({...input,locktime:bad}));
+ for(const bad of [0,16,0x100000000])assert.throws(()=>deriveJadePublicCltvHandoff({...input,locktime:bad}));
  for(const bad of ['','fffffffff'])assert.throws(()=>deriveJadePublicCltvHandoff({...input,masterFingerprintHex:bad}));
+});
+
+test('retail-style timestamp CLTV derived entirely from public Jade account xpub',()=>{
+ const timestamp=1798761600;
+ const handoff=deriveJadePublicCltvHandoff({...input,locktime:timestamp});
+ const expectedScript=bitcoin.script.compile([bitcoin.script.number.encode(timestamp),bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,
+  bitcoin.opcodes.OP_DROP,Buffer.from(handoff.signerPubkeyHex,'hex'),bitcoin.opcodes.OP_CHECKSIG]);
+ assert.equal(handoff.redeemScriptHex,expectedScript.toString('hex'));
+ assert.equal(handoff.locktime,timestamp);
+ assert.equal(handoff.originAttestedByXpub,false);
 });
