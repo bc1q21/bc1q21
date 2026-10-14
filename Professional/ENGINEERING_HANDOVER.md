@@ -63,3 +63,36 @@ Useful GitHub Actions URL: https://github.com/bc1q21/bc1q21/actions?query=branch
 
 ## Creator-to-beneficiary handoff (user-confirmed, non-negotiable)
 The gift creator independently creates, safeguards, and delivers the recovery words **and** the normal bc1q21 gift card to the beneficiary, whether personally, through a will or estate, or another private arrangement. **bc1q21 does not generate, hold, escrow, transmit, deliver, recover, or manage those recovery words**, and does not mediate this handoff. The beneficiary later uses those privately received recovery words with their own compatible air-gapped wallet to authorize the ordinary retail-style gift release. This is a user responsibility, **not** an unresolved platform credential-delivery requirement. Keep retail gift-card output and release UX unchanged except for the minimum air-gapped private-operation exchange.
+
+
+---
+
+## 2026-10-14 checkpoint — current authoritative continuation (read before older snapshot)
+
+**User explicitly requested a new-chat handover and a concise status assessment.** This section supersedes stale “last green” and “next step” statements earlier in this file. Work remains strictly on `professional/isolated-release-prototype`; NEVER edit `main`, merge, deploy, broadcast, or use real seed/private-key material. The creator independently creates and privately hands **both** gift card and recovery words to the beneficiary; bc1q21 never generates or transfers words. Keep identical retail gift choices, schedules, card and beneficiary release workflow. Hardware neutral and KISS.
+
+### Progress achieved since prior snapshot
+
+- Retail-format **public gift distribution intent**: `public-exchange-envelope.mjs`, `public-gift-distribution-accounting.mjs`, `signed-gift-output-intent-check.mjs` and tests. Validate ordered CLTV gift outputs, service-fee and optional change, miner fee, exact trailing zero-value encrypted first-date OP_RETURN, funding outpoints and amounts. These do **not** verify signatures or blockchain.
+- Public **UTXO comparison**: `trusted-utxo-snapshot-check.mjs`, `bitcoin-core-gettxout-adapter.mjs`, `gift-distribution-snapshot-gate.mjs`, `gift-distribution-core-response-gate.mjs`. Parse caller-supplied Bitcoin Core `gettxout` data and compare expected funding; there is **no trusted live node connection, snapshot provenance attestation, or independent signature verification**.
+- Disposable **four-release CLTV** test: `public-multi-release-gift-integration.check.mjs`, using fixed public account xpub, four dates/outputs, funding and tamper tests. Passed CI at https://github.com/bc1q21/bc1q21/actions/runs/38615732629 .
+- Disposable wallet-derived retail AES: `disposable-wallet-retail-date-interoperability.check.mjs` tests retail `BC1Q21G1` encryption and independent offline decrypt with public test wallet secret. Passed CI https://github.com/bc1q21/bc1q21/actions/runs/38615981987 .
+- Combined **encryption → synthetic funding transaction → offline first-date unlock → public four-release schedule**: `disposable-encrypted-four-release-flow.check.mjs`. Passed CI https://github.com/bc1q21/bc1q21/actions/runs/38616189786 .
+- `OFFLINE_SIGNER_RETAIL_COMPATIBILITY_GATE.md` and `OFFLINE_SIGNER_EVIDENCE_REGISTER.md` document hardware-neutral go/no-go criteria H-01 through H-08, with a clear **NO-GO** for actual device/production integration pending evidence.
+- Public device test vectors: `public-device-comparison-vectors.mjs` and `.check.mjs`; four CLTV derivation paths, pubkeys, redeem scripts, P2SH addresses/scripts; passed CI https://github.com/bc1q21/bc1q21/actions/runs/38616662193 .
+- Public device observation comparison: `public-device-cltv-observation-check.mjs` and `.check.mjs` compare candidate-supplied **public-only** observations with vectors. No actual device observations collected. The CI run for `f6f08196` **FAILED** https://github.com/bc1q21/bc1q21/actions/runs/38616816299 because the strict comparison's field list omitted `locktime`, which the reference vectors correctly contain. Root cause was identified from logs and a focused fix committed as **`a5a64964fbd4cd5dfe1582d088525165cad572b2`**. **Check the latest Actions result for that fix and this handover commit; do not assume green.**
+
+### Engineering assessment — important distinction
+
+**The software-only feasibility and synthetic regression phase is advanced, but the actual Professional product is NOT near production-ready.** The main unknowns are physical offline wallet capability for (1) exact wallet-derived AES first-date encryption/decryption and constrained schedule-only return, (2) exact legacy P2SH CLTV multi-release signing, (3) independent verified signed funding return and trustworthy Bitcoin UTXO verification, (4) real hardware transport/approval/secret-isolation proof, and (5) integration into retail-equivalent creator and beneficiary UI followed by security review. Ordinary PSBT support does not prove (1) or (2). Existing separate Jade fixture/signing experiments are not full retail-compatible device acceptance.
+
+### Next actions, in priority order
+
+1. Check CI after `a5a64964` and this handover; fix any failing regressions before proceeding.
+2. **Stop proliferating synthetic tests for their own sake.** Decide the smallest real-device public-only evaluation: identify an available candidate device and firmware/transport, compare its actual public account/CLTV observations to vectors without entering real seed words into the website. If device lacks required AES or CLTV capabilities, record a NO-GO and present minimal alternatives **before** redesigning architecture.
+3. Only after hardware feasibility evidence, implement minimal actual retail UI handoff and offline signing/unlock, with full transaction/script verification, safe recovery and security review.
+4. Never mistake green CI for hardware certification or production readiness.
+
+### Suggested new-chat opener
+
+“Continue bc1q21 Professional from the 2026-10-14 checkpoint in `Professional/ENGINEERING_HANDOVER.md` on GitHub branch `professional/isolated-release-prototype`. First check current Actions, especially the strict observation `locktime` fix; then tell me the single next meaningful engineering step. Keep retail `main` untouched; no deployment or real Bitcoin.”
