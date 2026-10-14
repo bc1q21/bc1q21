@@ -26,13 +26,17 @@ export function checkSignedGiftDistributionOutputs(envelope, fundingInputs, sign
   const p = approved.publicPayload;
   const outputs = [...p.giftOutputs,p.serviceFeeOutput,
     ...(p.changeOutput === null ? [] : [p.changeOutput])];
-  if (tx.outs.length !== outputs.length) throw Error('Gift output count changed');
+  if (tx.outs.length !== outputs.length + 1) throw Error('Gift output count changed');
   tx.outs.forEach((output, index) => {
     const expected = outputs[index];
     if (output.value !== expected.valueSats ||
         output.script.toString('hex') !== expected.scriptPubKeyHex.toLowerCase())
       throw Error('Gift output script, amount, or order changed');
   });
+  const expectedOpReturn = bitcoin.script.compile([bitcoin.opcodes.OP_RETURN,Buffer.from(p.encryptedFirstDateHex,'hex')]);
+  const actualOpReturn = tx.outs[outputs.length];
+  if (actualOpReturn.value !== 0 || !actualOpReturn.script.equals(expectedOpReturn))
+    throw Error('Encrypted first-date OP_RETURN changed');
   return Object.freeze({txid:tx.getId(),giftReference:approved.giftReference,
     giftSats:totals.giftSats,releaseCount:totals.releaseCount,
     outputsMatch:true,signaturesVerified:false,utxosVerified:false,broadcast:false});
