@@ -5,7 +5,7 @@ const output=(valueSats)=>({scriptPubKeyHex:'a914'+'ab'.repeat(20)+'87',valueSat
 const gift=()=>({
  operation:'gift-distribution',network:'regtest',giftReference:'a'.repeat(64),
  publicPayload:{giftOutputs:[output(7000),output(5000)],
- serviceFeeOutput:output(500),changeOutput:null,minerFeeSats:100}
+ serviceFeeOutput:output(500),changeOutput:null,minerFeeSats:100,encryptedFirstDateHex:'4243315132314731'}
 });
 test('retains multiple retail gift output amounts and balances funding',()=>{
  const r=reconcilePublicGiftDistribution(gift(),[12600]);
