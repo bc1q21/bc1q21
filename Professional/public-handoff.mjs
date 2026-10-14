@@ -15,8 +15,8 @@ export function verifyProfessionalPublicHandoff(payload) {
   const {signerPubkeyHex,redeemScriptHex,fundingAddress,locktime} = payload;
   if (typeof signerPubkeyHex !== 'string' || !/^(02|03)[0-9a-f]{64}$/i.test(signerPubkeyHex))
     throw Error('Invalid compressed signer public key');
-  if (!Number.isSafeInteger(locktime) || locktime < 1 || locktime >= 500000000)
-    throw Error('Invalid block-height locktime');
+  if (!Number.isSafeInteger(locktime) || locktime < 1 || locktime > 0xffffffff)
+    throw Error('Invalid CLTV locktime');
   if (typeof redeemScriptHex !== 'string' || !/^[0-9a-f]+$/i.test(redeemScriptHex))
     throw Error('Invalid redeemScript');
   const pubkey=Buffer.from(signerPubkeyHex,'hex');
