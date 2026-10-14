@@ -34,3 +34,8 @@ test('rejects modified encrypted first-date OP_RETURN',()=>{
  tx.outs[3].script=bitcoin.script.compile([bitcoin.opcodes.OP_RETURN,Buffer.from('ffff','hex')]);
  assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),inputs,tx.toHex()),/OP_RETURN/);
 });
+
+test('rejects duplicate funding outpoints before transaction review',()=>{
+ const duplicate=[inputs[0],inputs[0]];
+ assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),duplicate,syntheticTx()),/Duplicate funding outpoint/);
+});
