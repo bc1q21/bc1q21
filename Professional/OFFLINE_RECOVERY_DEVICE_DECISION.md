@@ -29,3 +29,6 @@ Professional reproduces the retail gift experience. The online gift page never r
 The isolated CI now runs the expanded schedule regression suite, including the fixed public BIP39 mnemonic comparison against an independent BIP32 library. Passing software fixtures is not proof of a secure physical air gap.
 
 No main/retail changes, real seed words, real Bitcoin transactions, or broadcasts.
+
+## Creator-to-beneficiary handoff (user-confirmed, non-negotiable)
+The gift creator independently creates, safeguards, and delivers the recovery words **and** the normal bc1q21 gift card to the beneficiary, whether personally, through a will or estate, or another private arrangement. **bc1q21 does not generate, hold, escrow, transmit, deliver, recover, or manage those recovery words**, and does not mediate this handoff. The beneficiary later uses those privately received recovery words with their own compatible air-gapped wallet to authorize the ordinary retail-style gift release. This is a user responsibility, **not** an unresolved platform credential-delivery requirement. Keep retail gift-card output and release UX unchanged except for the minimum air-gapped private-operation exchange.
