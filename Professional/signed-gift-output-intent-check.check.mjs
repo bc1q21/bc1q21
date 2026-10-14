@@ -13,6 +13,7 @@ function syntheticTx(values=[7000,5000,500],txid=inputTxid){
  const tx=new bitcoin.Transaction();
  tx.addInput(Buffer.from(txid,'hex').reverse(),0);
  for(const n of values) tx.addOutput(Buffer.from(script,'hex'),n);
+ tx.addOutput(bitcoin.script.compile([bitcoin.opcodes.OP_RETURN,Buffer.from('4243315132314731','hex')]),0);
  return tx.toHex();
 }
 test('checks exact output amounts and ordering without claiming signatures verified',()=>{
@@ -26,4 +27,10 @@ test('rejects changed gift amount, missing fee output, changed outpoint',()=>{
  assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),inputs,syntheticTx([7001,4999,500])),/changed/);
  assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),inputs,syntheticTx([7000,5000])),/count/);
  assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),inputs,syntheticTx([7000,5000,500],'33'.repeat(32))),/input changed/);
+});
+
+test('rejects modified encrypted first-date OP_RETURN',()=>{
+ const tx=bitcoin.Transaction.fromHex(syntheticTx());
+ tx.outs[3].script=bitcoin.script.compile([bitcoin.opcodes.OP_RETURN,Buffer.from('ffff','hex')]);
+ assert.throws(()=>checkSignedGiftDistributionOutputs(envelope(),inputs,tx.toHex()),/OP_RETURN/);
 });
