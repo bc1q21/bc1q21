@@ -1,0 +1,3 @@
+# Professional retail parity
+
+Preserve the existing gift creation, public gift-card display, hidden release dates, private schedule unlock, and independent release behavior. The Professional variant moves every seed-dependent operation to an air-gapped signer. Public gift views must not disclose individual release dates. The existing retail implementation uses encrypted first-date data and timestamp-based CLTV; the current Professional prototype supports only block-height CLTV. Verify hardware support for offline date-secret derivation before implementing the private unlock bridge. Do not change retail or deploy Professional.
