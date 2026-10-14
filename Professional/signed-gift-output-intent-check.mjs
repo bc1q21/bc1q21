@@ -10,11 +10,16 @@ export function checkSignedGiftDistributionOutputs(envelope, fundingInputs, sign
   if (!Array.isArray(fundingInputs) || fundingInputs.length < 1 ||
       fundingInputs.some(i => !i || !/^[0-9a-f]{64}$/i.test(i.txid) ||
       !Number.isInteger(i.vout) || i.vout < 0 || i.vout > 0xffffffff ||
-      !Number.isSafeInteger(i.valueSats) || i.valueSats <= 0))
+      !Number.isSafeInteger(i.valueSats) || i.valueSats <= 0 ||
+      typeof i.scriptPubKeyHex !== 'string' ||
+      !/^(?:[0-9a-f]{2})+$/i.test(i.scriptPubKeyHex) ||
+      i.scriptPubKeyHex.length > 20000))
     throw Error('Invalid public funding outpoints');
   const outpointKeys = fundingInputs.map(i => `${i.txid.toLowerCase()}:${i.vout}`);
   if (new Set(outpointKeys).size !== outpointKeys.length)
     throw Error('Duplicate funding outpoint');
+  const inputScripts = new Set(fundingInputs.map(i => i.scriptPubKeyHex.toLowerCase()));
+  if (inputScripts.size !== 1) throw Error('Mixed funding scripts require separate review');
   const totals = reconcilePublicGiftDistribution(envelope, fundingInputs.map(i=>i.valueSats));
   if (typeof signedTxHex !== 'string' || !/^(?:[0-9a-f]{2})+$/i.test(signedTxHex) ||
       signedTxHex.length > 400000) throw Error('Invalid transaction hex');
