@@ -89,6 +89,19 @@ test('new public-only Professional builder verifies and finalizes previously cap
  assert.equal(finalized.inputCount,1);assert.equal(finalized.outputCount,1);
  assert.equal(finalized.scriptExecutionVerified,false);assert.equal(finalized.broadcast,false);
 });
+test('regression: synthetic funding outpoint uses internal txid bytes, not display-order bytes',()=>{
+ const signedTx=bitcoin.Transaction.fromBuffer(original.data.globalMap.unsignedTx.toBuffer());
+ const fundingTx=bitcoin.Transaction.fromBuffer(original.data.inputs[0].nonWitnessUtxo);
+ const internalHash=fundingTx.getHash();
+ assert.ok(signedTx.ins[0].hash.equals(internalHash),
+  'Outpoint must contain raw funding double-SHA256 bytes');
+ assert.notEqual(internalHash.toString('hex'),fundingTx.getId(),
+  'Displayed txid is reversed and must never be copied as internal outpoint bytes');
+ const reversed=Buffer.from(internalHash).reverse();
+ assert.ok(!signedTx.ins[0].hash.equals(reversed),
+  'Regression: old standalone HTML generator reversed the internal funding hash');
+});
+
 test('new builder rejects wrong signer key when checking prior Jade signature',()=>{
  const wrongPubkey='02'+'11'.repeat(32);
  assert.throws(()=>verifySyntheticSignedPsbt(signed,unsigned,wrongPubkey),/signer signature/i);
