@@ -1,6 +1,6 @@
 # Jade Plus public-information export acceptance gate (Professional only)
 
-**Status: PREPARED — NOT YET EXECUTED WITH JADE.** Scope: isolated synthetic/regtest engineering, no real Bitcoin. Retail bc1q21 and `main` are out of scope.
+**Status: PARTIALLY VERIFIED — public account export and child-key/fixture matching completed; independent fingerprint attestation, custom CLTV address verification and a funded regtest hardware roundtrip remain open.** Scope: isolated synthetic/regtest engineering, no real Bitcoin. Retail bc1q21 and `main` are out of scope.
 
 ## What has already passed
 - Disposable Jade Plus Temporary Signer signed the synthetic PSBT by QR, and our offline receiver verified its signature.
@@ -8,7 +8,7 @@
 - Public-only CLTV handoff, synthetic funding-output matching and unsigned PSBT preparation passed.
 - A static read-only synthetic public-handoff HTML demonstration built successfully.
 
-These tests do **not** prove that Jade exported a public key matching our prototype's script and derivation path. The earlier Jade-signed fixture had a fabricated funding output and is not a funded-chain transaction.
+The isolated regression `jade-xpub-cltv-handoff.check.mjs` uses the previously captured disposable Jade account xpub and confirms that public-only derivation at `m/84'/0'/0'/1/10` produces the **same compressed public key** as the previously signed synthetic PSBT fixture. It also reconstructs the CLTV redeemScript and regtest funding address and checks unsigned PSBT signer metadata. This is a meaningful completed compatibility milestone. The xpub by itself **does not attest** its claimed origin path, master fingerprint or hardware wallet identity, and the previously signed fixture has a fabricated funding output rather than a Bitcoin Core-backed UTXO.
 
 ## Official Jade Plus capability and compatibility constraint
 
@@ -19,18 +19,18 @@ Official references:
 - https://help.blockstream.com/blockstream-jade/faqs/which-xpub-export-settings-should-i-use
 - https://help.blockstream.com/blockstream-jade/use-jade-air-gapped/supported-air-gapped-functionality-via-qr
 
-**Unresolved compatibility:** The previously signed synthetic PSBT used a particular compressed public key and a derivation path `m/84'/0'/0'/1/10`. Do not assume the test wallet's Jade export produces that same public key or that the QR export path/network can reproduce the regtest fixture. Standard BIP84 native-Segwit account exports do not themselves describe our custom P2SH/CLTV locking script. A derivation scheme, network selection, fingerprint and signing metadata must be matched and verified. An xpub is public but privacy-sensitive: sharing it exposes related addresses and transaction history.
+**Current compatibility status:** The saved disposable Jade xpub-derived child key **does match** the previously signed synthetic fixture at `m/84'/0'/0'/1/10` in an automated regression. The regtest CLTV script and funding address are reconstructed in software; the xpub itself uses a mainnet-format account serialization and does not independently attest wallet identity, master fingerprint or origin path. Standard BIP84 account export does not constitute hardware confirmation of a custom P2SH/CLTV gift address. An xpub is public but privacy-sensitive: sharing it exposes related addresses and transaction history.
 
-## Next acceptance sequence (one step at a time, after user approval)
+## Historical acceptance sequence (do not repeat completed steps; remaining work requires separate approval)
 1. Keep the disposable test wallet only. Do not create, enter, photograph, type, scan into the computer, or upload any seed phrase, SeedQR, WIF, private key, or xprv.
-2. Confirm the Jade Plus session is the same **Temporary Signer** test wallet used in the successful signing exercise. Do not reset or initialize a new wallet.
-3. Locate **Options → Wallet → Export Xpub** if this option is available in that session. Record only the *menu options and derivation path displayed*; do not yet scan or send the QR to the website.
-4. Confirm supported export format, network, account path and how a child compressed public key can be derived without secrets. Determine whether the resulting signer metadata can match a future CLTV PSBT.
-5. Only after review, build a local-only, constrained decoder and test with **synthetic** xpub fixtures first; reject secret QR types, unexpected fields, malformed encodings and incompatible network/path. Never submit wallet data to external web services.
-6. Have the user approve an explicit **public-only** QR export scan. Verify the fingerprint, path, derived child key, redeemScript, and resulting funding address independently before any funding workflow.
-7. Verify a *Jade-displayed address* when the hardware supports verifying the custom locking-script address. If unsupported, record the hardware verification gap as a blocker for production; do not substitute verification of a standard BIP84 receive address for verification of a CLTV address.
+2. **Completed in earlier experiments:** Jade Plus Temporary Signer and xpub export were exercised. Do not reset or initialize a new wallet merely to repeat this.
+3. **Completed:** Options → Wallet → Export Xpub was confirmed; Single Sig, Native SegWit, account 0, `m/84'/0'/0'`. Animated public export QR was captured and decoded in earlier experiments. Do not request another scan without a specific new purpose.
+4. **Partially completed:** public-only xpub child derivation and match against the saved Jade-signed fixture are covered by `jade-xpub-cltv-handoff.check.mjs`; independent fingerprint/origin attestation remains open.
+5. **Partially completed:** xpub input validation rejects malformed/private extended-key material, wrong account-level metadata and unsupported child indices; do not equate this with a complete audited animated-QR decoder or hardware origin proof.
+6. **Remaining:** obtain independently verified wallet fingerprint and origin metadata if supported by the hardware, and reconcile against the already matched child key and reconstructed CLTV address. Do not rescan public QR merely to reproduce a completed test.
+7. **Remaining:** establish whether Jade can independently display/verify the custom CLTV locking-script address. If unsupported, record a production hardware-verification gap; a standard BIP84 receive address is not equivalent.
 
-## Acceptance conditions
+## Acceptance conditions (partial; not all met)
 - Proven export source and exact derivation path; public child key matches signer metadata.
 - Reconstructed CLTV script and funding address match independently.
 - No seed/private material reaches Professional application or browser.
