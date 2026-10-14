@@ -60,3 +60,6 @@ Useful GitHub Actions URL: https://github.com/bc1q21/bc1q21/actions?query=branch
 ## Suggested new-chat opener
 
 “Please continue the bc1q21 Professional engineering project. First read `Professional/ENGINEERING_HANDOVER.md` on GitHub branch `professional/isolated-release-prototype` in repo `bc1q21/bc1q21`, check the latest GitHub Actions results, and confirm the exact next step. Do not touch retail bc1q21 or `main`, do not deploy, and use only synthetic/regtest data.”
+
+## Creator-to-beneficiary handoff (user-confirmed, non-negotiable)
+The gift creator independently creates, safeguards, and delivers the recovery words **and** the normal bc1q21 gift card to the beneficiary, whether personally, through a will or estate, or another private arrangement. **bc1q21 does not generate, hold, escrow, transmit, deliver, recover, or manage those recovery words**, and does not mediate this handoff. The beneficiary later uses those privately received recovery words with their own compatible air-gapped wallet to authorize the ordinary retail-style gift release. This is a user responsibility, **not** an unresolved platform credential-delivery requirement. Keep retail gift-card output and release UX unchanged except for the minimum air-gapped private-operation exchange.
