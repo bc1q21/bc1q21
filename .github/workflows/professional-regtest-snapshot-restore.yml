@@ -48,6 +48,8 @@ jobs:
           cli stop
           docker wait bc1q21-regtest-snapshot >/dev/null
           docker rm bc1q21-regtest-snapshot
+          echo "Disposable volume directory layout after shutdown:"
+          find "$RUNNER_TEMP/bc1q21-regtest-original" -maxdepth 4 -type d -print
           test -d "$RUNNER_TEMP/bc1q21-regtest-original/regtest/blocks"
           test -d "$RUNNER_TEMP/bc1q21-regtest-original/regtest/chainstate"
       - name: Export and restore stopped real regtest chain
