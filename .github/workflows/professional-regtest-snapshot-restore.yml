@@ -41,9 +41,13 @@ jobs:
           funding_address="$(cli -rpcwallet=snapshotfixture getnewaddress '' p2sh-segwit)"
           txid="$(cli -rpcwallet=snapshotfixture sendtoaddress "$funding_address" 0.001)"
           cli generatetoaddress 1 "$mining_address" >/dev/null
-          txout="$(cli gettxout "$txid" 0)"
+          funding_blockhash="$(cli getbestblockhash)"
+          recipient_vout="$(cli getrawtransaction "$txid" true "$funding_blockhash" | jq -er --arg address "$funding_address" '.vout[] | select(.scriptPubKey.address == $address and .value == 0.001) | .n')"
+          txout="$(cli gettxout "$txid" "$recipient_vout")"
           test "$(jq -r '.confirmations' <<<"$txout")" -ge 1
           printf '%s\n' "$txid" > "$RUNNER_TEMP/bc1q21-regtest-funding-txid"
+          printf '%s\n' "$recipient_vout" > "$RUNNER_TEMP/bc1q21-regtest-funding-vout"
+          printf '%s\n' "$funding_blockhash" > "$RUNNER_TEMP/bc1q21-regtest-funding-blockhash"
           cli getblockchaininfo | jq -e '.chain == "regtest"' >/dev/null
           cli stop
           docker wait bc1q21-regtest-snapshot >/dev/null
@@ -83,7 +87,10 @@ jobs:
           cli() { docker exec bc1q21-regtest-restored bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwait "$@"; }
           cli getblockchaininfo | jq -e '.chain == "regtest" and .blocks == 102' >/dev/null
           txid="$(cat "$RUNNER_TEMP/bc1q21-regtest-funding-txid")"
-          cli gettxout "$txid" 0 | jq -e '.confirmations >= 1 and .value == 0.001' >/dev/null
+          recipient_vout="$(cat "$RUNNER_TEMP/bc1q21-regtest-funding-vout")"
+          expected_blockhash="$(cat "$RUNNER_TEMP/bc1q21-regtest-funding-blockhash")"
+          test "$(cli getbestblockhash)" = "$expected_blockhash"
+          cli gettxout "$txid" "$recipient_vout" | jq -e '.confirmations >= 1 and .value == 0.001' >/dev/null
           echo "PASS: restored Bitcoin Core 28 regtest recognized original confirmed unspent funding output"
           cli stop
           docker wait bc1q21-regtest-restored >/dev/null
