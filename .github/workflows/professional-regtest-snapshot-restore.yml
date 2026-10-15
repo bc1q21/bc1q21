@@ -45,6 +45,8 @@ jobs:
           test "$(jq -r '.confirmations' <<<"$txout")" -ge 1
           printf '%s\n' "$txid" > "$RUNNER_TEMP/bc1q21-regtest-funding-txid"
           cli getblockchaininfo | jq -e '.chain == "regtest"' >/dev/null
+          echo 'Regtest datadir structure (directory names only):'
+          find "$RUNNER_TEMP/bc1q21-regtest-original" -maxdepth 3 -type d -print
           cli stop
           docker wait bc1q21-regtest-snapshot >/dev/null
           docker rm bc1q21-regtest-snapshot
