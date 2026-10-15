@@ -30,7 +30,7 @@ jobs:
           printf '%s\n' '{"purpose":"bc1q21-professional-disposable-regtest","acknowledged":true}' > "$RUNNER_TEMP/bc1q21-regtest-original/.bc1q21-professional-disposable-regtest"
           docker run -d --name bc1q21-regtest-snapshot --network host \
             -v "$RUNNER_TEMP/bc1q21-regtest-original:/regtestdata" \
-            ruimarinho/bitcoin-core:28 \
+            --entrypoint bitcoind ruimarinho/bitcoin-core:28 \
             -regtest -server -datadir=/regtestdata -txindex=0 \
             -rpcuser=professional -rpcpassword=synthetic-only \
             -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
@@ -45,11 +45,11 @@ jobs:
           test "$(jq -r '.confirmations' <<<"$txout")" -ge 1
           printf '%s\n' "$txid" > "$RUNNER_TEMP/bc1q21-regtest-funding-txid"
           cli getblockchaininfo | jq -e '.chain == "regtest"' >/dev/null
-          echo 'Regtest datadir structure (directory names only):'
-          find "$RUNNER_TEMP/bc1q21-regtest-original" -maxdepth 3 -type d -print
           cli stop
           docker wait bc1q21-regtest-snapshot >/dev/null
           docker rm bc1q21-regtest-snapshot
+          test -d "$RUNNER_TEMP/bc1q21-regtest-original/regtest/blocks"
+          test -d "$RUNNER_TEMP/bc1q21-regtest-original/regtest/chainstate"
       - name: Export and restore stopped real regtest chain
         shell: bash
         run: |
@@ -73,7 +73,7 @@ jobs:
           set -euo pipefail
           docker run -d --name bc1q21-regtest-restored --network host \
             -v "$RUNNER_TEMP/bc1q21-regtest-restored:/regtestdata" \
-            ruimarinho/bitcoin-core:28 \
+            --entrypoint bitcoind ruimarinho/bitcoin-core:28 \
             -regtest -server -datadir=/regtestdata -txindex=0 \
             -rpcuser=professional -rpcpassword=synthetic-only \
             -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1
