@@ -26,7 +26,7 @@ export function createSnapshotFileManifest(files) {
   const path=validateSnapshotRelativePath(f.path);
   if(names.has(path))throw Error('Duplicate snapshot path');
   names.add(path);
-  if(!Buffer.isBuffer(f.bytes)||f.bytes.length===0)throw Error('Snapshot file must contain bytes');
+  if(!Buffer.isBuffer(f.bytes))throw Error('Snapshot file must be a Buffer');
   return {path,size:f.bytes.length,sha256:createHash('sha256').update(f.bytes).digest('hex')};
  }).sort((a,b)=>a.path.localeCompare(b.path,'en'));
  return Object.freeze({format:'bc1q21-professional-regtest-chain-files-v1',network:'regtest',files:result});
