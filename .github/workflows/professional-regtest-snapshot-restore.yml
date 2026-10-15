@@ -1,0 +1,85 @@
+name: Professional disposable regtest snapshot restoration
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - '.github/workflows/professional-regtest-snapshot-restore.yml'
+      - 'Professional/regtest-snapshot-offline.mjs'
+      - 'Professional/regtest-snapshot-allowlist.mjs'
+permissions:
+  contents: read
+jobs:
+  real-regtest-snapshot-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Fund disposable Bitcoin Core regtest output
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bc1q21-regtest-original"
+          chmod 777 "$RUNNER_TEMP/bc1q21-regtest-original"
+          printf '%s\n' '{"purpose":"bc1q21-professional-disposable-regtest","acknowledged":true}' > "$RUNNER_TEMP/bc1q21-regtest-original/.bc1q21-professional-disposable-regtest"
+          docker run -d --name bc1q21-regtest-snapshot --network host \
+            -v "$RUNNER_TEMP/bc1q21-regtest-original:/regtestdata" \
+            ruimarinho/bitcoin-core:28 \
+            -regtest -server -datadir=/regtestdata -txindex=0 \
+            -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
+          cli() { docker exec bc1q21-regtest-snapshot bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwait "$@"; }
+          cli createwallet snapshotfixture
+          mining_address="$(cli -rpcwallet=snapshotfixture getnewaddress)"
+          cli generatetoaddress 101 "$mining_address" >/dev/null
+          funding_address="$(cli -rpcwallet=snapshotfixture getnewaddress '' p2sh-segwit)"
+          txid="$(cli -rpcwallet=snapshotfixture sendtoaddress "$funding_address" 0.001)"
+          cli generatetoaddress 1 "$mining_address" >/dev/null
+          txout="$(cli gettxout "$txid" 0)"
+          test "$(jq -r '.confirmations' <<<"$txout")" -ge 1
+          printf '%s\n' "$txid" > "$RUNNER_TEMP/bc1q21-regtest-funding-txid"
+          cli getblockchaininfo | jq -e '.chain == "regtest"' >/dev/null
+          cli stop
+          docker wait bc1q21-regtest-snapshot >/dev/null
+          docker rm bc1q21-regtest-snapshot
+      - name: Export and restore stopped real regtest chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ORIGINAL="$RUNNER_TEMP/bc1q21-regtest-original"
+          export SNAPSHOT="$RUNNER_TEMP/bc1q21-regtest-snapshot"
+          export RESTORED="$RUNNER_TEMP/bc1q21-regtest-restored"
+          node --input-type=module <<'NODE'
+          import {exportStoppedRegtestSnapshot,verifyOfflineRegtestSnapshot,restoreOfflineRegtestSnapshot} from './Professional/regtest-snapshot-offline.mjs';
+          const {ORIGINAL,SNAPSHOT,RESTORED}=process.env;
+          const manifest=exportStoppedRegtestSnapshot(ORIGINAL,SNAPSHOT,{coreStopped:true});
+          verifyOfflineRegtestSnapshot(SNAPSHOT);
+          restoreOfflineRegtestSnapshot(SNAPSHOT,RESTORED);
+          if(manifest.files.length<3)throw Error('Unexpectedly small snapshot');
+          console.log('Real regtest chain files restored with verified SHA-256 manifests:',manifest.files.length);
+          NODE
+          chmod -R a+rwX "$RESTORED"
+      - name: Start Bitcoin Core from restored chain and verify original unspent output
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name bc1q21-regtest-restored --network host \
+            -v "$RUNNER_TEMP/bc1q21-regtest-restored:/regtestdata" \
+            ruimarinho/bitcoin-core:28 \
+            -regtest -server -datadir=/regtestdata -txindex=0 \
+            -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1
+          cli() { docker exec bc1q21-regtest-restored bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwait "$@"; }
+          cli getblockchaininfo | jq -e '.chain == "regtest" and .blocks == 102' >/dev/null
+          txid="$(cat "$RUNNER_TEMP/bc1q21-regtest-funding-txid")"
+          cli gettxout "$txid" 0 | jq -e '.confirmations >= 1 and .value == 0.001' >/dev/null
+          echo "PASS: restored Bitcoin Core 28 regtest recognized original confirmed unspent funding output"
+          cli stop
+          docker wait bc1q21-regtest-restored >/dev/null
+          docker rm bc1q21-regtest-restored
