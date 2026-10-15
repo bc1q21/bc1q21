@@ -11,7 +11,7 @@ export function validateSnapshotRelativePath(path) {
  if(parts.some(p=>!p||p==='.'||p==='..'))throw Error('Unsafe snapshot path segments');
  const [dir,...rest]=parts;
  if(dir==='blocks') {
-  if(rest.length===1&&/^(?:blk|rev)[0-9]{5}\.dat$/.test(rest[0]))return path;
+  if(rest.length===1&&(rest[0]==='xor.dat'||/^(?:blk|rev)[0-9]{5}\.dat$/.test(rest[0])))return path;
   if(rest.length===2&&rest[0]==='index'&&leveldb.test(rest[1]))return path;
  }
  if(dir==='chainstate'&&rest.length===1&&leveldb.test(rest[0]))return path;
