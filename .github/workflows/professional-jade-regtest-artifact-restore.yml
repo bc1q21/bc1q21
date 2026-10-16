@@ -12,6 +12,7 @@ on:
       - 'Professional/build-funded-regtest-jade-offline-qr.mjs'
       - 'Professional/verify-funded-jade-qr.mjs'
       - 'Professional/verify-funded-jade-cltv-core.mjs'
+      - 'Professional/public-multi-release-gift-integration.check.mjs'
       - 'Professional/bc1q21_Jade_Signed_PSBT_QR_frames (1).txt'
 permissions:
   contents: read
@@ -76,6 +77,11 @@ jobs:
         run: |
           set -euo pipefail
           node Professional/jade-v7-real-bcur-roundtrip.mjs "$RUNNER_TEMP/professional-downloaded-public-package"
+      - name: Verify four-release public schedule and reject altered amounts scripts and dates
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test Professional/public-multi-release-gift-integration.check.mjs
       - name: Independently decode funded Jade QR and verify hardware ECDSA signature
         shell: bash
         run: |
