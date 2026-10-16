@@ -22,7 +22,7 @@ await rpc('generatetoaddress',[101,mining]);
 const funding=[];
 for(let i=0;i<4;i++){
  const txid=await rpc('sendtoaddress',[payments[i].address,amounts[i]/1e8],wallet);
- const raw=await rpc('gettransaction',[txid,false],wallet);
+ const raw=(await rpc('gettransaction',[txid,false],wallet)).hex;
  const tx=bitcoin.Transaction.fromHex(raw);
  const vout=tx.outs.findIndex(o=>o.value===amounts[i]&&Buffer.from(o.script).equals(Buffer.from(payments[i].output)));
  assert.ok(vout>=0,'Funding script not found');
@@ -66,7 +66,7 @@ for(let i=0;i<4;i++){
  const broadcastTxid=await rpc('sendrawtransaction',[premature.toHex()]);
  assert.equal(broadcastTxid,premature.getId());
  await rpc('generatetoaddress',[1,mining]);
- const receipt=await rpc('getrawtransaction',[broadcastTxid,true]);
+ const receipt=await rpc('gettransaction',[broadcastTxid,false],wallet);
  assert.ok(receipt.confirmations>=1,'Release not confirmed');
  assert.equal(await rpc('gettxout',[funding[i].txid,funding[i].vout]),null,'Released outpoint remains unspent');
  for(let j=i+1;j<4;j++)assert.ok(await rpc('gettxout',[funding[j].txid,funding[j].vout]),'Later release was affected');
