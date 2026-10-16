@@ -88,7 +88,7 @@ if(publicEvidencePath){
   destinationScriptHex:destination.output.toString('hex'),
   inputSats:100000,outputSats:99000,feeSats:1000,locktime:110,
   signed:false,broadcast:false});
- writeFileSync(publicEvidencePath,JSON.stringify(record,null,2)+'\\n',{flag:'wx',mode:0o600});
+ writeFileSync(publicEvidencePath,JSON.stringify(record,null,2)+String.fromCharCode(10),{flag:'wx',mode:0o600});
 }
 console.log(JSON.stringify({result:'PASS_STAGE_A',chain:'regtest',height:chain.blocks,
  checkpoint,unsignedPsbtSha256:sha,inputSats:100000,outputSats:99000,feeSats:1000,
