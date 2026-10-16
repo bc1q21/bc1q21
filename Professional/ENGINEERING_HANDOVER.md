@@ -96,3 +96,15 @@ The gift creator independently creates, safeguards, and delivers the recovery wo
 ### Suggested new-chat opener
 
 “Continue bc1q21 Professional from the 2026-10-14 checkpoint in `Professional/ENGINEERING_HANDOVER.md` on GitHub branch `professional/isolated-release-prototype`. First check current Actions, especially the strict observation `locktime` fix; then tell me the single next meaningful engineering step. Keep retail `main` untouched; no deployment or real Bitcoin.”
+
+---
+
+## 2026-10-16 authoritative PAUSE — supersedes earlier continuation instructions
+
+**User direction:** continue all safe software-only work, then STOP before another live Jade Plus session, record a durable GitHub handover and take a break. This checkpoint is the current continuation authority. **No device power-on, new hardware signature, real funds, production deployment, retail edit or main-branch merge authorized.**
+
+**Read FIRST:** [`Professional/JADE_PLUS_NEXT_SESSION_CHECKPOINT_2026-10-16.md`](JADE_PLUS_NEXT_SESSION_CHECKPOINT_2026-10-16.md) and the appended 2026-10-16 sections of [`Professional/OFFLINE_SIGNER_EVIDENCE_REGISTER.md`](OFFLINE_SIGNER_EVIDENCE_REGISTER.md). The detailed next-session objective, hardware/public-key/AES feasibility gates, reproducible run IDs, acceptance limitations, safety boundaries and suggested resume prompt are recorded there. Earlier proposed “next steps” in this handover are historical and must not override this checkpoint.
+
+**Verified green run:** [four staged software-signed regtest releases #38948176903](https://github.com/bc1q21/bc1q21/actions/runs/38948176903), four separately confirmed regtest-only releases with signed pre-locktime rejection, invalid-sequence and wrong-locktime rejection. Software fixture keys are **not** Jade keys. Separately, [funded Jade hardware ECDSA + Core acceptance #38944732136](https://github.com/bc1q21/bc1q21/actions/runs/38944732136) established **one** Jade-signed funded CLTV spend accepted by Bitcoin Core, **not broadcast**. Public-only four-output funding [#38947073663](https://github.com/bc1q21/bc1q21/actions/runs/38947073663) and public four-release schedule [#38945182627](https://github.com/bc1q21/bc1q21/actions/runs/38945182627) passed separately.
+
+**PAUSE POINT:** Next meaningful unknown is actual Jade Plus **device-attested public derivation / four-key origin**, followed by determining whether exact retail wallet-derived offline AES is possible. **Do not claim Jade supports AES without proof.** Both need user-supervised hardware or an explicit architecture decision. Jade stays **OFF**; Professional **NO-GO** for real funds or deployment. On return, check GitHub current state and ask for permission before hardware actions. Continue one simple step at a time.
