@@ -5,6 +5,7 @@ on:
       - professional/isolated-release-prototype
     paths:
       - '.github/workflows/professional-jade-regtest-artifact-restore.yml'
+      - 'Professional/offline-qr-public-psbt-roundtrip.mjs'
 permissions:
   contents: read
   actions: read
@@ -20,7 +21,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install disposable PSBT decoder
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 qrcode@1.5.4 jsqr@1.4.0 pngjs@7.0.0
       - name: Pin and validate previously confirmed source run
         shell: bash
         run: |
@@ -58,6 +59,11 @@ jobs:
         run: |
           set -euo pipefail
           node Professional/offline-qr-handoff-preflight.mjs "$RUNNER_TEMP/professional-downloaded-public-package"
+      - name: Roundtrip genuine unsigned regtest PSBT through QR PNG pixels and reject tampering
+        shell: bash
+        run: |
+          set -euo pipefail
+          node Professional/offline-qr-public-psbt-roundtrip.mjs "$RUNNER_TEMP/professional-downloaded-public-package"
       - name: Restart isolated Bitcoin Core and verify retained original CLTV outpoint and PSBT
         shell: bash
         run: |
