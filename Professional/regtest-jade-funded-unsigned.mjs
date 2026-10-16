@@ -76,6 +76,20 @@ const checkpoint=validateRegtestFundingCheckpoint({version:1,chain:'regtest',
  fundingTxid:txid,vout,amountSats:100000,scriptPubKeyHex:fixture.fundingScriptPubKeyHex,
  fundingBlockHash:blockhash,fundingBlockHeight:chain.blocks});
 const sha=createHash('sha256').update(psbt.toBuffer()).digest('hex');
+const publicEvidencePath=process.env.PROFESSIONAL_PUBLIC_EVIDENCE_PATH;
+if(publicEvidencePath){
+ if(!publicEvidencePath.startsWith('/'))throw Error('Public evidence output must be absolute');
+ const {writeFileSync}=await import('node:fs');
+ const record=Object.freeze({format:'bc1q21-professional-regtest-public-psbt-v1',
+  network:'regtest',checkpoint,expectedChainTip:blockhash,expectedChainHeight:chain.blocks,
+  unsignedPsbtBase64:prepared.unsignedPsbtBase64,unsignedPsbtSha256:sha,
+  fundingTxHex,redeemScriptHex:fixture.publicHandoff.redeemScriptHex,
+  signerPubkeyHex:fixture.publicHandoff.signerPubkeyHex,
+  destinationScriptHex:destination.output.toString('hex'),
+  inputSats:100000,outputSats:99000,feeSats:1000,locktime:110,
+  signed:false,broadcast:false});
+ writeFileSync(publicEvidencePath,JSON.stringify(record,null,2)+'\\n',{flag:'wx',mode:0o600});
+}
 console.log(JSON.stringify({result:'PASS_STAGE_A',chain:'regtest',height:chain.blocks,
  checkpoint,unsignedPsbtSha256:sha,inputSats:100000,outputSats:99000,feeSats:1000,
  signerSource:fixture.signerSource,signed:false,broadcast:false}));
