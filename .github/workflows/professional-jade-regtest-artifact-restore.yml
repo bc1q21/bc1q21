@@ -8,6 +8,7 @@ on:
       - 'Professional/offline-qr-public-psbt-roundtrip.mjs'
       - 'Professional/jade-v7-ur-reference-structure.check.mjs'
       - 'Professional/jade-v7-ur-reference-frames.json'
+      - 'Professional/jade-v7-real-bcur-roundtrip.mjs'
 permissions:
   contents: read
   actions: read
@@ -23,7 +24,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install disposable PSBT decoder
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 qrcode@1.5.4 jsqr@1.4.0 pngjs@7.0.0
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 qrcode@1.5.4 jsqr@1.4.0 pngjs@7.0.0 @ngraveio/bc-ur@1.1.13 cbor@9.0.2
       - name: Pin and validate previously confirmed source run
         shell: bash
         run: |
@@ -66,6 +67,11 @@ jobs:
         run: |
           set -euo pipefail
           node Professional/jade-v7-ur-reference-structure.check.mjs
+      - name: Decode genuine Jade V7 BC-UR and roundtrip funded regtest PSBT
+        shell: bash
+        run: |
+          set -euo pipefail
+          node Professional/jade-v7-real-bcur-roundtrip.mjs "$RUNNER_TEMP/professional-downloaded-public-package"
       - name: Roundtrip genuine unsigned regtest PSBT through QR PNG pixels and reject tampering
         shell: bash
         run: |
