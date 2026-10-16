@@ -42,6 +42,25 @@ jobs:
           docker exec professional-four-funded bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only generatetoaddress 121 "$ADDRESS" >/dev/null
       - name: Verify four funded confirmed distinct public CLTV P2SH outputs
         run: node Professional/four-funded-public-cltv-regtest.mjs
+      - name: Reset disposable regtest for independent staged-release scenario
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker rm -f professional-four-funded
+          mkdir -p "$RUNNER_TEMP/professional-four-staged-fresh"
+          docker run -d --name professional-four-funded --network host \
+            -v "$RUNNER_TEMP/professional-four-staged-fresh:/regtestdata" \
+            --entrypoint bitcoind ruimarinho/bitcoin-core:28 \
+            -regtest -server -datadir=/regtestdata -fallbackfee=0.0001 \
+            -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1
+          for i in $(seq 1 40); do
+            if docker exec professional-four-funded bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only getblockchaininfo >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          docker exec professional-four-funded bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only createwallet professional-initial-miner
+          ADDRESS=$(docker exec professional-four-funded bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwallet=professional-initial-miner getnewaddress)
+          docker exec professional-four-funded bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only generatetoaddress 121 "$ADDRESS" >/dev/null
       - name: Verify four independently staged software-signed CLTV releases
         run: node Professional/four-staged-software-cltv-regtest.mjs
       - name: Remove disposable regtest
