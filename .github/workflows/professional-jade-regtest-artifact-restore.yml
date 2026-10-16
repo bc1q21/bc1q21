@@ -1,0 +1,75 @@
+name: Professional independent retained CLTV regtest package restore
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Successful source run ID of Professional funded CLTV regtest snapshot continuity'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-regtest-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install disposable PSBT decoder
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+      - name: Reject malformed artifact source run ID
+        shell: bash
+        env:
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]{8,14}$ ]] || { echo 'Invalid source run ID'; exit 1; }
+      - name: Download retained package from previous isolated workflow run
+        uses: actions/download-artifact@v4
+        with:
+          name: professional-disposable-public-cltv-regtest
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/professional-downloaded-public-package
+      - name: Independently verify public package and restore chain snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PACKAGE="$RUNNER_TEMP/professional-downloaded-public-package"
+          export RESTORED="$RUNNER_TEMP/professional-independent-restored"
+          export PROFESSIONAL_PUBLIC_EVIDENCE_PATH="$PACKAGE/public-unsigned-cltv.json"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {verifyPortablePublicRegtestPackage} from './Professional/regtest-portable-public-package.mjs';
+          import {restoreOfflineRegtestSnapshot} from './Professional/regtest-snapshot-offline.mjs';
+          const result=verifyPortablePublicRegtestPackage(process.env.PACKAGE);
+          assert.equal(result.network,'regtest');
+          assert.ok(result.fileCount>=3);
+          const restored=restoreOfflineRegtestSnapshot(process.env.PACKAGE+'/chain',process.env.RESTORED);
+          console.log('PASS: independent runner downloaded and verified retained public package',JSON.stringify(result));
+          console.log('Restored allowlisted chain files:',restored.files.length);
+          NODE
+          chmod -R a+rwX "$RESTORED"
+      - name: Restart isolated Bitcoin Core and verify retained original CLTV outpoint and PSBT
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PROFESSIONAL_PUBLIC_EVIDENCE_PATH="$RUNNER_TEMP/professional-downloaded-public-package/public-unsigned-cltv.json"
+          docker run -d --name professional-independent-restore --network host \
+            -v "$RUNNER_TEMP/professional-independent-restored:/regtestdata" \
+            --entrypoint bitcoind ruimarinho/bitcoin-core:28 \
+            -regtest -server -datadir=/regtestdata -txindex=0 \
+            -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1
+          node Professional/regtest-jade-restored-check.mjs
+          echo 'PASS_INDEPENDENT_ARTIFACT_RESTORE: retained package restored in separate GitHub Actions run'
+          docker exec professional-independent-restore bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwait stop
+          docker wait professional-independent-restore >/dev/null
+          docker rm professional-independent-restore
+      - name: Remove disposable regtest instance
+        if: always()
+        run: docker rm -f professional-independent-restore 2>/dev/null || true
