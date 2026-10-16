@@ -11,6 +11,7 @@ on:
       - 'Professional/jade-v7-real-bcur-roundtrip.mjs'
       - 'Professional/build-funded-regtest-jade-offline-qr.mjs'
       - 'Professional/verify-funded-jade-qr.mjs'
+      - 'Professional/verify-funded-jade-cltv-core.mjs'
       - 'Professional/bc1q21_Jade_Signed_PSBT_QR_frames (1).txt'
 permissions:
   contents: read
@@ -125,6 +126,7 @@ jobs:
             -rpcuser=professional -rpcpassword=synthetic-only \
             -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1
           node Professional/regtest-jade-restored-check.mjs
+          node Professional/verify-funded-jade-cltv-core.mjs "$RUNNER_TEMP/professional-downloaded-public-package"
           echo 'PASS_INDEPENDENT_ARTIFACT_RESTORE: retained package restored in separate GitHub Actions run'
           docker exec professional-independent-restore bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwait stop
           docker wait professional-independent-restore >/dev/null
