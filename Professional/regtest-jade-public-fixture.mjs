@@ -30,3 +30,34 @@ export function getCapturedJadePublicFixture() {
   return Object.freeze({pubkeyHex:pubkey,masterFingerprintHex:fingerprint,derivationPath,
     source:'captured Jade V7 synthetic PSBT public origin; not freshly device-attested'});
 }
+
+
+/**
+ * Construct the PUBLIC-only legacy P2SH CLTV funding handoff for a disposable
+ * regtest fixture. This neither funds an output nor proves hardware spendability.
+ * The pubkey and origin are taken from the recorded Jade V7 synthetic PSBT.
+ */
+export async function getCapturedJadeRegtestCltvHandoff(locktime=110) {
+  if(!Number.isSafeInteger(locktime)||locktime<1||locktime>0xffffffff)
+    throw Error('Invalid CLTV locktime');
+  const jade=getCapturedJadePublicFixture();
+  const bitcoin=(await import('bitcoinjs-lib')).default;
+  const pubkey=Buffer.from(jade.pubkeyHex,'hex');
+  const redeem=bitcoin.script.compile([bitcoin.script.number.encode(locktime),
+    bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,bitcoin.opcodes.OP_DROP,
+    pubkey,bitcoin.opcodes.OP_CHECKSIG]);
+  const payment=bitcoin.payments.p2sh({
+    redeem:{output:redeem},network:bitcoin.networks.regtest
+  });
+  return Object.freeze({
+    publicHandoff:Object.freeze({
+      version:1,network:'regtest',signerPubkeyHex:jade.pubkeyHex,
+      locktime,redeemScriptHex:redeem.toString('hex'),
+      fundingAddress:payment.address
+    }),
+    masterFingerprintHex:jade.masterFingerprintHex,
+    derivationPath:jade.derivationPath,
+    fundingScriptPubKeyHex:payment.output.toString('hex'),
+    signerSource:jade.source
+  });
+}
