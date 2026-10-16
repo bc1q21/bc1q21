@@ -11,6 +11,7 @@ on:
       - 'Professional/regtest-jade-public-fixture.mjs'
       - 'Professional/regtest-snapshot-offline.mjs'
       - 'Professional/regtest-snapshot-allowlist.mjs'
+      - 'Professional/regtest-portable-public-package.mjs'
 permissions:
   contents: read
 jobs:
@@ -64,6 +65,32 @@ jobs:
           console.log('Verified allowlisted regtest chain snapshot files:',manifest.files.length);
           NODE
           chmod -R a+rwX "$RESTORED"
+      - name: Build and verify strictly allowlisted portable public regtest package
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SNAPSHOT="$RUNNER_TEMP/professional-cltv-snapshot"
+          export EVIDENCE="$RUNNER_TEMP/professional-cltv-public-evidence.json"
+          export PACKAGE="$RUNNER_TEMP/professional-cltv-portable-package"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync,mkdirSync,cpSync} from 'node:fs';
+          import {join} from 'node:path';
+          import {createPortablePublicRegtestPackage,verifyPortablePublicRegtestPackage} from './Professional/regtest-portable-public-package.mjs';
+          const {SNAPSHOT,EVIDENCE,PACKAGE}=process.env;
+          const made=createPortablePublicRegtestPackage(SNAPSHOT,EVIDENCE,PACKAGE);
+          const verified=verifyPortablePublicRegtestPackage(PACKAGE);
+          assert.equal(made.fileCount,verified.fileCount);
+          const clone=PACKAGE+'-tamper';
+          cpSync(PACKAGE,clone,{recursive:true});
+          const target=join(clone,'public-unsigned-cltv.json');
+          const original=readFileSync(target);
+          const changed=Buffer.from(original);changed[0]^=1;
+          writeFileSync(target,changed);
+          assert.throws(()=>verifyPortablePublicRegtestPackage(clone));
+          console.log('PASS_STAGE_C_PREP: portable public-only package integrity and tamper rejection',JSON.stringify(made));
+          console.log('Package is ephemeral in CI; NO hardware signing and NO durable archive published');
+          NODE
       - name: Restart Bitcoin Core against restored data and independently verify CLTV UTXO and PSBT
         shell: bash
         run: |
