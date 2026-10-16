@@ -9,6 +9,7 @@ on:
       - 'Professional/jade-v7-ur-reference-structure.check.mjs'
       - 'Professional/jade-v7-ur-reference-frames.json'
       - 'Professional/jade-v7-real-bcur-roundtrip.mjs'
+      - 'Professional/build-funded-regtest-jade-offline-qr.mjs'
 permissions:
   contents: read
   actions: read
@@ -72,6 +73,27 @@ jobs:
         run: |
           set -euo pipefail
           node Professional/jade-v7-real-bcur-roundtrip.mjs "$RUNNER_TEMP/professional-downloaded-public-package"
+      - name: Build and validate fully offline eight-frame regtest Jade QR review page
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PUBLIC_PACKAGE="$RUNNER_TEMP/professional-downloaded-public-package"
+          export QR_HTML="$RUNNER_TEMP/professional-funded-regtest-jade-qr-offline.html"
+          node Professional/build-funded-regtest-jade-offline-qr.mjs "$PUBLIC_PACKAGE" "$QR_HTML"
+          test -s "$QR_HTML"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const html=readFileSync(process.env.QR_HTML,'utf8');
+          assert.ok(html.includes('DISPOSABLE REGTEST ONLY'));
+          assert.ok(html.includes('JADE PLUS MUST REMAIN OFF'));
+          assert.ok(html.includes('default-src \'none\''));
+          assert.ok(html.includes('data:image/png;base64,'));
+          assert.ok(!/https?:\\/\\//i.test(html));
+          const embedded=html.match(/data:image\\/png;base64,/g)||[];
+          assert.equal(embedded.length,9,'Expected first QR image and eight embedded frames');
+          console.log('PASS_OFFLINE_JADE_QR_HTML_STATIC_REVIEW',JSON.stringify({embeddedPngReferences:embedded.length,hardwareScanned:false,signed:false,broadcast:false}));
+          NODE
       - name: Roundtrip genuine unsigned regtest PSBT through QR PNG pixels and reject tampering
         shell: bash
         run: |
