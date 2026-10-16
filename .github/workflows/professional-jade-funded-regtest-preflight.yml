@@ -1,0 +1,36 @@
+name: Professional Jade public-origin funded CLTV regtest preflight
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - 'Professional/regtest-jade-funded-unsigned.mjs'
+      - 'Professional/regtest-jade-public-fixture.mjs'
+      - '.github/workflows/professional-jade-funded-regtest-preflight.yml'
+permissions:
+  contents: read
+jobs:
+  stage-a-regtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install disposable test-only libraries
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+      - name: Start fresh disposable loopback-only Bitcoin Core 28 regtest
+        run: |
+          docker run -d --name professional-jade-public-regtest --network host \
+            ruimarinho/bitcoin-core:28 \
+            -regtest -server -txindex=0 -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
+      - name: Verify funded CLTV output and unsigned public-origin PSBT
+        run: node Professional/regtest-jade-funded-unsigned.mjs
+      - name: Remove disposable Bitcoin Core
+        if: always()
+        run: docker rm -f professional-jade-public-regtest || true
