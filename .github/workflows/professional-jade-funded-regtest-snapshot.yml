@@ -89,7 +89,7 @@ jobs:
           writeFileSync(target,changed);
           assert.throws(()=>verifyPortablePublicRegtestPackage(clone));
           console.log('PASS_STAGE_C_PREP: portable public-only package integrity and tamper rejection',JSON.stringify(made));
-          console.log('Package is ephemeral in CI; NO hardware signing and NO durable archive published');
+          console.log('Package integrity verified before retention; NO hardware signing');
           NODE
       - name: Restart Bitcoin Core against restored data and independently verify CLTV UTXO and PSBT
         shell: bash
@@ -106,6 +106,14 @@ jobs:
           docker exec professional-cltv-restored bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwait stop
           docker wait professional-cltv-restored >/dev/null
           docker rm professional-cltv-restored
+      - name: Publish verified disposable PUBLIC regtest package for independent restore
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-disposable-public-cltv-regtest
+          path: ${{ runner.temp }}/professional-cltv-portable-package/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
       - name: Clean up disposable regtest containers
         if: always()
         run: |
