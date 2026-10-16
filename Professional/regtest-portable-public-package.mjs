@@ -4,7 +4,8 @@ import {readFileSync,writeFileSync,mkdirSync,readdirSync,lstatSync,copyFileSync,
 import {join,resolve,relative} from 'node:path';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
-import {verifyOfflineRegtestSnapshot,validateSnapshotRelativePath} from './regtest-snapshot-offline.mjs';
+import {verifyOfflineRegtestSnapshot} from './regtest-snapshot-offline.mjs';
+import {validateSnapshotRelativePath} from './regtest-snapshot-allowlist.mjs';
 import {validateRegtestFundingCheckpoint} from './regtest-chain-continuity.mjs';
 
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
