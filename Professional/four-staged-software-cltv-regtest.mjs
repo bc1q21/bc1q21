@@ -6,7 +6,7 @@ import http from 'node:http';
 import {createHash} from 'node:crypto';
 import bitcoin from 'bitcoinjs-lib';
 import {secp256k1} from '@noble/curves/secp256k1';
-const heights=[130,140,150,160], amounts=[12000,15000,18000,21000];
+const heights=[230,240,250,260], amounts=[12000,15000,18000,21000];
 const keys=heights.map((_,i)=>createHash('sha256').update('bc1q21-professional-disposable-four-cltv-'+i).digest());
 const pubkeys=keys.map(k=>Buffer.from(secp256k1.getPublicKey(k,true)));
 const scripts=heights.map((h,i)=>bitcoin.script.compile([bitcoin.script.number.encode(h),bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,bitcoin.opcodes.OP_DROP,pubkeys[i],bitcoin.opcodes.OP_CHECKSIG]));
