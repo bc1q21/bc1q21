@@ -1,5 +1,38 @@
-// Isolated regtest test only. No network, keys, or broadcast.
-import { readFileSync } from 'node:fs';
-const frames = readFileSync(new URL('./bc1q21_Jade_Signed_PSBT_QR_frames (1).txt', import.meta.url), 'utf8').split(/\r?\n/).filter(x => /^ur:crypto-psbt\//i.test(x));
-if (frames.length !== 9) throw new Error('Expected nine captured QR frames');
-console.log('PASS_CAPTURE_FRAME_COUNT', frames.length);
+// Isolated bc1q21 Professional disposable funded regtest Jade response verification.
+// No private keys, device access, network calls, transaction broadcast or real funds.
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {URDecoder} from '@ngraveio/bc-ur';
+import cbor from 'cbor';
+import bitcoin from 'bitcoinjs-lib';
+import {secp256k1} from '@noble/curves/secp256k1';
+import {inspectUnsignedOfflineHandoff} from './offline-qr-handoff-preflight.mjs';
+const packageDir=process.argv[2];
+assert.ok(packageDir,'Usage: node Professional/verify-funded-jade-qr.mjs <verified-package-dir>');
+const source=readFileSync(new URL('./bc1q21_Jade_Signed_PSBT_QR_frames (1).txt',import.meta.url),'utf8');
+const frames=source.split(/\r?\n/).map(s=>s.trim()).filter(s=>/^ur:crypto-psbt\//i.test(s));
+assert.equal(frames.length,9,'Unexpected captured QR frame count');
+const decoder=new URDecoder();
+for(const frame of frames)decoder.receivePart(frame);
+assert.equal(decoder.isComplete(),true,'Captured QR fountain incomplete');
+assert.equal(decoder.isSuccess(),true,'Captured QR fountain invalid');
+const ur=decoder.resultUR();
+assert.equal(ur.type,'crypto-psbt');
+const decoded=cbor.decodeFirstSync(Buffer.from(ur.cbor));
+assert.ok(Buffer.isBuffer(decoded),'Expected CBOR byte string');
+const signedRaw=Buffer.from(decoded);
+const {review,unsignedPsbtBase64}=await inspectUnsignedOfflineHandoff(packageDir);
+const signed=bitcoin.Psbt.fromBuffer(signedRaw,{network:bitcoin.networks.regtest});
+const original=bitcoin.Psbt.fromBase64(unsignedPsbtBase64,{network:bitcoin.networks.regtest});
+assert.deepEqual(Buffer.from(signed.data.globalMap.unsignedTx.toBuffer()),Buffer.from(original.data.globalMap.unsignedTx.toBuffer()),'Unsigned transaction changed');
+assert.equal(signed.txInputs.length,1);
+assert.equal(signed.txOutputs.length,1);
+const input=signed.data.inputs[0],base=original.data.inputs[0];
+for(const k of ['nonWitnessUtxo','redeemScript'])assert.deepEqual(Buffer.from(input[k]),Buffer.from(base[k]),k+' changed');
+assert.ok(!input.finalScriptSig&&!input.finalScriptWitness&&!input.witnessUtxo,'Unexpected finalized/witness input');
+assert.equal(input.partialSig?.length,1,'Expected one Jade partial signature');
+assert.equal(Buffer.from(input.partialSig[0].pubkey).toString('hex'),review.signerPubkeyHex,'Signer pubkey changed');
+assert.equal(Buffer.from(input.partialSig[0].signature).at(-1),bitcoin.Transaction.SIGHASH_ALL,'Unexpected sighash');
+assert.equal(signed.validateSignaturesOfInput(0,(pubkey,hash,compactSig)=>secp256k1.verify(Buffer.from(compactSig),Buffer.from(hash),Buffer.from(pubkey),{lowS:false,prehash:false})),true,'Invalid Jade ECDSA signature');
+console.log('PASS_FUNDED_JADE_REGTEST_QR_ECDSA',JSON.stringify({frames:frames.length,signedPsbtBytes:signedRaw.length,signedPsbtSha256:createHash('sha256').update(signedRaw).digest('hex'),originalPsbtSha256:review.psbtSha256,signatureCount:1,network:'regtest',broadcast:false,consensusVerified:false}));
