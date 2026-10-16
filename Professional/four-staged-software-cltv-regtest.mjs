@@ -22,7 +22,7 @@ await rpc('generatetoaddress',[101,mining]);
 const funding=[];
 for(let i=0;i<4;i++){
  const txid=await rpc('sendtoaddress',[payments[i].address,amounts[i]/1e8],wallet);
- const raw=await rpc('getrawtransaction',[txid]);
+ const raw=await rpc('gettransaction',[txid,false],wallet);
  const tx=bitcoin.Transaction.fromHex(raw);
  const vout=tx.outs.findIndex(o=>o.value===amounts[i]&&Buffer.from(o.script).equals(Buffer.from(payments[i].output)));
  assert.ok(vout>=0,'Funding script not found');
