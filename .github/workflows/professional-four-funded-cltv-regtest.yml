@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/professional-four-funded-cltv-regtest.yml'
       - 'Professional/four-funded-public-cltv-regtest.mjs'
+      - 'Professional/four-staged-software-cltv-regtest.mjs'
 permissions:
   contents: read
 jobs:
@@ -41,6 +42,8 @@ jobs:
           docker exec professional-four-funded bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only generatetoaddress 121 "$ADDRESS" >/dev/null
       - name: Verify four funded confirmed distinct public CLTV P2SH outputs
         run: node Professional/four-funded-public-cltv-regtest.mjs
+      - name: Verify four independently staged software-signed CLTV releases
+        run: node Professional/four-staged-software-cltv-regtest.mjs
       - name: Remove disposable regtest
         if: always()
         run: docker rm -f professional-four-funded 2>/dev/null || true
