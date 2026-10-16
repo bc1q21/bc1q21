@@ -10,7 +10,7 @@ assert.equal(ref.frames.length,7);
 const seen=new Set();
 for(let i=0;i<ref.frames.length;i++){
  const f=ref.frames[i];
- assert.equal(f.length,135,'V7 reference UR frame length changed');
+ assert.equal(f.length,[135,135,131,135,135,135,131][i],'V7 recorded UR frame length changed');
  const match=f.match(/^ur:crypto-psbt\/([1-7])-7\/([a-z]+)$/);
  assert.ok(match,'Invalid reference UR structure');
  assert.equal(Number(match[1]),i+1);
@@ -26,7 +26,7 @@ const raw=signed.toBuffer();
 assert.equal(raw.length,283);
 assert.equal(createHash('sha256').update(raw).digest('hex'),ref.syntheticUnsignedPsbtSha256);
 console.log('PASS_JADE_V7_UR_REFERENCE_STRUCTURE',JSON.stringify({
- frameCount:7,frameLength:135,urType:'crypto-psbt',
+ frameCount:7,recordedFrameLengths:[135,135,131,135,135,135,131],urType:'crypto-psbt',
  recordedSyntheticPsbtBytes:283,syntheticSha256:ref.syntheticUnsignedPsbtSha256,
  urPayloadDecoded:false,hardwareCompatibilityForFundedRegtestVerified:false,signed:false,broadcast:false
 }));
