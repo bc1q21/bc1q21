@@ -1,0 +1,85 @@
+name: Professional funded CLTV regtest snapshot continuity
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - '.github/workflows/professional-jade-funded-regtest-snapshot.yml'
+      - 'Professional/regtest-jade-funded-unsigned.mjs'
+      - 'Professional/regtest-jade-restored-check.mjs'
+      - 'Professional/regtest-jade-public-fixture.mjs'
+      - 'Professional/regtest-snapshot-offline.mjs'
+      - 'Professional/regtest-snapshot-allowlist.mjs'
+permissions:
+  contents: read
+jobs:
+  stage-a-b-cltv-continuity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install disposable PSBT inspection libraries
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+      - name: Create marked, isolated disposable source and fund real regtest CLTV
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PROFESSIONAL_PUBLIC_EVIDENCE_PATH="$RUNNER_TEMP/professional-cltv-public-evidence.json"
+          mkdir -p "$RUNNER_TEMP/professional-cltv-original"
+          chmod 777 "$RUNNER_TEMP/professional-cltv-original"
+          printf '%s\n' '{"purpose":"bc1q21-professional-disposable-regtest","acknowledged":true}' > "$RUNNER_TEMP/professional-cltv-original/.bc1q21-professional-disposable-regtest"
+          docker run -d --name professional-cltv-original --network host \
+            -v "$RUNNER_TEMP/professional-cltv-original:/regtestdata" \
+            --entrypoint bitcoind ruimarinho/bitcoin-core:28 \
+            -regtest -server -datadir=/regtestdata -txindex=0 \
+            -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
+          node Professional/regtest-jade-funded-unsigned.mjs
+          test -s "$PROFESSIONAL_PUBLIC_EVIDENCE_PATH"
+          node -e "const x=require(process.env.PROFESSIONAL_PUBLIC_EVIDENCE_PATH);if(x.network!=='regtest'||x.signed!==false||x.broadcast!==false)process.exit(1)"
+          docker exec professional-cltv-original bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwait stop
+          docker wait professional-cltv-original >/dev/null
+          docker rm professional-cltv-original
+          sudo chmod -R a+rX "$RUNNER_TEMP/professional-cltv-original/regtest"
+      - name: Verify SHA-256 and restore stopped real CLTV regtest chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ORIGINAL="$RUNNER_TEMP/professional-cltv-original"
+          export SNAPSHOT="$RUNNER_TEMP/professional-cltv-snapshot"
+          export RESTORED="$RUNNER_TEMP/professional-cltv-restored"
+          node --input-type=module <<'NODE'
+          import {exportStoppedRegtestSnapshot,verifyOfflineRegtestSnapshot,restoreOfflineRegtestSnapshot} from './Professional/regtest-snapshot-offline.mjs';
+          const {ORIGINAL,SNAPSHOT,RESTORED}=process.env;
+          const manifest=exportStoppedRegtestSnapshot(ORIGINAL,SNAPSHOT,{coreStopped:true});
+          verifyOfflineRegtestSnapshot(SNAPSHOT);
+          restoreOfflineRegtestSnapshot(SNAPSHOT,RESTORED);
+          if(manifest.files.length<3)throw Error('Unexpectedly small regtest snapshot');
+          console.log('Verified allowlisted regtest chain snapshot files:',manifest.files.length);
+          NODE
+          chmod -R a+rwX "$RESTORED"
+      - name: Restart Bitcoin Core against restored data and independently verify CLTV UTXO and PSBT
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PROFESSIONAL_PUBLIC_EVIDENCE_PATH="$RUNNER_TEMP/professional-cltv-public-evidence.json"
+          docker run -d --name professional-cltv-restored --network host \
+            -v "$RUNNER_TEMP/professional-cltv-restored:/regtestdata" \
+            --entrypoint bitcoind ruimarinho/bitcoin-core:28 \
+            -regtest -server -datadir=/regtestdata -txindex=0 \
+            -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1
+          node Professional/regtest-jade-restored-check.mjs
+          docker exec professional-cltv-restored bitcoin-cli -regtest -datadir=/regtestdata -rpcuser=professional -rpcpassword=synthetic-only -rpcwait stop
+          docker wait professional-cltv-restored >/dev/null
+          docker rm professional-cltv-restored
+      - name: Clean up disposable regtest containers
+        if: always()
+        run: |
+          docker rm -f professional-cltv-original professional-cltv-restored 2>/dev/null || true
