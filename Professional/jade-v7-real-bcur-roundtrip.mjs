@@ -30,7 +30,16 @@ async function pixelRoundTrip(frame){
  return decoded.data;
 }
 const reference=JSON.parse(readFileSync(new URL('./jade-v7-ur-reference-frames.json',import.meta.url),'utf8'));
-const original=decodeFrames(reference.frames);
+let original;
+try {
+ original=decodeFrames(reference.frames);
+} catch(e) {
+ if(/Invalid Checksum/i.test(String(e))) {
+  console.error('FAIL_REFERENCE_BCUR_CHECKSUM: original V7 literal frame data did not pass Bytewords CRC; refusing to call protocol verified');
+  console.error('Reference checksums must be validated against original QR image pixels and frame strings, not disabled.');
+ }
+ throw e;
+}
 assert.equal(original.length,283,'Original V7 decoded PSBT length');
 assert.equal(digest(original),reference.syntheticUnsignedPsbtSha256,'Original V7 decoded PSBT fingerprint');
 const packageDir=process.argv[2];
