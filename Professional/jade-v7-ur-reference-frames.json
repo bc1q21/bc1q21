@@ -1,0 +1,13 @@
+{
+  "source": "User supplied offline Jade V7 synthetic QR HTML; seven literal UR frames; public-only",
+  "syntheticUnsignedPsbtSha256": "ee120308ac348227d0f249662ed52108c0ca4f183be6baa9517d7caf35818544",
+  "frames": [
+    "ur:crypto-psbt/1-7/lpadatcfadckcybspmnytthddthkadcwjojkidjyzmadaegmaoaeaeaeadbtahemrphngshssgkigdqzhtsrolwnrskbkojpjtetjtchpypkrdmwahwl",
+    "ur:crypto-psbt/2-7/lpaoatcfadckcybspmnytthddtderywnfrvylrvaaeaeaeaeaezezmzmzmadrolfadaeaeaeaeaecmaebbfwfwfwfwfwfwfwfwfwfwfwfwfwgobsjpvl",
+    "ur:crypto-psbt/3-7/lpaxatcfadckcybspmnytthddtfwfwfwfwfwfwfwjtaeaeaeaeadaegoaoaeaeaeadaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaehhvygrhl",
+    "ur:crypto-psbt/4-7/lpaaatcfadckcybspmnytthddtaeaeaeaeaeaeaeaeaeaeaezmzmzmzmaoadadzmzmzmzmadnblnadaeaeaeaeaechptbbpakpwtpsnyjlvaiedizsfg",
+    "ur:crypto-psbt/5-7/lpahatcfadckcybspmnytthddtkegsaowyuojkoskpftiooxwpolltaeaeaeaeadaadiadjtpakpclaxdsayhgfnmdvodrseprzofzmwtlzcfmeymepr",
+    "ur:crypto-psbt/6-7/lpamatcfadckcybspmnytthddtkekkotutlewdsbeymuvapacxuolsbtwyzmrypscpamaxdsayhgfnmdvodrseprzofzmwtlzckekkotutlerhftwkdt",
+    "ur:crypto-psbt/7-7/lpatatcfadckcybspmnytthddtwdsbeymuvapacxuolsbtwycsvonysefnghaeaelaaeaeaelaaeaeaelaadaeaeaebkaeaeaeaeaeaebzdtcnze"
+  ]
+}
