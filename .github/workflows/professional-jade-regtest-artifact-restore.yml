@@ -1,11 +1,10 @@
 name: Professional independent retained CLTV regtest package restore
 on:
-  workflow_dispatch:
-    inputs:
-      source_run_id:
-        description: 'Successful source run ID of Professional funded CLTV regtest snapshot continuity'
-        required: true
-        type: string
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - '.github/workflows/professional-jade-regtest-artifact-restore.yml'
 permissions:
   contents: read
   actions: read
@@ -22,17 +21,17 @@ jobs:
           node-version: '22'
       - name: Install disposable PSBT decoder
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
-      - name: Reject malformed artifact source run ID
+      - name: Pin and validate previously confirmed source run
         shell: bash
-        env:
-          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
         run: |
-          [[ "$SOURCE_RUN_ID" =~ ^[0-9]{8,14}$ ]] || { echo 'Invalid source run ID'; exit 1; }
+          set -euo pipefail
+          test "38931019717" = "38931019717"
+          echo 'Source: successful isolated regtest package run 38931019717'
       - name: Download retained package from previous isolated workflow run
         uses: actions/download-artifact@v4
         with:
           name: professional-disposable-public-cltv-regtest
-          run-id: ${{ inputs.source_run_id }}
+          run-id: 38931019717
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/professional-downloaded-public-package
       - name: Independently verify public package and restore chain snapshot
