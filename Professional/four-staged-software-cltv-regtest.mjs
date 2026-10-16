@@ -50,14 +50,17 @@ for(let i=0;i<4;i++){
  const premature=signedSpend(i);
  const denied=await rpc('testmempoolaccept',[[premature.toHex()]]);
  assert.equal(denied.length,1);assert.equal(denied[0].allowed,false,'Premature signed CLTV spend accepted');
+ assert.ok(await rpc('gettxout',[funding[i].txid,funding[i].vout]),'Prematurely spent');
+ // Bitcoin Core's next-block finality requires nLockTime < next block height.
+ // Advance to tip h, so a new block would have height h+1.
+ await rpc('generatetoaddress',[2,mining]);
+ assert.equal((await rpc('getblockchaininfo')).blocks,h);
  const wrongSequence=signedSpend(i,h,0xffffffff);
  const sequenceDenied=await rpc('testmempoolaccept',[[wrongSequence.toHex()]]);
  assert.equal(sequenceDenied[0].allowed,false,'Final-sequence CLTV spend accepted');
  const wrongTime=signedSpend(i,h-1);
  const timeDenied=await rpc('testmempoolaccept',[[wrongTime.toHex()]]);
  assert.equal(timeDenied[0].allowed,false,'Wrong-locktime CLTV spend accepted');
- assert.ok(await rpc('gettxout',[funding[i].txid,funding[i].vout]),'Prematurely spent');
- await rpc('generatetoaddress',[1,mining]); // height h-1, next block h
  const valid=await rpc('testmempoolaccept',[[premature.toHex()]]);
  assert.equal(valid[0].allowed,true,'Mature signed spend rejected: '+JSON.stringify(valid[0]));
  const broadcastTxid=await rpc('sendrawtransaction',[premature.toHex()]);
