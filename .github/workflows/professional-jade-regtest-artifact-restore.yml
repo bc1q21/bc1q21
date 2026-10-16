@@ -53,6 +53,11 @@ jobs:
           console.log('Restored allowlisted chain files:',restored.files.length);
           NODE
           chmod -R a+rwX "$RESTORED"
+      - name: Strict public-only offline QR signing handoff preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          node Professional/offline-qr-handoff-preflight.mjs "$RUNNER_TEMP/professional-downloaded-public-package"
       - name: Restart isolated Bitcoin Core and verify retained original CLTV outpoint and PSBT
         shell: bash
         run: |
