@@ -1,0 +1,26 @@
+name: Professional isolated public xpub gift-output matching
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/verify-watchonly-xpub-gift.mjs'
+      - 'Professional/test-watchonly-xpub-gift.mjs'
+      - '.github/workflows/professional-watchonly-xpub-gift.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned public-only BIP32 derivation library
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @scure/bip32@1.7.0
+      - name: Verify derived public signer keys and CLTV gift output scripts
+        run: node Professional/test-watchonly-xpub-gift.mjs
