@@ -1,0 +1,24 @@
+name: Professional gift-link candidate validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/gift-link-public-candidate.mjs'
+      - 'Professional/test-gift-link-public-candidate.mjs'
+      - '.github/workflows/professional-gift-link-public-candidate.yml'
+permissions:
+  contents: read
+jobs:
+  public-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test gift-specific public locator validation without private keys
+        run: node Professional/test-gift-link-public-candidate.mjs
