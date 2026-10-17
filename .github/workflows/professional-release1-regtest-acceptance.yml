@@ -1,0 +1,121 @@
+name: Professional Release 1 restored-regtest acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths: ['.github/workflows/professional-release1-regtest-acceptance.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  regtest-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download saved disposable regtest chain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/input" "$RUNNER_TEMP/node/regtest"
+          gh run download 39048374200 --repo "$GITHUB_REPOSITORY" --name professional-four-jade-public-unsigned-regtest --dir "$RUNNER_TEMP/input"
+          cp -a "$RUNNER_TEMP/input/four-jade-snapshot/blocks" "$RUNNER_TEMP/node/regtest/"
+          cp -a "$RUNNER_TEMP/input/four-jade-snapshot/chainstate" "$RUNNER_TEMP/node/regtest/"
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'input/four-jade-snapshot'
+          m=json.loads((root/'manifest.json').read_text())
+          assert m['network']=='regtest'
+          for x in m['files']:
+              b=(root/x['path']).read_bytes()
+              assert len(b)==x['size'] and hashlib.sha256(b).hexdigest()==x['sha256'],x['path']
+          print('PASS snapshot file hashes')
+          PY
+      - name: Start disposable Bitcoin Core 28 regtest
+        run: |
+          set -euo pipefail
+          docker pull bitcoin/bitcoin:28.0
+          docker run -d --name bc1q21-professional-regtest --network none -v "$RUNNER_TEMP/node:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -fallbackfee=0.0001 -txindex=1 -printtoconsole=0
+          for i in $(seq 1 90); do
+            if docker exec bc1q21-professional-regtest bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable getblockcount >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          docker exec bc1q21-professional-regtest bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable getblockcount | tee "$RUNNER_TEMP/initial-height"
+          test "$(cat "$RUNNER_TEMP/initial-height")" = 121
+      - name: Reconstruct finalized raw transaction from independently verified Jade signed PSBT
+        env:
+          PSBT_BASE64: cHNidP8BAFICAAAAAW63BFKGcM7QUQArtcRAgjw5/BlRN1/SqkHmXZvvwnEtAAAAAAD+////AfgqAAAAAAAAFgAUdR526BmRltRUlBxF0bOjI/FDO9aCAAAAAAEAcwIAAAABtBQ54Mnp72zFqRCeGxFVMyRDstbNLGy255u/sdei+KIAAAAAAP3///8C4C4AAAAAAAAXqRQq/Mt3iFUxiUiQYzBcp6PscZtQjoeRwgUqAQAAABepFM035loj3YG1jNWcdLyhXGjW6fSGh3gAAAAiAgNIAyWgUGWy8f0rPhDIgvvt3tnL+vL9CkV/LyzWyCmXQEcwRAIgcIdKba8jSXiWQ/0e7J6QGIZINNu5n0HRTD8vvWBxo98CIBXaxDz189SNF80zMy0I1bqEwCotml/o7Ar7pKIFaqHtAQEEKAKCALF1IQNIAyWgUGWy8f0rPhDIgvvt3tnL+vL9CkV/LyzWyCmXQKwiBgNIAyWgUGWy8f0rPhDIgvvt3tnL+vL9CkV/LyzWyCmXQBjimsE8VAAAgAAAAIAAAACAAQAAAAAAAAAAAA==
+        run: |
+          python3 - <<'PY'
+          import os,base64,hashlib,pathlib
+          b=base64.b64decode(os.environ['PSBT_BASE64']); assert b[:5]==b'psbt\xff'
+          assert hashlib.sha256(b).hexdigest()=='be3fd0749b52094cab76c1c0a168dff4446f95bc5a6838f733b21ddd03bda6b1'
+          pos=5
+          def varint():
+              global pos
+              n=b[pos];pos+=1
+              if n==253:n=int.from_bytes(b[pos:pos+2],'little');pos+=2
+              elif n==254:n=int.from_bytes(b[pos:pos+4],'little');pos+=4
+              elif n==255:n=int.from_bytes(b[pos:pos+8],'little');pos+=8
+              return n
+          def section():
+              global pos
+              d={}
+              while True:
+                  klen=varint()
+                  if not klen:break
+                  k=b[pos:pos+klen];pos+=klen
+                  vlen=varint();v=b[pos:pos+vlen];pos+=vlen
+                  d[k]=v
+              return d
+          g=section();i=section();o=section()
+          unsigned=g[b'\x00']
+          pub=b'\x03H\x03%\xa0Pe\xb2\xf1\xfd+>\x10\xc8\x82\xfb\xed\xde\xd9\xcb\xfa\xf2\xfd\nE\x7f/,\xd6\xc8)t@'
+          sig=i[b'\x02'+pub];redeem=i[b'\x04']
+          assert redeem.hex()=='028200b17521'+pub.hex()+'ac'
+          assert len(sig)<76 and len(redeem)<76
+          # The unsigned tx has exactly one input with empty scriptSig.
+          assert unsigned[:4].hex()=='02000000' and unsigned[4]==1 and unsigned[41]==0
+          script=bytes([len(sig)])+sig+bytes([len(redeem)])+redeem
+          raw=unsigned[:41]+bytes([len(script)])+script+unsigned[42:]
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'release1-final-raw.hex'
+          p.write_text(raw.hex())
+          print('PASS PSBT hash, embedded signer and P2SH CLTV script; raw bytes',len(raw))
+          PY
+      - name: Check CLTV rejection before maturity and acceptance after maturity
+        run: |
+          set -euo pipefail
+          cli() { docker exec bc1q21-professional-regtest bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable "$@"; }
+          test "$(cli getblockcount)" = 121
+          test "$(cli gettxout 2d71c2ef9b5de641aad25f375119fc393c8240c4b52b0051d0ce70865204b76e 0 | python3 -c 'import json,sys; assert json.load(sys.stdin)["value"]==0.00012000')" = ""
+          RAW="$(cat "$RUNNER_TEMP/release1-final-raw.hex")"
+          cli decoderawtransaction "$RAW" | python3 -c 'import json,sys; x=json.load(sys.stdin); assert x["locktime"]==130 and x["vout"][0]["value"]==0.00011000'
+          cli testmempoolaccept "[\"$RAW\"]" | tee "$RUNNER_TEMP/pre-maturity.json"
+          python3 - <<'PY'
+          import json,os,pathlib
+          a=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'pre-maturity.json').read_text())[0]
+          assert not a['allowed'],a
+          print('PASS pre-maturity rejected:',a.get('reject-reason'))
+          PY
+          cli createwallet disposable-miner >/dev/null
+          ADDRESS="$(cli -rpcwallet=disposable-miner getnewaddress)"
+          cli generatetoaddress 9 "$ADDRESS" >/dev/null
+          test "$(cli getblockcount)" = 130
+          cli testmempoolaccept "[\"$RAW\"]" | tee "$RUNNER_TEMP/after-maturity.json"
+          python3 - <<'PY'
+          import json,os,pathlib
+          a=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'after-maturity.json').read_text())[0]
+          assert a['allowed'],a
+          print('PASS Bitcoin Core 28 regtest testmempoolaccept after height 130',a['txid'])
+          PY
+      - name: Upload acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-release1-regtest-acceptance-evidence
+          path: |
+            ${{ runner.temp }}/initial-height
+            ${{ runner.temp }}/pre-maturity.json
+            ${{ runner.temp }}/after-maturity.json
+          if-no-files-found: warn
+          retention-days: 7
