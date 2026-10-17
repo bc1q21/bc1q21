@@ -1,0 +1,42 @@
+name: Professional isolated public gift-output recipient review
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/build-public-discovery-review.mjs'
+      - '.github/workflows/professional-public-recipient-review.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  offline-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Retrieve independently checked public regtest discovery audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/public-fixture"
+          gh run download 39056955199 --repo "$GITHUB_REPOSITORY" --name professional-public-regtest-outpoint-audit --dir "$RUNNER_TEMP/public-fixture"
+          test -s "$RUNNER_TEMP/public-fixture/public-outpoints-audit.json"
+      - name: Build offline public-only recipient release review
+        run: |
+          set -euo pipefail
+          node Professional/build-public-discovery-review.mjs "$RUNNER_TEMP/public-fixture/public-outpoints-audit.json" "$RUNNER_TEMP/bc1q21-Professional-Public-Release-Review.html"
+          test -s "$RUNNER_TEMP/bc1q21-Professional-Public-Release-Review.html"
+      - name: Upload disposable offline HTML review
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-public-regtest-recipient-review
+          path: ${{ runner.temp }}/bc1q21-Professional-Public-Release-Review.html
+          if-no-files-found: error
+          retention-days: 7
