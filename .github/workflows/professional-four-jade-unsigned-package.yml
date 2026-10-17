@@ -45,6 +45,11 @@ jobs:
             -rpcuser=professional -rpcpassword=synthetic-only \
             -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
 
+          echo "Waiting for disposable Bitcoin Core regtest to be ready..."
+          docker exec professional-four-jade bitcoin-cli \
+            -regtest -datadir=/regtestdata \
+            -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcwait getblockchaininfo
           node Professional/four-jade-funded-unsigned-regtest.mjs
           test -s "$PROFESSIONAL_FOUR_PUBLIC_EVIDENCE_PATH"
 
