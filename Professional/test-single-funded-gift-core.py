@@ -19,7 +19,11 @@ def rpc(*args,wallet=False):
          '-rpcuser=regtest','-rpcpassword=disposable']
     if wallet:cmd+=['-rpcwallet=test-gift-creator']
     cmd += list(map(str,args))
-    return json.loads(subprocess.check_output(cmd,text=True))
+    result=subprocess.check_output(cmd,text=True).strip()
+    try:
+        return json.loads(result)
+    except json.JSONDecodeError:
+        return result  # Bitcoin Core CLI returns plain addresses and txids as unquoted text
 
 def p2sh_addr(script):
     assert len(script)==46 and script[:4]=='a914' and script[-2:]=='87'
