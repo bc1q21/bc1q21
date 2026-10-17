@@ -1,0 +1,60 @@
+// Public-only, offline four-release Jade BC-UR QR preparation. No keys or signing.
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {join} from 'node:path';
+import {createHash} from 'node:crypto';
+import {UR,URDecoder,UREncoder} from '@ngraveio/bc-ur';
+import cbor from 'cbor';
+import QRCode from 'qrcode';
+import jsQR from 'jsqr';
+import {PNG} from 'pngjs';
+const sha=b=>createHash('sha256').update(b).digest('hex');
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const [input,output]=process.argv.slice(2);
+assert.ok(input&&output,'Usage: node build-four-jade-bcur-review.mjs <public-json> <output-html>');
+const record=JSON.parse(readFileSync(input,'utf8'));
+assert.equal(record.format,'bc1q21-professional-four-jade-public-regtest-v1');
+assert.equal(record.network,'regtest');
+assert.equal(record.chainHeight,121);
+assert.equal(record.signed,false);
+assert.equal(record.releases.length,4);
+assert.equal(record.fingerprint,'e29ac13c');
+const framesByRelease=[],imagesByRelease=[],summaries=[];
+for(let i=0;i<4;i++){
+ const r=record.releases[i];
+ assert.equal(r.release,i+1);
+ assert.equal(r.locktime,[130,140,150,160][i]);
+ assert.equal(r.derivationPath,`m/84'/0'/0'/1/${i}`);
+ assert.equal(r.inputSats,[12000,15000,18000,21000][i]);
+ assert.equal(r.destinationSats,r.inputSats-1000);
+ assert.equal(r.feeSats,1000);
+ const raw=Buffer.from(r.unsignedPsbtBase64,'base64');
+ assert.equal(raw.length,314);
+ assert.equal(sha(raw),r.unsignedPsbtSha256);
+ assert.equal(raw.subarray(0,5).toString('hex'),'70736274ff');
+ const enc=new UREncoder(new UR(cbor.encode(raw),'crypto-psbt'),41,0);
+ const frames=[],images=[];
+ for(let j=0;j<enc.fragmentsLength;j++){
+  const frame=enc.nextPart();
+  const png=PNG.sync.read(await QRCode.toBuffer(frame,{type:'png',errorCorrectionLevel:'M',margin:4,scale:6}));
+  const pixels=jsQR(new Uint8ClampedArray(png.data),png.width,png.height,{inversionAttempts:'dontInvert'});
+  assert.ok(pixels,'QR image could not be decoded');
+  assert.equal(pixels.data.toLowerCase(),frame.toLowerCase(),'QR pixel mismatch');
+  frames.push(frame);
+  images.push('data:image/png;base64,'+PNG.sync.write(png).toString('base64'));
+ }
+ const decoder=new URDecoder();
+ for(const frame of [...frames].reverse())decoder.receivePart(frame);
+ assert.equal(decoder.isComplete(),true,'BC-UR fountain incomplete');
+ assert.equal(decoder.isSuccess(),true,'BC-UR fountain failure');
+ assert.equal(decoder.resultUR().type,'crypto-psbt');
+ assert.deepEqual(cbor.decodeFirstSync(Buffer.from(decoder.resultUR().cbor)),raw,'PSBT byte roundtrip mismatch');
+ framesByRelease.push(frames);imagesByRelease.push(images);
+ summaries.push({release:i+1,height:r.locktime,amount:r.inputSats,recipient:r.destinationSats,fee:r.feeSats,path:r.derivationPath,outpoint:r.fundingTxid+':'+r.vout,sha256:sha(raw),frames:frames.length});
+}
+assert.equal(new Set(summaries.map(x=>x.outpoint)).size,4);
+const cards=summaries.map((r,i)=>`<section><h2>Release ${r.release} — height ${r.height}</h2><p>Funding: ${r.amount} test sats · Destination: ${r.recipient} · Fee: ${r.fee}</p><p>Signer path: ${esc(r.path)}</p><p>Outpoint: <code>${esc(r.outpoint)}</code></p><p>PSBT SHA-256: <code>${r.sha256}</code></p><p>BC-UR frames: ${r.frames}</p><button onclick="selectRelease(${i})">Review release ${r.release} QR</button></section>`).join('');
+const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'"><title>bc1q21 Professional — four Jade BC-UR QR review</title><style>body{font:16px system-ui;max-width:860px;margin:20px auto;padding:20px;background:#162233;color:#fff}section,#viewer{padding:18px;border:1px solid #889;margin:12px 0;border-radius:9px}code{overflow-wrap:anywhere;font-size:12px}button{padding:12px;margin:6px;font-size:16px}img{max-width:95%;width:440px;background:white;image-rendering:pixelated}.warning{color:#ffb1b1;font-weight:bold}#viewer{text-align:center}</style></head><body><h1>bc1q21 Professional — offline Jade QR review</h1><p class="warning">REGTEST ONLY — NO REAL BITCOIN. REVIEW ONLY. DO NOT SCAN OR SIGN UNTIL SEPARATELY AUTHORIZED.</p><p>Four unsigned Jade-origin CLTV PSBTs. Each BC-UR crypto-psbt QR frame has passed pixel decoding and complete PSBT byte-for-byte reconstruction. Hardware acceptance is not yet proven. This page makes no network requests.</p>${cards}<div id="viewer"><h2 id="heading">Release 1 QR — review only</h2><p id="status">Paused</p><img id="qr" alt="Offline BC-UR QR frame"><div><button onclick="previous()">Previous frame</button><button onclick="next()">Next frame</button><button id="toggle" onclick="toggle()">Start animation</button></div></div><script>'use strict';const images=${JSON.stringify(imagesByRelease)};let release=0,index=0,timer=null;function stop(){if(timer!==null){clearInterval(timer);timer=null}document.getElementById('toggle').textContent='Start animation'}function show(){document.getElementById('qr').src=images[release][index];document.getElementById('heading').textContent='Release '+(release+1)+' QR — review only';document.getElementById('status').textContent='Frame '+(index+1)+' of '+images[release].length+(timer===null?' — paused':' — animating')}function selectRelease(i){stop();release=i;index=0;show();document.getElementById('viewer').scrollIntoView()}function previous(){stop();index=(index+images[release].length-1)%images[release].length;show()}function next(){stop();index=(index+1)%images[release].length;show()}function toggle(){if(timer!==null){stop();show();return}timer=setInterval(()=>{index=(index+1)%images[release].length;show()},1500);document.getElementById('toggle').textContent='Pause animation';show()}show();</script></body></html>`;
+assert.ok(!/https?:\/\//i.test(html),'Offline HTML contains external URLs');
+writeFileSync(output,html,{mode:0o600});
+console.log('PASS_FOUR_JADE_BCUR_QR_PIXEL_AND_PSBT_ROUNDTRIP',JSON.stringify({releases:summaries,htmlSha256:sha(Buffer.from(html)),hardwareScanned:false,signed:false,broadcast:false}));
