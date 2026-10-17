@@ -1,0 +1,24 @@
+name: Professional isolated gift-specific recipient UI check
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/recipient-gift-specific-prototype.html'
+      - 'Professional/test-recipient-gift-specific-prototype.mjs'
+      - '.github/workflows/professional-recipient-gift-specific-ui.yml'
+permissions:
+  contents: read
+jobs:
+  public-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate isolated recipient mockup security boundary
+        run: node Professional/test-recipient-gift-specific-prototype.mjs
