@@ -49,7 +49,8 @@ const destination=bitcoin.payments.p2wpkh({
 const funded=[];
 for(let i=0;i<4;i++){
  const txid=await rpc('sendtoaddress',[handoffs[i].fundingAddress,amounts[i]/1e8],wallet);
- const raw=await rpc('getrawtransaction',[txid,false]);
+ const rawWithWitness=await rpc('getrawtransaction',[txid,false]);
+const raw=bitcoin.Transaction.fromHex(rawWithWitness).toHex(false);
  const tx=bitcoin.Transaction.fromHex(raw);
  const vouts=tx.outs.map((o,vout)=>({o,vout})).filter(({o})=>
   o.value===amounts[i]&&Buffer.from(o.script).toString('hex')===handoffs[i].fundingScriptPubKeyHex);
