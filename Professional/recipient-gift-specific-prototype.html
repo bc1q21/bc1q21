@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>bc1q21 Professional — gift-specific recipient prototype (offline)</title>
+<style>
+:root{color-scheme:light;font:16px system-ui,Arial,sans-serif;background:#f4f7fb;color:#16263a}
+*{box-sizing:border-box}body{margin:0}main{max-width:930px;margin:0 auto;padding:24px 18px 65px}
+header{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0 20px;border-bottom:3px solid #064c85}
+.brand{color:#064c85;font-size:1.7rem;font-weight:800}.tag{font-size:.74rem;font-weight:700;color:#fff;background:#34465c;padding:7px 10px;border-radius:6px}
+section{background:#fff;border:1px solid #d9e2ee;border-radius:12px;padding:20px;margin:18px 0;box-shadow:0 2px 6px #1428400c}
+h1{font-size:1.65rem;margin:20px 0 8px}h2{font-size:1.13rem;margin:0 0 13px}p{line-height:1.5}.muted{color:#506174}.warn{background:#fff1dc;border-left:4px solid #ba760d;padding:12px 16px}.pledge{background:#eaf5ee;border-left:4px solid #167447;padding:12px 16px}
+.mono{font:0.85rem ui-monospace,monospace;word-break:break-word}.overview{text-align:center;background:#14283e;color:white}.overview h2{color:#e0ecff}.big{font-size:2rem;font-weight:800;letter-spacing:.02em}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:12px;border-bottom:1px solid #e1e6ed}th{font-size:.82rem;color:#4b6075}td:last-child{text-align:right}
+button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;background:#07568e;font-weight:700;cursor:pointer}button[disabled]{cursor:not-allowed;background:#a7b2c0}button.secondary{background:#e8eff5;color:#18466b}
+.status{font-size:.82rem;font-weight:700;border-radius:16px;background:#e8eef4;padding:5px 9px;white-space:nowrap}
+.step{display:flex;gap:12px;margin:12px 0}.number{background:#dbeaf6;color:#074b7b;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 0}
+#message{font-weight:600}small{line-height:1.45}
+@media(max-width:550px){main{padding:14px 10px}section{padding:14px}header{align-items:start}.brand{font-size:1.4rem}.big{font-size:1.5rem}td,th{padding:10px 5px}}
+</style>
+</head>
+<body><main>
+<header><div class="brand">bc1q21</div><div class="tag">PROFESSIONAL · REGTEST PROTOTYPE</div></header>
+<h1>Your Gift Overview</h1>
+<p class="muted">This is the gift-specific recipient page reached through a gift card's link or QR code. It is not the general bc1q21 homepage.</p>
+<p class="warn"><strong>Offline demonstration only.</strong> Fictional gift and wallet address. No real Bitcoin. No wallet connection, blockchain queries, transaction construction, signing, or broadcast.</p>
+<section><h2>Gift identification</h2><p>Recipient link context:</p><p class="mono" id="giftId"></p><p class="muted" id="linkStatus"></p><small>The retail recipient link is based on the funding address: /gift/&lt;address&gt; or ?a=&lt;address&gt;. This prototype never queries that address or assumes possession of it authorizes spending.</small></section>
+<section class="overview"><h2>Your total gift value</h2><div class="big">0.00066000 BTC</div><p>66,000 disposable regtest satoshis in four example releases</p></section>
+<section><h2>Security: your wallet stays offline</h2><p class="pledge">Do not type your 12 recovery words into this page. Your Jade or other hardware signer keeps the private signing keys offline. A gift link is a locator, never authorization to spend.</p><p>Instead of the retail recovery-word field, a real Professional page will exchange unsigned and signed transaction QR data with your offline signer. That exchange is <strong>not enabled in this mockup</strong>.</p></section>
+<section><h2>Gift release schedule</h2><div style="overflow-x:auto"><table><thead><tr><th>Release</th><th>Unlock height</th><th>Amount</th><th>Current status</th></tr></thead>
+<tbody><tr><td>1</td><td>130</td><td>12,000 sats</td><td><span class="status">Tested</span></td></tr>
+<tr><td>2</td><td>140</td><td>15,000 sats</td><td><span class="status">Tested</span></td></tr>
+<tr><td>3</td><td>150</td><td>18,000 sats</td><td><span class="status">Tested</span></td></tr>
+<tr><td>4</td><td>160</td><td>21,000 sats</td><td><span class="status">Tested</span></td></tr></tbody></table></div>
+<p class="muted">These are known public synthetic fixtures from our isolated regtest work—not live balances, spendable UTXO discoveries, or dates derived from the recipient's real gift.</p></section>
+<section><h2>Release payments — offline signer</h2>
+<div class="step"><div class="number">1</div><div>Review the matured release, destination and fee on this gift-specific page.</div></div>
+<div class="step"><div class="number">2</div><div>Open the unsigned transaction as animated QR frames, and review it on Jade.</div></div>
+<div class="step"><div class="number">3</div><div>Scan Jade's signed QR back into the page and verify the returned PSBT publicly.</div></div>
+<div class="step"><div class="number">4</div><div>Broadcast only after verifying authorization, maturity, signature and transaction details.</div></div>
+<div class="actions"><button id="sign" disabled aria-describedby="message">Sign matured release with offline wallet</button><button class="secondary" id="explain">Why is signing disabled?</button></div>
+<p id="message" role="status">QR-signing integration is intentionally disabled. This page is a public-only UX prototype.</p>
+</section>
+</main>
+<script>
+'use strict';
+(function(){
+ const params=new URLSearchParams(location.search);
+ const value=params.get('a')||params.get('address')||'';
+ const gift=document.getElementById('giftId'),status=document.getElementById('linkStatus');
+ // Address is text, never HTML. No seed, private-key field, camera, networking or storage.
+ const valid=/^[a-zA-Z0-9]{26,90}$/.test(value);
+ gift.textContent=valid?value:'DEMO-ONLY — no gift address provided';
+ status.textContent=valid?'Gift-specific address from recipient link (not queried or authenticated).':'A real gift link will supply a public funding-address locator.';
+ document.getElementById('explain').addEventListener('click',()=>{
+  document.getElementById('message').textContent='The four regtest spends have been tested independently. This prototype does not yet connect a gift link to verified on-chain release discovery, unsigned PSBT construction, offline QR signing, or broadcasting. No keys are requested.';
+ });
+})();
+</script>
+</body></html>
