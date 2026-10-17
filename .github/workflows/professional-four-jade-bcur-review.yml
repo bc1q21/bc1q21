@@ -1,0 +1,50 @@
+name: Professional four Jade offline BC-UR QR review
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - '.github/workflows/professional-four-jade-bcur-review.yml'
+      - 'Professional/build-four-jade-bcur-review.mjs'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  offline-four-jade-bcur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install QR-only dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 jsqr@1.4.0 pngjs@7.0.0
+      - name: Retrieve previously verified disposable public regtest artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/four-jade-input"
+          gh run download 39048374200 --repo "$GITHUB_REPOSITORY" --name professional-four-jade-public-unsigned-regtest --dir "$RUNNER_TEMP/four-jade-input"
+          test -s "$RUNNER_TEMP/four-jade-input/four-jade-public-unsigned.json"
+      - name: Build and independently verify four offline BC-UR QR sequences
+        shell: bash
+        run: |
+          set -euo pipefail
+          node Professional/build-four-jade-bcur-review.mjs "$RUNNER_TEMP/four-jade-input/four-jade-public-unsigned.json" "$RUNNER_TEMP/bc1q21-Professional-Four-Jade-BCUR-Review.html"
+          test -s "$RUNNER_TEMP/bc1q21-Professional-Four-Jade-BCUR-Review.html"
+      - name: Upload offline QR review page
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-four-jade-offline-bcur-review
+          path: ${{ runner.temp }}/bc1q21-Professional-Four-Jade-BCUR-Review.html
+          if-no-files-found: error
+          retention-days: 7
