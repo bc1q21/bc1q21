@@ -1,0 +1,23 @@
+name: Professional real retail AESHelper synthetic compatibility
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/test-retail-aeshelper-public-fixture.mjs'
+      - '.github/workflows/professional-retail-aeshelper-compat.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test actual retail AES helper with fictional non-wallet strings
+        run: node Professional/test-retail-aeshelper-public-fixture.mjs
