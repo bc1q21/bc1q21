@@ -1,0 +1,109 @@
+
+name: Professional four Jade unsigned funded regtest package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - '.github/workflows/professional-four-jade-unsigned-package.yml'
+      - 'Professional/four-jade-funded-unsigned-regtest.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  four-jade-public-unsigned:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - name: Install pinned public-only dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @noble/curves@1.9.7
+
+      - name: Start fresh disposable regtest and prepare four unsigned PSBTs
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PROFESSIONAL_FOUR_PUBLIC_EVIDENCE_PATH="$RUNNER_TEMP/four-jade-public-unsigned.json"
+          mkdir -p "$RUNNER_TEMP/four-jade-chain"
+          chmod 777 "$RUNNER_TEMP/four-jade-chain"
+          printf '%s\n' '{"purpose":"bc1q21-professional-disposable-regtest","acknowledged":true}' > "$RUNNER_TEMP/four-jade-chain/.bc1q21-professional-disposable-regtest"
+
+          docker run -d --name professional-four-jade --network host \
+            -v "$RUNNER_TEMP/four-jade-chain:/regtestdata" \
+            --entrypoint bitcoind ruimarinho/bitcoin-core:28 \
+            -regtest -server -datadir=/regtestdata -txindex=0 \
+            -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
+
+          node Professional/four-jade-funded-unsigned-regtest.mjs
+          test -s "$PROFESSIONAL_FOUR_PUBLIC_EVIDENCE_PATH"
+
+          docker exec professional-four-jade bitcoin-cli \
+            -regtest -datadir=/regtestdata \
+            -rpcuser=professional -rpcpassword=synthetic-only -rpcwait stop
+          docker wait professional-four-jade >/dev/null
+          docker rm professional-four-jade
+          sudo chmod -R a+rX "$RUNNER_TEMP/four-jade-chain/regtest"
+
+      - name: Export and verify stopped-chain snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ORIGINAL="$RUNNER_TEMP/four-jade-chain"
+          export SNAPSHOT="$RUNNER_TEMP/four-jade-snapshot"
+
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {
+            exportStoppedRegtestSnapshot,
+            verifyOfflineRegtestSnapshot
+          } from './Professional/regtest-snapshot-offline.mjs';
+
+          const e=JSON.parse(readFileSync(
+            process.env.RUNNER_TEMP+'/four-jade-public-unsigned.json','utf8'
+          ));
+          assert.equal(e.network,'regtest');
+          assert.equal(e.releases.length,4);
+          assert.equal(e.signed,false);
+          assert.equal(
+            new Set(e.releases.map(r=>r.fundingTxid+':'+r.vout)).size,4
+          );
+
+          const m=exportStoppedRegtestSnapshot(
+            process.env.ORIGINAL,process.env.SNAPSHOT,{coreStopped:true}
+          );
+          verifyOfflineRegtestSnapshot(process.env.SNAPSHOT);
+          assert.ok(m.files.length>=3);
+          console.log('PASS_FOUR_JADE_CHAIN_SNAPSHOT',JSON.stringify({
+            files:m.files.length,
+            chainHeight:e.chainHeight,
+            chainTip:e.chainTip,
+            releaseCount:e.releases.length
+          }));
+          NODE
+
+      - name: Upload public PSBTs and disposable regtest snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-four-jade-public-unsigned-regtest
+          path: |
+            ${{ runner.temp }}/four-jade-public-unsigned.json
+            ${{ runner.temp }}/four-jade-snapshot/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
+
+      - name: Remove disposable regtest container
+        if: always()
+        run: docker rm -f professional-four-jade 2>/dev/null || true
