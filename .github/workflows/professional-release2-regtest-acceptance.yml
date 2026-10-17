@@ -1,0 +1,140 @@
+name: Professional Release 2 Jade restored-regtest acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - '.github/workflows/professional-release2-regtest-acceptance.yml'
+      - 'Professional/verify-release2-jade-bcur.mjs'
+      - 'Professional/release2-jade-signed-public-qr.txt'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  regtest-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Retrieve original public four-gift PSBT and saved regtest blockchain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/input" "$RUNNER_TEMP/node/regtest"
+          gh run download 39048374200 --repo "$GITHUB_REPOSITORY" --name professional-four-jade-public-unsigned-regtest --dir "$RUNNER_TEMP/input"
+          cp -a "$RUNNER_TEMP/input/four-jade-snapshot/blocks" "$RUNNER_TEMP/node/regtest/"
+          cp -a "$RUNNER_TEMP/input/four-jade-snapshot/chainstate" "$RUNNER_TEMP/node/regtest/"
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'input/four-jade-snapshot'
+          m=json.loads((root/'manifest.json').read_text())
+          assert m['network']=='regtest'
+          for x in m['files']:
+              b=(root/x['path']).read_bytes()
+              assert len(b)==x['size'] and hashlib.sha256(b).hexdigest()==x['sha256'],x['path']
+          print('PASS snapshot SHA256 checks')
+          PY
+      - name: Reconstruct exact Jade signed PSBT from Release 2 QR frames
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @ngraveio/bc-ur@1.1.13 cbor@9.0.2
+          node Professional/verify-release2-jade-bcur.mjs Professional/release2-jade-signed-public-qr.txt "$RUNNER_TEMP/input/four-jade-public-unsigned.json" "$RUNNER_TEMP/release2-signed.psbt"
+      - name: Independently finalize Release 2 signed P2SH CLTV transaction
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,hashlib,json
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          b=(root/'release2-signed.psbt').read_bytes()
+          assert b[:5]==b'psbt\xff'
+          pos=5
+          def varint():
+              global pos
+              n=b[pos];pos+=1
+              if n==253:n=int.from_bytes(b[pos:pos+2],'little');pos+=2
+              elif n==254:n=int.from_bytes(b[pos:pos+4],'little');pos+=4
+              elif n==255:n=int.from_bytes(b[pos:pos+8],'little');pos+=8
+              return n
+          def section():
+              global pos
+              d={}
+              while True:
+                  klen=varint()
+                  if not klen:break
+                  k=b[pos:pos+klen];pos+=klen
+                  vlen=varint();v=b[pos:pos+vlen];pos+=vlen
+                  assert k not in d
+                  d[k]=v
+              return d
+          g=section();i=section();o=section()
+          assert pos==len(b)
+          unsigned=g[b'\x00']
+          sigkeys=[k for k in i if len(k)==34 and k[0]==2]
+          assert len(sigkeys)==1, 'Exactly one signed pubkey required'
+          pub=sigkeys[0][1:]
+          sig=i[sigkeys[0]]
+          redeem=i[b'\x04']
+          assert redeem.endswith(bytes([33])+pub+b'\xac'), 'Unexpected CLTV public key'
+          assert redeem.startswith(bytes.fromhex('028c00b175')), 'Expected 140 CLTV redeem-script prefix'
+          assert 8<len(sig)<76 and sig[-1]==1, 'Bad partial signature'
+          assert len(redeem)<76
+          assert unsigned[:4].hex()=='02000000' and unsigned[4]==1 and unsigned[41]==0, 'Unexpected unsigned input serialization'
+          script=bytes([len(sig)])+sig+bytes([len(redeem)])+redeem
+          assert len(script)<253
+          raw=unsigned[:41]+bytes([len(script)])+script+unsigned[42:]
+          (root/'release2-raw.hex').write_text(raw.hex())
+          (root/'release2-evidence.json').write_text(json.dumps({'psbt_sha256':hashlib.sha256(b).hexdigest(),'raw_sha256':hashlib.sha256(raw).hexdigest(),'pubkey':pub.hex(),'cltv':140,'fee_sats':1000},indent=2))
+          print('PASS signed PSBT and CLTV redeem script; raw bytes',len(raw))
+          PY
+      - name: Restore Bitcoin Core 28 isolated regtest and validate acceptance by height
+        run: |
+          set -euo pipefail
+          docker pull bitcoin/bitcoin:28.0
+          docker run -d --name bc1q21-pro-release2 --network none -v "$RUNNER_TEMP/node:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -fallbackfee=0.0001 -txindex=1 -printtoconsole=0
+          cli() { docker exec bc1q21-pro-release2 bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable "$@"; }
+          for i in $(seq 1 90); do if cli getblockcount >/dev/null 2>&1; then break; fi; sleep 2; done
+          test "$(cli getblockcount)" = 121
+          RAW="$(cat "$RUNNER_TEMP/release2-raw.hex")"
+          cli decoderawtransaction "$RAW" | tee "$RUNNER_TEMP/release2-decoded.json"
+          python3 - <<'PY'
+          import json,os,pathlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          r=json.loads((root/'release2-decoded.json').read_text())
+          assert r['locktime']==140,r
+          assert len(r['vin'])==1 and len(r['vout'])==1,r
+          assert r['vout'][0]['value']==0.00014000,r
+          assert r['vin'][0]['sequence']<4294967295,r
+          print('PASS exact payout, nLockTime 140 and enabled sequence')
+          PY
+          cli testmempoolaccept "[\"$RAW\"]" | tee "$RUNNER_TEMP/release2-before.json"
+          python3 - <<'PY'
+          import json,os,pathlib
+          r=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'release2-before.json').read_text())[0]
+          assert not r['allowed'],r
+          print('PASS before maturity rejected:',r.get('reject-reason'))
+          PY
+          cli createwallet disposable-release2-miner >/dev/null
+          ADDRESS="$(cli -rpcwallet=disposable-release2-miner getnewaddress)"
+          cli generatetoaddress 19 "$ADDRESS" >/dev/null
+          test "$(cli getblockcount)" = 140
+          cli testmempoolaccept "[\"$RAW\"]" | tee "$RUNNER_TEMP/release2-after.json"
+          python3 - <<'PY'
+          import json,os,pathlib
+          r=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'release2-after.json').read_text())[0]
+          assert r['allowed'],r
+          print('PASS_RELEASE2_BITCOIN_CORE_ACCEPTED_AT_140',r['txid'])
+          PY
+      - name: Preserve technical verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-release2-regtest-acceptance-evidence
+          path: |
+            ${{ runner.temp }}/release2-evidence.json
+            ${{ runner.temp }}/release2-decoded.json
+            ${{ runner.temp }}/release2-before.json
+            ${{ runner.temp }}/release2-after.json
+          if-no-files-found: warn
+          retention-days: 7
