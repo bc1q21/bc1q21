@@ -72,9 +72,9 @@ for index,d in enumerate(descriptors):
     matches=[v for v in all_vouts if v['scriptPubKey']['hex']==expected]
     assert len(matches)==1,'Missing or duplicate public gift output'
     v=matches[0]
-    assert v['n']==index+1,'Output ordering mismatch'
+    # Bitcoin Core may reorder recipient outputs when funding/signing; bind by script, never assumed vout.
     assert int(Decimal(str(v['value']))*100000000)==d['sats']
-    utxo=rpc('gettxout',txid,index+1,'true')
+    utxo=rpc('gettxout',txid,v['n'],'true')
     assert utxo is not None and utxo['scriptPubKey']['hex']==expected
     matched.append({'index':index,'vout':v['n'],'scriptPubKey':expected,'sats':d['sats']})
 assert len(matched)==24 and len({m['vout'] for m in matched})==24
