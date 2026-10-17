@@ -1,0 +1,47 @@
+name: Professional funded 24-release recipient evidence
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/bind-funded-public-gift.mjs'
+      - 'Professional/build-funded-recipient-review.mjs'
+      - '.github/workflows/professional-funded-recipient-evidence.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  bind-public-funding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned BIP32 verifier
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @scure/bip32@1.7.0
+      - name: Generate public watch-only descriptor fixture
+        run: node Professional/build-watchonly-public-fixture.mjs "$RUNNER_TEMP/public-fixture.json"
+      - name: Retrieve actual 24-output funding regtest evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          gh run download 39058443825 --repo "$GITHUB_REPOSITORY" --name professional-one-funded-24-release-regtest-proof --dir "$RUNNER_TEMP/evidence"
+          test -s "$RUNNER_TEMP/evidence/single-funded-gift-proof.json"
+      - name: Verify public script binding to funded Bitcoin Core outputs
+        run: node Professional/bind-funded-public-gift.mjs "$RUNNER_TEMP/public-fixture.json" "$RUNNER_TEMP/evidence/single-funded-gift-proof.json" "$RUNNER_TEMP/bound-public-gift.json"
+      - name: Build gift-specific offline recipient review
+        run: node Professional/build-funded-recipient-review.mjs "$RUNNER_TEMP/bound-public-gift.json" "$RUNNER_TEMP/bc1q21-Professional-Funded-Recipient-Review.html"
+      - name: Upload public-only evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-funded-24-release-recipient-evidence
+          path: |
+            ${{ runner.temp }}/bound-public-gift.json
+            ${{ runner.temp }}/bc1q21-Professional-Funded-Recipient-Review.html
+          retention-days: 7
