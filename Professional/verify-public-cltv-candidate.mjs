@@ -24,7 +24,7 @@ function parseCLTV(redeemHex) {
   assert.ok(pub[0]===2||pub[0]===3,'Invalid compressed key prefix');
   assert.equal(s[s.length-1],0xac,'Missing OP_CHECKSIG');
   assert.ok(!(encoded.at(-1)&0x80),'Negative CLTV number');
-  assert.ok(!(n>1&&encoded.at(-1)===0),'Nonminimal CLTV number');
+  assert.ok(!(n>1&&encoded.at(-1)===0&&!(encoded.at(-2)&0x80)),'Nonminimal CLTV number');
   const locktime=Number(encoded.readUIntLE(0,n));
   assert.ok(Number.isSafeInteger(locktime)&&locktime>=1);
   return {scriptPubKey:'a914'+hash160(s).toString('hex')+'87',locktime,publicKeyHex:pub.toString('hex')};
