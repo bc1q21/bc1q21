@@ -1,0 +1,24 @@
+name: Professional synthetic offline first-date recovery handoff
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/offline-first-date-handoff.mjs'
+      - 'Professional/test-offline-first-date-handoff.mjs'
+      - '.github/workflows/professional-offline-first-date-handoff.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate minimal public offline recovery handoff without wallet secrets
+        run: node Professional/test-offline-first-date-handoff.mjs
