@@ -1,0 +1,24 @@
+name: Professional retail calendar compatibility
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/retail-date-policy-reference.mjs'
+      - 'Professional/test-retail-date-policy.mjs'
+      - '.github/workflows/professional-retail-date-policy.yml'
+permissions:
+  contents: read
+jobs:
+  calendar-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compare retail date rollover behavior
+        run: node Professional/test-retail-date-policy.mjs
