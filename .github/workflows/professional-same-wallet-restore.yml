@@ -1,0 +1,25 @@
+name: Professional disposable same-wallet restore consistency
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/test-same-12-word-offline-restore.mjs'
+      - '.github/workflows/professional-same-wallet-restore.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned synthetic-test derivation packages
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @scure/bip32@1.7.0 @scure/bip39@1.6.0
+      - name: Verify isolated same-12-word public wallet restoration and CLTV scripts
+        run: node Professional/test-same-12-word-offline-restore.mjs
