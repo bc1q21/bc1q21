@@ -71,7 +71,10 @@ jobs:
           g=section();i=section();o=section()
           unsigned=g[b'\x00']
           pub=b'\x03H\x03%\xa0Pe\xb2\xf1\xfd+>\x10\xc8\x82\xfb\xed\xde\xd9\xcb\xfa\xf2\xfd\nE\x7f/,\xd6\xc8)t@'
-          signed_keys=[k for k in i if len(k)==34 and k[0]==2]\n          assert len(signed_keys)==1, signed_keys\n          pub=signed_keys[0][1:]\n          sig=i[signed_keys[0]];redeem=i[b'\x04']
+          signed_keys=[k for k in i if len(k)==34 and k[0]==2]
+          assert len(signed_keys)==1, signed_keys
+          pub=signed_keys[0][1:]
+          sig=i[signed_keys[0]];redeem=i[b'\x04']
           assert redeem.endswith(bytes([33])+pub+b'\xac'), 'redeem script signer mismatch'
           assert len(sig)<76 and len(redeem)<76
           # The unsigned tx has exactly one input with empty scriptSig.
