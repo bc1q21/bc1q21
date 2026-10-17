@@ -50,7 +50,7 @@ const funded=[];
 for(let i=0;i<4;i++){
  const txid=await rpc('sendtoaddress',[handoffs[i].fundingAddress,amounts[i]/1e8],wallet);
  const rawWithWitness=await rpc('getrawtransaction',[txid,false]);
-const raw=bitcoin.Transaction.fromHex(rawWithWitness).toHex(false);
+const raw=bitcoin.Transaction.fromHex(rawWithWitness).toBuffer(undefined,undefined,false).toString('hex');
  const tx=bitcoin.Transaction.fromHex(raw);
  const vouts=tx.outs.map((o,vout)=>({o,vout})).filter(({o})=>
   o.value===amounts[i]&&Buffer.from(o.script).toString('hex')===handoffs[i].fundingScriptPubKeyHex);
