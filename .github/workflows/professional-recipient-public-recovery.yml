@@ -1,0 +1,23 @@
+name: Professional synthetic recipient-public recovery tests
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/test-recipient-public-recovery.mjs'
+      - '.github/workflows/professional-recipient-public-recovery.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test X25519 recipient recovery using disposable synthetic keys
+        run: node Professional/test-recipient-public-recovery.mjs
