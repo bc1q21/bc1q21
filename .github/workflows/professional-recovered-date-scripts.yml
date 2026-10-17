@@ -1,0 +1,26 @@
+name: Professional recovered-date public script checks
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/verify-recovered-date-scripts.mjs'
+      - 'Professional/test-recovered-date-scripts.mjs'
+      - '.github/workflows/professional-recovered-date-scripts.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned public-only derivation library
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @scure/bip32@1.7.0
+      - name: Require recovered dates to reproduce actual public CLTV locking scripts
+        run: node Professional/test-recovered-date-scripts.mjs
