@@ -1,0 +1,20 @@
+// Static safety contract for the isolated gift-specific Professional recipient mockup.
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const html=readFileSync('Professional/recipient-gift-specific-prototype.html','utf8');
+assert.match(html,/bc1q21 Professional/);
+assert.match(html,/gift-specific recipient page/);
+assert.match(html,/URLSearchParams\(location\.search\)/);
+assert.match(html,/params\.get\('a'\)\|\|params\.get\('address'\)/);
+assert.match(html,/id="sign" disabled/);
+assert.match(html,/No real Bitcoin/);
+assert.match(html,/connect-src 'none'/);
+assert.match(html,/form-action 'none'/);
+assert.doesNotMatch(html,/<textarea\b/i);
+assert.doesNotMatch(html,/<input\b[^>]*type=["']password/i);
+assert.doesNotMatch(html,/\b(?:fetch|XMLHttpRequest|WebSocket|localStorage|sessionStorage|navigator\.mediaDevices)\s*(?:\(|\.)/);
+assert.doesNotMatch(html,/<script[^>]+src=/i);
+assert.doesNotMatch(html,/broadcastTransaction\s*\(/);
+for(const amount of ['12,000','15,000','18,000','21,000'])assert.ok(html.includes(amount));
+for(const height of ['130','140','150','160'])assert.ok(html.includes(height));
+console.log('PASS isolated gift-specific public-only recipient UX, inactive signer and no secret-entry/network code');
