@@ -1,0 +1,37 @@
+name: Professional isolated public watch-only recipient review
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/build-watchonly-recipient-review.mjs'
+      - 'Professional/build-watchonly-public-fixture.mjs'
+      - '.github/workflows/professional-watchonly-recipient-review.yml'
+permissions:
+  contents: read
+jobs:
+  public-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install public-derivation dependency
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @scure/bip32@1.7.0
+      - name: Generate disposable public-only 24-release fixture
+        run: node Professional/build-watchonly-public-fixture.mjs "$RUNNER_TEMP/pro-public-fixture.json"
+      - name: Validate watch-only outputs and create gift-specific HTML
+        run: |
+          node Professional/build-watchonly-recipient-review.mjs "$RUNNER_TEMP/pro-public-fixture.json" "$RUNNER_TEMP/bc1q21-Professional-Watchonly-Recipient-Review.html"
+          test -s "$RUNNER_TEMP/bc1q21-Professional-Watchonly-Recipient-Review.html"
+      - name: Share offline public review
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-watchonly-public-recipient-review
+          path: ${{ runner.temp }}/bc1q21-Professional-Watchonly-Recipient-Review.html
+          if-no-files-found: error
+          retention-days: 7
