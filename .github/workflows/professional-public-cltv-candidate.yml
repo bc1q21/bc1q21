@@ -1,0 +1,24 @@
+name: Professional public CLTV candidate binding test
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/verify-public-cltv-candidate.mjs'
+      - 'Professional/test-public-cltv-candidate.mjs'
+      - '.github/workflows/professional-public-cltv-candidate.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate public P2SH CLTV script commitments for 1, 4 and 24 outputs
+        run: node Professional/test-public-cltv-candidate.mjs
