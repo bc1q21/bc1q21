@@ -6,7 +6,7 @@ function fixture(count){
  const pub='02'+'11'.repeat(32);
  const ds=Array.from({length:count},(_,i)=>{
   const lock=130+i*10;
-  const num=Buffer.from([lock,0]); // minimal positive script number for 130+
+  const num=Buffer.alloc(2);num.writeUInt16LE(lock); // minimal positive script number for heights 130..360
   const redeem=Buffer.concat([Buffer.from([num.length]),num,Buffer.from('b17521','hex'),Buffer.from(pub,'hex'),Buffer.from([0xac])]);
   return {index:i,path:"m/84'/0'/0'/1/"+i,vout:i+1,sats:12000+i*1000,publicKeyHex:pub,
     locktime:lock,redeemScriptHex:redeem.toString('hex'),scriptPubKey:'a914'+h160(redeem)+'87'};
