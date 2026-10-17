@@ -1,0 +1,24 @@
+name: Professional fail-closed recipient claim gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/recipient-claim-readiness-gate.mjs'
+      - 'Professional/test-recipient-claim-readiness-gate.mjs'
+      - '.github/workflows/professional-recipient-claim-readiness.yml'
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reject unsigned or unverified Professional claim readiness
+        run: node Professional/test-recipient-claim-readiness-gate.mjs
