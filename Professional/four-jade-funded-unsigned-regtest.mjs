@@ -68,7 +68,14 @@ for(let i=0;i<4;i++){
  assert.ok(utxo&&utxo.confirmations>=1,'Funding outpoint unconfirmed or spent');
  assert.equal(utxo.scriptPubKey.hex,h.fundingScriptPubKeyHex);
  assert.equal(Math.round(utxo.value*1e8),amounts[i]);
- const prepared=prepareProfessionalReleaseFromPublicHandoff(h,{
+const prepared=prepareProfessionalReleaseFromPublicHandoff({
+  version:h.version,
+  network:h.network,
+  signerPubkeyHex:h.signerPubkeyHex,
+  locktime:h.locktime,
+  redeemScriptHex:h.redeemScriptHex,
+  fundingAddress:h.fundingAddress
+},{
   fundingTxHex:f.fundingTxHex,vout:f.vout,expectedTxid:f.txid,expectedSats:amounts[i],
   masterFingerprintHex:fingerprint,derivationPath:h.derivationPath,
   destinationScriptHex:destination.output.toString('hex'),destinationSats:amounts[i]-1000
