@@ -1,0 +1,124 @@
+name: Professional Jade Releases 3 and 4 Bitcoin Core regtest acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths: ['.github/workflows/professional-release34-acceptance.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  regtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Verify saved disposable regtest blockchain snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/input" "$RUNNER_TEMP/node/regtest"
+          gh run download 39048374200 --repo "$GITHUB_REPOSITORY" --name professional-four-jade-public-unsigned-regtest --dir "$RUNNER_TEMP/input"
+          cp -a "$RUNNER_TEMP/input/four-jade-snapshot/blocks" "$RUNNER_TEMP/node/regtest/"
+          cp -a "$RUNNER_TEMP/input/four-jade-snapshot/chainstate" "$RUNNER_TEMP/node/regtest/"
+          python3 - <<'PY'
+          import json,hashlib,pathlib,os
+          r=pathlib.Path(os.environ['RUNNER_TEMP'])/'input/four-jade-snapshot'
+          m=json.loads((r/'manifest.json').read_text());assert m['network']=='regtest'
+          for f in m['files']:
+              b=(r/f['path']).read_bytes()
+              assert len(b)==f['size'] and hashlib.sha256(b).hexdigest()==f['sha256']
+          print('PASS snapshot hashes')
+          PY
+      - name: Validate Jade signatures and finalize public-only transaction bytes
+        env:
+          PSBT_3: cHNidP8BAFICAAAAAbXWU0wxVtj3NXsNXtOuk7AhMa89ih1tnjevLw/2QeLfAQAAAAD+////AWhCAAAAAAAAFgAUdR526BmRltRUlBxF0bOjI/FDO9aWAAAAAAEAcwIAAAABu4G03+SbswK/OkhfH7MF20VPeSms3mrLObQCpNN4+ukAAAAAAP3///8CIasFKgEAAAAXqRRZ1Fpkd0MEujL04DqOeI9+/voVS4dQRgAAAAAAABepFNBbIfRXFCXkjIqLI6yHR8ZswL3Jh3gAAAAiAgK7h2vqmFQc0SPW8cXjNL10qsM8c3nBNaasA3qKcE1E0UcwRAIgcaKhrVa9RX8j3y9KFN6qLMyVqlSvdbAKUPc0kGt5yGACIHcCLq34yiqTekEp5JusqVPq2KSlw4tpDlyooRrNJStFAQEEKAKWALF1IQK7h2vqmFQc0SPW8cXjNL10qsM8c3nBNaasA3qKcE1E0awiBgK7h2vqmFQc0SPW8cXjNL10qsM8c3nBNaasA3qKcE1E0RjimsE8VAAAgAAAAIAAAACAAQAAAAIAAAAAAA==
+          PSBT_4: cHNidP8BAFICAAAAAWPms3WHPws8ut5gLODqev24+DlxvunTm96xVvVNF2p9AQAAAAD+////ASBOAAAAAAAAFgAUdR526BmRltRUlBxF0bOjI/FDO9agAAAAAAEAcwIAAAABXKqtFloWNpmXVns9WkOciNzdpBmNVIP+1nFVl2+sb/IAAAAAAP3///8CaZ8FKgEAAAAXqRTsEpkLhbYrrXFFXBwaLffkIWH8dYcIUgAAAAAAABepFN7Jm7bvuv18i7v/cMLs3JaqmiXyh3gAAAAiAgIdlhVfq3o53FRGvkSdOAsnUXK4wjQchDCWd8iiPLrr5kcwRAIgdjtRp+OhtwUPF6hZi1cs+C+7C2Ruty1a7eR3DtafzegCIDWYOMJXzFQ+m7K0IlfAfFf3ns3LEyfpgqlsA6rS/sweAQEEKAKgALF1IQIdlhVfq3o53FRGvkSdOAsnUXK4wjQchDCWd8iiPLrr5qwiBgIdlhVfq3o53FRGvkSdOAsnUXK4wjQchDCWd8iiPLrr5hjimsE8VAAAgAAAAIAAAACAAQAAAAMAAAAAAA==
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,json,os,pathlib,struct
+          from cryptography.hazmat.primitives.asymmetric import ec,utils
+          from cryptography.hazmat.primitives import hashes
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          rec=json.loads((root/'input/four-jade-public-unsigned.json').read_text())
+          def compact(b,p):
+              n=b[p];p+=1
+              if n==253:n=int.from_bytes(b[p:p+2],'little');p+=2
+              elif n==254:n=int.from_bytes(b[p:p+4],'little');p+=4
+              elif n==255:n=int.from_bytes(b[p:p+8],'little');p+=8
+              return n,p
+          def maps(b):
+              assert b[:5]==b'psbt\xff'
+              p=5;out=[]
+              while p<len(b):
+                  m={}
+                  while True:
+                      n,p=compact(b,p)
+                      if not n:break
+                      k=b[p:p+n];p+=n
+                      n,p=compact(b,p);v=b[p:p+n];p+=n
+                      assert k not in m
+                      m[k]=v
+                  out.append(m)
+              assert len(out)==3
+              return out
+          for number in (3,4):
+              signed=base64.b64decode(os.environ[f'PSBT_{number}'],validate=True)
+              r=rec['releases'][number-1]
+              unsigned=base64.b64decode(r['unsignedPsbtBase64'])
+              g,i,o=maps(signed);u,ui,uo=maps(unsigned)
+              assert g[b'\x00']==u[b'\x00']
+              keys=[k for k in i if len(k)==34 and k[0]==2]
+              assert len(keys)==1
+              pub=keys[0][1:];sig=i[keys[0]];redeem=i[b'\x04']
+              assert pub.hex()==r['signerPubkeyHex']
+              assert redeem.hex()==r['redeemScriptHex']
+              assert redeem.endswith(bytes([33])+pub+b'\xac') and sig[-1]==1
+              assert hashlib.new('ripemd160',hashlib.sha256(redeem).digest()).hexdigest()==r['fundingScriptPubKeyHex'][4:-2]
+              tx=g[b'\x00'];assert tx[41]==0 and tx[-4:]==struct.pack('<I',r['locktime'])
+              assert tx[47:55]==struct.pack('<Q',r['destinationSats'])
+              assert tx[56:78].hex()==r['destinationScriptHex']
+              scripted=tx[:41]+bytes([len(redeem)])+redeem+tx[42:]
+              sighash=hashlib.sha256(hashlib.sha256(scripted+b'\x01\x00\x00\x00').digest()).digest()
+              ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(),pub).verify(sig[:-1],sighash,ec.ECDSA(utils.Prehashed(hashes.SHA256())))
+              assert r['inputSats']-r['destinationSats']==1000
+              script=bytes([len(sig)])+sig+bytes([len(redeem)])+redeem
+              raw=tx[:41]+bytes([len(script)])+script+tx[42:]
+              (root/f'release{number}.hex').write_text(raw.hex())
+              print(f'PASS signature, source, recipient, fee and locktime for release {number}')
+          PY
+      - name: Test Bitcoin Core before and after each CLTV maturity
+        run: |
+          set -euo pipefail
+          docker pull bitcoin/bitcoin:28.0
+          docker run -d --name pro-regtest --network none -v "$RUNNER_TEMP/node:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -fallbackfee=0.0001 -txindex=1 -printtoconsole=0
+          cli() { docker exec pro-regtest bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable "$@"; }
+          for i in $(seq 1 90); do if cli getblockcount >/dev/null 2>&1; then break; fi; sleep 2; done
+          test "$(cli getblockcount)" = 121
+          cli createwallet disposable-miner >/dev/null
+          ADDRESS="$(cli -rpcwallet=disposable-miner getnewaddress)"
+          for number in 3 4; do
+            if [ "$number" = 3 ]; then lock=150; else lock=160; fi
+            RAW="$(cat "$RUNNER_TEMP/release${number}.hex")"
+            LOCK="$lock" cli decoderawtransaction "$RAW" | python3 -c 'import json,sys; d=json.load(sys.stdin);assert d["locktime"] in (150,160)' 
+            cli testmempoolaccept "[\"$RAW\"]" > "$RUNNER_TEMP/before-$number.json"
+            python3 -c 'import json,sys; d=json.load(open(sys.argv[1]))[0];assert not d["allowed"],d;print("PASS rejected before maturity",d.get("reject-reason"))' "$RUNNER_TEMP/before-$number.json"
+            height="$(cli getblockcount)"
+            blocks="$((lock-height))"
+            cli generatetoaddress "$blocks" "$ADDRESS" >/dev/null
+            test "$(cli getblockcount)" = "$lock"
+            cli testmempoolaccept "[\"$RAW\"]" > "$RUNNER_TEMP/after-$number.json"
+            python3 -c 'import json,sys; d=json.load(open(sys.argv[1]))[0];assert d["allowed"],d;print("PASS accepted after maturity",d["txid"])' "$RUNNER_TEMP/after-$number.json"
+          done
+      - name: Preserve public acceptance records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-release34-regtest-evidence
+          path: |
+            ${{ runner.temp }}/before-3.json
+            ${{ runner.temp }}/after-3.json
+            ${{ runner.temp }}/before-4.json
+            ${{ runner.temp }}/after-4.json
+          if-no-files-found: warn
+          retention-days: 7
