@@ -1,6 +1,9 @@
 name: Recipient claimed-status regression tests
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - fix/recipient-spent-status-verification
