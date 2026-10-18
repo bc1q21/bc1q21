@@ -195,7 +195,7 @@ if (this.giftTxCandidates.length === 1) {
               btc,
               scriptPubKey: o.scriptPubKey || '',
               fundingTxid: this.giftTx?.txid || '',
-              fundingVout: Number.isInteger(o.voutN) ? o.voutN : this.giftTx?.vout?.findIndex(v => v.scriptpubkey_address === o.address),
+              fundingVout: this.giftTx?.vout?.findIndex(v => v.scriptpubkey_address === o.address && Number(v.value) === o.sats) ?? -1,
               releaseDate: '',
               ready: false,
               pending: false,
