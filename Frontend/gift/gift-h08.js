@@ -194,6 +194,8 @@ if (this.giftTxCandidates.length === 1) {
               sats: o.sats,
               btc,
               scriptPubKey: o.scriptPubKey || '',
+              fundingTxid: this.giftTx?.txid || '',
+              fundingVout: Number.isInteger(o.voutN) ? o.voutN : this.giftTx?.vout?.findIndex(v => v.scriptpubkey_address === o.address),
               releaseDate: '',
               ready: false,
               pending: false,
@@ -1028,28 +1030,25 @@ childIndex: r.childIndex ?? null
           const due = this.rows.filter(r => r.releaseDate && this.isReadyForRelease(r.releaseDate));
           const results = await Promise.all(due.map(async r => {
             try {
-              const [ur, tr] = await Promise.all([
-                fetch(`${this.baseApi}/address/${encodeURIComponent(r.address)}/utxo`, { cache: 'no-store' }),
-                fetch(`${this.baseApi}/address/${encodeURIComponent(r.address)}/txs`, { cache: 'no-store' })
-              ]);
-              if (!ur.ok || !tr.ok || ur.headers.get('x-stale') === 'true' ||
-                  tr.headers.get('x-stale') === 'true') throw new Error('Unavailable chain state');
-              const utxos = await ur.json(), txs = await tr.json();
-              if (!Array.isArray(utxos) || !Array.isArray(txs)) throw new Error('Invalid chain data');
-              const funding = [];
-              for (const tx of txs) (tx.vout || []).forEach((o, i) => {
-                if (o?.scriptpubkey_address === r.address)
-                  funding.push({ txid: tx.txid, vout: i, value: Number(o.value) });
-              });
-              if (funding.length !== 1 || !funding[0].txid ||
-                  !Number.isSafeInteger(funding[0].value) || funding[0].value <= 0)
-                throw new Error('Ambiguous funding');
-              const source = funding[0];
-              const live = utxos.filter(u => u.txid === source.txid &&
-                Number(u.vout) === source.vout && Number(u.value) === source.value);
-              if (live.length > 1) throw new Error('Duplicate UTXO');
-              if (live.length === 1) this.utxoCache.set(r.address, [source]);
-              return { address: r.address, checkedSpent: true, spent: live.length === 0 };
+              if (r.validation !== 'match' || !r.fundingTxid ||
+                  !Number.isInteger(r.fundingVout) || r.fundingVout < 0 ||
+                  !Number.isSafeInteger(r.sats) || r.sats <= 0)
+                throw new Error('Unverified gift funding output');
+              const response = await fetch(
+                `${this.baseApi}/address/${encodeURIComponent(r.address)}/utxo`,
+                { cache: 'no-store' }
+              );
+              if (!response.ok || response.headers.get('x-stale') === 'true')
+                throw new Error('Unavailable or stale UTXO data');
+              const utxos = await response.json();
+              if (!Array.isArray(utxos)) throw new Error('Invalid UTXO data');
+              const matches = utxos.filter(u => u.txid === r.fundingTxid &&
+                Number(u.vout) === r.fundingVout && Number(u.value) === r.sats);
+              if (matches.length > 1) throw new Error('Duplicate UTXO');
+              if (matches.length === 1) this.utxoCache.set(r.address, [{
+                txid: r.fundingTxid, vout: r.fundingVout, value: r.sats
+              }]);
+              return { address: r.address, checkedSpent: true, spent: matches.length === 0 };
             } catch (_) {
               return { address: r.address, checkedSpent: false };
             }
