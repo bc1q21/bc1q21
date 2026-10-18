@@ -1,0 +1,38 @@
+name: Professional creator 24-output QR roundtrip
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/build-creator-24-qr.mjs'
+      - '.github/workflows/professional-creator-24-qr.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 jsqr@1.4.0 pngjs@7.0.0
+      - name: Retrieve prior verified public unsigned creator PSBT
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/creator"
+          gh run download 39144936258 --repo "$GITHUB_REPOSITORY" --name professional-creator-24-unsigned-regtest --dir "$RUNNER_TEMP/creator"
+          test -s "$RUNNER_TEMP/creator/creator.json"
+      - name: Validate QR pixel and UR reconstruction
+        run: node Professional/build-creator-24-qr.mjs "$RUNNER_TEMP/creator/creator.json" "$RUNNER_TEMP/creator-24-offline-qr.html"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: professional-creator-24-offline-qr
+          path: ${{ runner.temp }}/creator-24-offline-qr.html
+          if-no-files-found: error
+          retention-days: 7
