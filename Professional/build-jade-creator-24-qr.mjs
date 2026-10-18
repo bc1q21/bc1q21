@@ -13,7 +13,11 @@ assert.equal(gift.format,'bc1q21-professional-creator-24-jade-public-unsigned-v1
 assert.equal(gift.network,'regtest');
 assert.equal(gift.unsigned,true);
 assert.equal(gift.broadcast,false);
-assert.equal(gift.recipientOutputs.length,24);\nassert.equal(gift.creatorFingerprint,'e29ac13c');\nassert.equal(gift.creatorPath,\"m/84'/0'/0'/0/0\");\nassert.equal(gift.creatorInputSats,1000000);\nassert.equal(gift.recipientOutputs.reduce((a,o)=>a+o.sats,0)+gift.changeSats+gift.feeSats,gift.creatorInputSats);
+assert.equal(gift.recipientOutputs.length,24);
+assert.equal(gift.creatorFingerprint,'e29ac13c');
+assert.equal(gift.creatorPath,"m/84'/0'/0'/0/0");
+assert.equal(gift.creatorInputSats,1000000);
+assert.equal(gift.recipientOutputs.reduce((a,o)=>a+o.sats,0)+gift.changeSats+gift.feeSats,gift.creatorInputSats);
 const psbt=Buffer.from(gift.psbtBase64,'base64');
 assert.equal(psbt.subarray(0,5).toString('hex'),'70736274ff');
 assert.equal(createHash('sha256').update(psbt).digest('hex'),gift.psbtSha256);
