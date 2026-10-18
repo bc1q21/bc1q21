@@ -847,7 +847,8 @@ while (cursor < maxDate) {
             this.error = 'Unlock the gift first.';
             return;
           }
-          await this.refreshSpentStatuses();\n          const readyRows = this.rows.filter(r => r.ready && r.checkedSpent === true && !r.spent);
+          await this.refreshSpentStatuses();
+          const readyRows = this.rows.filter(r => r.ready && r.checkedSpent === true && !r.spent);
           if (!readyRows.length) {
             this.notice = 'No payments are ready to release.';
             return;
