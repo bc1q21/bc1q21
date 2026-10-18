@@ -1,0 +1,39 @@
+name: Professional Jade 24-output local signature verifier
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/verify-jade-creator-24-capture.browser.mjs'
+      - 'Professional/build-jade-creator-24-local-verifier.mjs'
+      - '.github/workflows/professional-jade-24-local-verify.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @ngraveio/bc-ur@1.1.13 bitcoinjs-lib@6.1.7 tiny-secp256k1@2.2.3 buffer@6.0.3 esbuild@0.25.12
+      - name: Retrieve original Jade-public unsigned PSBT
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/creator"
+          gh run download 39145430077 --repo "$GITHUB_REPOSITORY" --name professional-jade-public-creator-24-unsigned --dir "$RUNNER_TEMP/creator"
+          test -s "$RUNNER_TEMP/creator/jade-creator.json"
+      - name: Build offline local verification page
+        run: node Professional/build-jade-creator-24-local-verifier.mjs "$RUNNER_TEMP/creator/jade-creator.json" "$RUNNER_TEMP/bc1q21-Jade-24-Signature-Verify-Offline.html"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: professional-jade-24-signature-verifier-offline
+          path: ${{ runner.temp }}/bc1q21-Jade-24-Signature-Verify-Offline.html
+          if-no-files-found: error
+          retention-days: 7
