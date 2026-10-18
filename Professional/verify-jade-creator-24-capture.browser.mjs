@@ -1,6 +1,6 @@
 import {URDecoder} from '@ngraveio/bc-ur';
 import bitcoin from 'bitcoinjs-lib';
-import ecc from 'tiny-secp256k1';
+import * as ecc from 'tiny-secp256k1';
 import {Buffer} from 'buffer';
 const $=id=>document.getElementById(id);
 const fixture=JSON.parse($('fixture').textContent);
