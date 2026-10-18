@@ -726,7 +726,7 @@ while (cursor < maxDate) {
         updateReadyCount() {
           let count = 0;
           this.rows = this.rows.map(r => {
-            const readyNow = !r.pending && !r.spent && this.isReadyForRelease(r.releaseDate || '');
+            const readyNow = r.checkedSpent === true && !r.pending && !r.spent && this.isReadyForRelease(r.releaseDate || '');
             if (readyNow && !r.spent) count++;
             return { ...r, ready: readyNow };
           });
@@ -847,7 +847,7 @@ while (cursor < maxDate) {
             this.error = 'Unlock the gift first.';
             return;
           }
-          const readyRows = this.rows.filter(r => r.ready && !r.spent);
+          await this.refreshSpentStatuses();\n          const readyRows = this.rows.filter(r => r.ready && r.checkedSpent === true && !r.spent);
           if (!readyRows.length) {
             this.notice = 'No payments are ready to release.';
             return;
@@ -878,28 +878,6 @@ locktime: r.locktime,
 childIndex: r.childIndex ?? null
                 });
               });
-            }
-
-            // Fallback: derive from known txs if cache missing
-            if (!utxos.length) {
-              for (const tx of this.txs || []) {
-                const txid = tx?.txid;
-                const vouts = tx?.vout || [];
-                for (const o of vouts) {
-                  const addr = o?.scriptpubkey_address || '';
-                  if (readyAddresses.has(addr)) {
-                    const matchedRow = readyRows.find(x => x.address === addr);
-                    utxos.push({
-                      txid,
-                      vout: typeof o.n !== 'undefined' ? Number(o.n) : (typeof o.vout !== 'undefined' ? Number(o.vout) : undefined),
-                      value: Number(o.value) || 0,
-                      redeemScript: matchedRow?.redeemScript || '',
-locktime: matchedRow?.locktime,
-childIndex: matchedRow?.childIndex ?? null
-                    });
-                  }
-                }
-              }
             }
 
             if (!utxos.length) {
@@ -1042,85 +1020,46 @@ childIndex: matchedRow?.childIndex ?? null
         },
 
         async refreshSpentStatuses() {
-          // Marks "spent" if tx history shows outputs redeemed; caches utxos otherwise
-          try {
-            const now = new Date();
-            const tomorrowUtc = new Date(Date.UTC(
-              now.getUTCFullYear(),
-              now.getUTCMonth(),
-              now.getUTCDate() + 1
-            ));
-
-            const dueRows = this.rows.filter(r => {
-              if (!r.releaseDate) return false;
-              const rd = new Date(r.releaseDate + 'T00:00:00Z');
-              return rd <= tomorrowUtc;
-            });
-
-            const checks = dueRows.map(async (r) => {
-              const url = `${this.baseApi}/address/${r.address}/txs`;
-              const data = await fetch(url).then(resp => resp.json());
-              const txs = Array.isArray(data) ? data : [];
-
-              let spendingTx = null;
-              let candidateOutput = null;
-
-              for (const tx of txs) {
-                const vouts = tx?.vout || [];
-                vouts.forEach((out, idx) => {
-                  if ((out?.scriptpubkey_address || '') === r.address) {
-                    candidateOutput = {
-                      txid: tx.txid,
-                      vout: typeof out.n !== 'undefined' ? out.n : idx,
-                      value: Number(out.value) || 0,
-                      scriptpubkey: out.scriptpubkey || ''
-                    };
-                  }
-                });
-
-                if (!spendingTx) {
-                  const vins = tx?.vin || [];
-                  const spentHere = vins.some(v => (v?.prevout?.scriptpubkey_address || '') === r.address);
-                  if (spentHere) spendingTx = tx;
-                }
-              }
-
-              if (!spendingTx && candidateOutput) {
-                this.utxoCache.set(r.address, [{
-                  txid: candidateOutput.txid,
-                  vout: candidateOutput.vout,
-                  value: candidateOutput.value,
-                  scriptpubkey: candidateOutput.scriptpubkey,
-                  nonWitnessUtxo: ''
-                }]);
-              } else {
-                this.utxoCache.delete(r.address);
-              }
-
-              const priceUsd = spendingTx ? this.extractPriceUsd(spendingTx?.status) : NaN;
-              const usdAtRelease = Number.isFinite(priceUsd) ? (r.btc * priceUsd) : NaN;
-
-              return { address: r.address, spent: Boolean(spendingTx), usdAtRelease };
-            });
-
-            const results = await Promise.all(checks);
-            const map = new Map(results.map(x => [x.address, x]));
-
-            this.rows = this.rows.map(r => {
-              if (!map.has(r.address)) return r;
-              const { spent, usdAtRelease } = map.get(r.address);
-              return {
-                ...r,
-                spent,
-                pending: spent ? false : r.pending,
-                checkedSpent: true,
-                usdAtRelease: Number.isFinite(usdAtRelease) ? usdAtRelease : r.usdAtRelease
-              };
-            });
-          } catch (e) {
-            // non-fatal
-            this.error = `Status refresh failed: ${e?.message || e}`;
-          }
+          // Fail closed when the chain state is missing, stale or ambiguous.
+          this.utxoCache.clear();
+          this.rows = this.rows.map(r => ({ ...r, checkedSpent: false }));
+          this.updateReadyCount();
+          const due = this.rows.filter(r => r.releaseDate && this.isReadyForRelease(r.releaseDate));
+          const results = await Promise.all(due.map(async r => {
+            try {
+              const [ur, tr] = await Promise.all([
+                fetch(`${this.baseApi}/address/${encodeURIComponent(r.address)}/utxo`, { cache: 'no-store' }),
+                fetch(`${this.baseApi}/address/${encodeURIComponent(r.address)}/txs`, { cache: 'no-store' })
+              ]);
+              if (!ur.ok || !tr.ok || ur.headers.get('x-stale') === 'true' ||
+                  tr.headers.get('x-stale') === 'true') throw new Error('Unavailable chain state');
+              const utxos = await ur.json(), txs = await tr.json();
+              if (!Array.isArray(utxos) || !Array.isArray(txs)) throw new Error('Invalid chain data');
+              const funding = [];
+              for (const tx of txs) (tx.vout || []).forEach((o, i) => {
+                if (o?.scriptpubkey_address === r.address)
+                  funding.push({ txid: tx.txid, vout: i, value: Number(o.value) });
+              });
+              if (funding.length !== 1 || !funding[0].txid ||
+                  !Number.isSafeInteger(funding[0].value) || funding[0].value <= 0)
+                throw new Error('Ambiguous funding');
+              const source = funding[0];
+              const live = utxos.filter(u => u.txid === source.txid &&
+                Number(u.vout) === source.vout && Number(u.value) === source.value);
+              if (live.length > 1) throw new Error('Duplicate UTXO');
+              if (live.length === 1) this.utxoCache.set(r.address, [source]);
+              return { address: r.address, checkedSpent: true, spent: live.length === 0 };
+            } catch (_) {
+              return { address: r.address, checkedSpent: false };
+            }
+          }));
+          const statuses = new Map(results.map(r => [r.address, r]));
+          this.rows = this.rows.map(r => {
+            const status = statuses.get(r.address);
+            return status ? { ...r, ...status, pending: status.spent ? false : r.pending } : r;
+          });
+          if (results.some(r => !r.checkedSpent))
+            this.error = 'Some payment statuses are unavailable. Refresh status before releasing.';
           this.updateReadyCount();
         },
 
