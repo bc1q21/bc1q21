@@ -1,0 +1,37 @@
+name: Professional Jade-public creator 24 unsigned
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/build-jade-creator-24-public-psbt.mjs'
+      - '.github/workflows/professional-jade-creator-24-public.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @scure/bip32@1.7.0 bitcoinjs-lib@6.1.7
+      - run: node Professional/build-watchonly-public-fixture.mjs "$RUNNER_TEMP/public.json"
+      - run: |
+          docker pull bitcoin/bitcoin:28.0
+          mkdir -p "$RUNNER_TEMP/core"
+          docker run -d --name bc1q21-jade-creator --network none -v "$RUNNER_TEMP/core:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -txindex=1 -rpcuser=regtest -rpcpassword=disposable -fallbackfee=0.0001 -printtoconsole=0
+          for i in $(seq 1 90); do
+            if docker exec bc1q21-jade-creator bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable getblockcount >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+      - run: node Professional/build-jade-creator-24-public-psbt.mjs "$RUNNER_TEMP/public.json" "$RUNNER_TEMP/jade-creator.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: professional-jade-public-creator-24-unsigned
+          path: ${{ runner.temp }}/jade-creator.json
+          retention-days: 7
