@@ -1,0 +1,20 @@
+name: Recipient claimed-status regression tests
+
+on:
+  push:
+    branches:
+      - fix/recipient-spent-status-verification
+
+permissions:
+  contents: read
+
+jobs:
+  recipient-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Check JavaScript syntax
+        run: node --check Frontend/gift/gift-h08.js
+      - name: Run Lindsay claimed-status regression tests
+        run: node --test tests/recipient-claimed-status.test.cjs
