@@ -33,23 +33,23 @@ assert.equal(rpc('getblockcount'),0);
 rpc('createwallet','mining');
 const mining=wallet('getnewaddress');
 wallet('generatetoaddress',121,mining);
-const fundingTxid=wallet('sendtoaddress',signerAddress.address,'0.005');
+const fundingTxid=wallet('sendtoaddress',signerAddress.address,'0.01');
 wallet('generatetoaddress',1,mining);
 const funded=rpc('getrawtransaction',fundingTxid,'true');
 const vouts=funded.vout.filter(v=>v.scriptPubKey.hex===signerAddress.output.toString('hex'));
 assert.equal(vouts.length,1);
 const utxo=vouts[0];
-assert.equal(utxo.value,0.005);
+assert.equal(utxo.value,0.01);
 assert.ok(rpc('gettxout',fundingTxid,utxo.n));
 const psbt=new bitcoin.Psbt({network});
-psbt.addInput({hash:fundingTxid,index:utxo.n,witnessUtxo:{script:signerAddress.output,value:500000},
+psbt.addInput({hash:fundingTxid,index:utxo.n,witnessUtxo:{script:signerAddress.output,value:1000000},
  bip32Derivation:[{masterFingerprint:Buffer.from(fingerprint,'hex'),path:"m/84'/0'/0'/0/0",pubkey:signerPub}]});
 let total=0;
 for(const d of fixture.descriptors){
  const value=d.sats;total+=value;
  psbt.addOutput({script:Buffer.from(d.scriptPubKey,'hex'),value});
 }
-const fee=2500,changeSats=500000-total-fee;
+const fee=2500,changeSats=1000000-total-fee;
 assert.ok(changeSats>1000);
 psbt.addOutput({address:changeAddress.address,value:changeSats});
 assert.equal(psbt.txInputs.length,1);
@@ -59,11 +59,11 @@ const raw=psbt.toBuffer();
 const record={format:'bc1q21-professional-creator-24-jade-public-unsigned-v1',network:'regtest',
  creatorFingerprint:fingerprint,creatorPath:"m/84'/0'/0'/0/0",
  creatorPubkeyHex:signerPub.toString('hex'),creatorAddress:signerAddress.address,
- creatorFundingOutpoint:fundingTxid+':'+utxo.n,creatorInputSats:500000,
+ creatorFundingOutpoint:fundingTxid+':'+utxo.n,creatorInputSats:1000000,
  recipientOutputs:fixture.descriptors.map((d,i)=>({index:i,sats:d.sats,scriptPubKey:d.scriptPubKey})),
  changeAddress:changeAddress.address,changeSats,feeSats:fee,
  psbtBase64:psbt.toBase64(),psbtSha256:createHash('sha256').update(raw).digest('hex'),
  psbtBytes:raw.length,unsigned:true,hardwareScanned:false,broadcast:false,
  caveat:'xpub and fingerprint are prior public test records, not fresh device attestation'};
 writeFileSync(process.argv[3],JSON.stringify(record,null,2)+'\n',{flag:'wx',mode:0o600});
-console.log('PASS_JADE_PUBLIC_CREATOR_24_UNSIGNED',JSON.stringify({inputSats:500000,recipientSats:total,changeSats,feeSats:fee,psbtBytes:raw.length,psbtSha256:record.psbtSha256}));
+console.log('PASS_JADE_PUBLIC_CREATOR_24_UNSIGNED',JSON.stringify({inputSats:1000000,recipientSats:total,changeSats,feeSats:fee,psbtBytes:raw.length,psbtSha256:record.psbtSha256}));
