@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @ngraveio/bc-ur@1.1.13 bitcoinjs-lib@6.1.7 tiny-secp256k1@2.2.3 buffer@6.0.3 esbuild@0.25.12
+      - run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @ngraveio/bc-ur@1.1.13 bitcoinjs-lib@6.1.7 @noble/curves@1.9.7 buffer@6.0.3 esbuild@0.25.12
       - name: Retrieve original Jade-public unsigned PSBT
         env:
           GH_TOKEN: ${{ github.token }}
