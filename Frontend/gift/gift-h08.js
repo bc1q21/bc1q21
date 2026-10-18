@@ -849,7 +849,18 @@ while (cursor < maxDate) {
             this.error = 'Unlock the gift first.';
             return;
           }
-          await this.refreshSpentStatuses();
+          if (this.loading) return;
+          this.loading = true;
+          try {
+            await this.refreshSpentStatuses();
+            if (this.rows.some(r => r.releaseDate && this.isReadyForRelease(r.releaseDate) &&
+                r.checkedSpent !== true)) {
+              this.error = 'Payment statuses could not all be verified. Please retry when blockchain data is available.';
+              return;
+            }
+          } finally {
+            this.loading = false;
+          }
           const readyRows = this.rows.filter(r => r.ready && r.checkedSpent === true && !r.spent);
           if (!readyRows.length) {
             this.notice = 'No payments are ready to release.';
@@ -1060,6 +1071,8 @@ childIndex: r.childIndex ?? null
           });
           if (results.some(r => !r.checkedSpent))
             this.error = 'Some payment statuses are unavailable. Refresh status before releasing.';
+          else if (this.error?.startsWith('Some payment statuses are unavailable.'))
+            this.error = '';
           this.updateReadyCount();
         },
 
