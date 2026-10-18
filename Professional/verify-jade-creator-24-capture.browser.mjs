@@ -1,6 +1,6 @@
 import {URDecoder} from '@ngraveio/bc-ur';
 import bitcoin from 'bitcoinjs-lib';
-import * as ecc from 'tiny-secp256k1';
+import {secp256k1} from '@noble/curves/secp256k1';
 import {Buffer} from 'buffer';
 const $=id=>document.getElementById(id);
 const fixture=JSON.parse($('fixture').textContent);
@@ -15,7 +15,7 @@ function check(bytes){
  const origin=before.bip32Derivation;
  if(origin?.length!==1||Buffer.from(origin[0].masterFingerprint).toString('hex')!==fixture.creatorFingerprint||origin[0].path!==fixture.creatorPath)throw Error('Unexpected Jade signer origin');
  if(!Buffer.from(after.partialSig[0].pubkey).equals(Buffer.from(origin[0].pubkey)))throw Error('Signer pubkey mismatch');
- if(!b.validateSignaturesOfInput(0,(pubkey,hash,sig)=>ecc.verify(hash,pubkey,sig)))throw Error('ECDSA signature failed verification');
+ if(!b.validateSignaturesOfInput(0,(pubkey,hash,sig)=>secp256k1.verify(sig,hash,pubkey,{lowS:false})))throw Error('ECDSA signature failed verification');
  for(let i=0;i<24;i++){const out=b.txOutputs[i],expected=fixture.recipientOutputs[i];if(out.value!==expected.sats||!Buffer.from(out.script).equals(Buffer.from(expected.scriptPubKey,'hex')))throw Error('Recipient output mismatch: '+(i+1))}
  if(b.txOutputs[24].value!==fixture.changeSats)throw Error('Change mismatch');
  const fee=before.witnessUtxo.value-b.txOutputs.reduce((sum,out)=>sum+out.value,0);
