@@ -194,6 +194,8 @@ if (this.giftTxCandidates.length === 1) {
               sats: o.sats,
               btc,
               scriptPubKey: o.scriptPubKey || '',
+              fundingTxid: this.giftTx?.txid || '',
+              fundingVout: this.giftTx?.vout?.findIndex(v => v.scriptpubkey_address === o.address && Number(v.value) === o.sats) ?? -1,
               releaseDate: '',
               ready: false,
               pending: false,
@@ -726,7 +728,7 @@ while (cursor < maxDate) {
         updateReadyCount() {
           let count = 0;
           this.rows = this.rows.map(r => {
-            const readyNow = !r.pending && !r.spent && this.isReadyForRelease(r.releaseDate || '');
+            const readyNow = r.checkedSpent === true && !r.pending && !r.spent && this.isReadyForRelease(r.releaseDate || '');
             if (readyNow && !r.spent) count++;
             return { ...r, ready: readyNow };
           });
@@ -847,7 +849,19 @@ while (cursor < maxDate) {
             this.error = 'Unlock the gift first.';
             return;
           }
-          const readyRows = this.rows.filter(r => r.ready && !r.spent);
+          if (this.loading) return;
+          this.loading = true;
+          try {
+            await this.refreshSpentStatuses();
+            if (this.rows.some(r => r.releaseDate && this.isReadyForRelease(r.releaseDate) &&
+                r.checkedSpent !== true)) {
+              this.error = 'Payment statuses could not all be verified. Please retry when blockchain data is available.';
+              return;
+            }
+          } finally {
+            this.loading = false;
+          }
+          const readyRows = this.rows.filter(r => r.ready && r.checkedSpent === true && !r.spent);
           if (!readyRows.length) {
             this.notice = 'No payments are ready to release.';
             return;
@@ -878,28 +892,6 @@ locktime: r.locktime,
 childIndex: r.childIndex ?? null
                 });
               });
-            }
-
-            // Fallback: derive from known txs if cache missing
-            if (!utxos.length) {
-              for (const tx of this.txs || []) {
-                const txid = tx?.txid;
-                const vouts = tx?.vout || [];
-                for (const o of vouts) {
-                  const addr = o?.scriptpubkey_address || '';
-                  if (readyAddresses.has(addr)) {
-                    const matchedRow = readyRows.find(x => x.address === addr);
-                    utxos.push({
-                      txid,
-                      vout: typeof o.n !== 'undefined' ? Number(o.n) : (typeof o.vout !== 'undefined' ? Number(o.vout) : undefined),
-                      value: Number(o.value) || 0,
-                      redeemScript: matchedRow?.redeemScript || '',
-locktime: matchedRow?.locktime,
-childIndex: matchedRow?.childIndex ?? null
-                    });
-                  }
-                }
-              }
             }
 
             if (!utxos.length) {
@@ -1042,85 +1034,45 @@ childIndex: matchedRow?.childIndex ?? null
         },
 
         async refreshSpentStatuses() {
-          // Marks "spent" if tx history shows outputs redeemed; caches utxos otherwise
-          try {
-            const now = new Date();
-            const tomorrowUtc = new Date(Date.UTC(
-              now.getUTCFullYear(),
-              now.getUTCMonth(),
-              now.getUTCDate() + 1
-            ));
-
-            const dueRows = this.rows.filter(r => {
-              if (!r.releaseDate) return false;
-              const rd = new Date(r.releaseDate + 'T00:00:00Z');
-              return rd <= tomorrowUtc;
-            });
-
-            const checks = dueRows.map(async (r) => {
-              const url = `${this.baseApi}/address/${r.address}/txs`;
-              const data = await fetch(url).then(resp => resp.json());
-              const txs = Array.isArray(data) ? data : [];
-
-              let spendingTx = null;
-              let candidateOutput = null;
-
-              for (const tx of txs) {
-                const vouts = tx?.vout || [];
-                vouts.forEach((out, idx) => {
-                  if ((out?.scriptpubkey_address || '') === r.address) {
-                    candidateOutput = {
-                      txid: tx.txid,
-                      vout: typeof out.n !== 'undefined' ? out.n : idx,
-                      value: Number(out.value) || 0,
-                      scriptpubkey: out.scriptpubkey || ''
-                    };
-                  }
-                });
-
-                if (!spendingTx) {
-                  const vins = tx?.vin || [];
-                  const spentHere = vins.some(v => (v?.prevout?.scriptpubkey_address || '') === r.address);
-                  if (spentHere) spendingTx = tx;
-                }
-              }
-
-              if (!spendingTx && candidateOutput) {
-                this.utxoCache.set(r.address, [{
-                  txid: candidateOutput.txid,
-                  vout: candidateOutput.vout,
-                  value: candidateOutput.value,
-                  scriptpubkey: candidateOutput.scriptpubkey,
-                  nonWitnessUtxo: ''
-                }]);
-              } else {
-                this.utxoCache.delete(r.address);
-              }
-
-              const priceUsd = spendingTx ? this.extractPriceUsd(spendingTx?.status) : NaN;
-              const usdAtRelease = Number.isFinite(priceUsd) ? (r.btc * priceUsd) : NaN;
-
-              return { address: r.address, spent: Boolean(spendingTx), usdAtRelease };
-            });
-
-            const results = await Promise.all(checks);
-            const map = new Map(results.map(x => [x.address, x]));
-
-            this.rows = this.rows.map(r => {
-              if (!map.has(r.address)) return r;
-              const { spent, usdAtRelease } = map.get(r.address);
-              return {
-                ...r,
-                spent,
-                pending: spent ? false : r.pending,
-                checkedSpent: true,
-                usdAtRelease: Number.isFinite(usdAtRelease) ? usdAtRelease : r.usdAtRelease
-              };
-            });
-          } catch (e) {
-            // non-fatal
-            this.error = `Status refresh failed: ${e?.message || e}`;
-          }
+          // Fail closed when the chain state is missing, stale or ambiguous.
+          this.utxoCache.clear();
+          this.rows = this.rows.map(r => ({ ...r, checkedSpent: false }));
+          this.updateReadyCount();
+          const due = this.rows.filter(r => r.releaseDate && this.isReadyForRelease(r.releaseDate));
+          const results = await Promise.all(due.map(async r => {
+            try {
+              if (r.validation !== 'match' || !r.fundingTxid ||
+                  !Number.isInteger(r.fundingVout) || r.fundingVout < 0 ||
+                  !Number.isSafeInteger(r.sats) || r.sats <= 0)
+                throw new Error('Unverified gift funding output');
+              const response = await fetch(
+                `${this.baseApi}/address/${encodeURIComponent(r.address)}/utxo`,
+                { cache: 'no-store' }
+              );
+              if (!response.ok || response.headers.get('x-stale') === 'true')
+                throw new Error('Unavailable or stale UTXO data');
+              const utxos = await response.json();
+              if (!Array.isArray(utxos)) throw new Error('Invalid UTXO data');
+              const matches = utxos.filter(u => u.txid === r.fundingTxid &&
+                Number(u.vout) === r.fundingVout && Number(u.value) === r.sats);
+              if (matches.length > 1) throw new Error('Duplicate UTXO');
+              if (matches.length === 1) this.utxoCache.set(r.address, [{
+                txid: r.fundingTxid, vout: r.fundingVout, value: r.sats
+              }]);
+              return { address: r.address, checkedSpent: true, spent: matches.length === 0 };
+            } catch (_) {
+              return { address: r.address, checkedSpent: false };
+            }
+          }));
+          const statuses = new Map(results.map(r => [r.address, r]));
+          this.rows = this.rows.map(r => {
+            const status = statuses.get(r.address);
+            return status ? { ...r, ...status, pending: status.spent ? false : r.pending } : r;
+          });
+          if (results.some(r => !r.checkedSpent))
+            this.error = 'Some payment statuses are unavailable. Refresh status before releasing.';
+          else if (this.error?.startsWith('Some payment statuses are unavailable.'))
+            this.error = '';
           this.updateReadyCount();
         },
 
