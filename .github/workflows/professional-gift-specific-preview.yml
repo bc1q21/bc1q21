@@ -1,0 +1,23 @@
+name: Professional gift-specific public preview
+on:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/gift-specific-public-preview*.mjs'
+      - 'Professional/gift-link-public-candidate.mjs'
+      - '.github/workflows/professional-gift-specific-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check fail-closed public preview
+        run: node Professional/gift-specific-public-preview.check.mjs
