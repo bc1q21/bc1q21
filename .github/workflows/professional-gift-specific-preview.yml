@@ -5,6 +5,7 @@ on:
     paths:
       - 'Professional/gift-specific-public-preview*.mjs'
       - 'Professional/gift-specific-option-b-view*.mjs'
+      - 'Professional/option-b-link-compatibility*.mjs'
       - 'Professional/render-option-b-recipient-page*.mjs'
       - 'Professional/build-option-b-gift-page*.mjs'
       - 'Professional/build-option-b-public-pages*.mjs'
@@ -42,6 +43,7 @@ jobs:
           node Professional/gift-specific-cltv-maturity.check.mjs
           node Professional/gift-specific-recipient-release-gate.check.mjs
           node Professional/gift-specific-option-b-view.check.mjs
+          node Professional/option-b-link-compatibility.check.mjs
           node Professional/render-option-b-recipient-page.check.mjs
           node Professional/build-option-b-gift-page.check.mjs
           node Professional/build-option-b-public-pages.check.mjs
