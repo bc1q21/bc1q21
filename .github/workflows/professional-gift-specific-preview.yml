@@ -7,6 +7,7 @@ on:
       - 'Professional/gift-specific-option-b-view*.mjs'
       - 'Professional/render-option-b-recipient-page*.mjs'
       - 'Professional/build-option-b-gift-page*.mjs'
+      - 'Professional/build-option-b-public-pages*.mjs'
       - 'Professional/public-retail-schedule-verify*.mjs'
       - 'Professional/gift-specific-release-boundary*.mjs'
       - 'Professional/gift-specific-funding-binding*.mjs'
@@ -43,4 +44,5 @@ jobs:
           node Professional/gift-specific-option-b-view.check.mjs
           node Professional/render-option-b-recipient-page.check.mjs
           node Professional/build-option-b-gift-page.check.mjs
+          node Professional/build-option-b-public-pages.check.mjs
           node Professional/public-retail-schedule-verify.check.mjs
