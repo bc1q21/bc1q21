@@ -3,12 +3,17 @@
 // This is not a production HTTP route and never authorizes spending.
 import {readFileSync} from 'node:fs';
 import {buildGiftSpecificOptionBView} from './gift-specific-option-b-view.mjs';
+import {mapProfessionalGiftLocatorToSchedule} from './option-b-explicit-link-map.mjs';
 
 function escapeHtml(v) {
  return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-export function renderOptionBRecipientPage(url,published) {
- const view=buildGiftSpecificOptionBView(url,published);
+export function renderOptionBRecipientPage(url,published,commitment) {
+ // An original gift-card funding locator requires explicit public script mapping;
+ // the earlier prototype used the first CLTV release address instead.
+ const mapped=commitment===undefined?null:mapProfessionalGiftLocatorToSchedule(url,published,commitment);
+ const view=mapped?{fundingAddress:mapped.giftLocatorAddress,releases:mapped.releases,releaseCount:mapped.releaseCount}:
+  buildGiftSpecificOptionBView(url,published);
  let html=readFileSync(new URL('./recipient-gift-specific-prototype.html',import.meta.url),'utf8');
  const rows=view.releases.map(release=>
   '<tr><td>'+escapeHtml(release.index+1)+'</td><td>'+escapeHtml(release.date)+
