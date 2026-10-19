@@ -27,3 +27,7 @@ No mainnet, real Bitcoin, retail/main edits, production deployment, Start9 chang
 ## Next investigation: Jade message-signing feasibility
 
 Investigate whether an existing air-gapped Jade message-signing operation can authenticate a gift-bound challenge without exposing the 12-word recovery phrase. Signing a challenge is not equivalent to decrypting the existing encrypted schedule. Keep dates hidden until a separate, validated decryption path exists. Preserve original 12-word recovery, avoid changes to retail, and do not authorize signing or broadcasting from a public gift link. If secure date unlocking proves impractical, return to the owner for an explicit decision on the privacy trade-off rather than making dates public automatically.
+
+## Owner-directed timebox and fallback (2026-10-19)
+
+Do not spend days on the Jade schedule-unlock question. Limit Option A to one focused review of supported Jade QR/message-signing capabilities and, only if evidence supports it, one small isolated proof of concept. If there is no practical path, stop and report that clearly to the owner; do not keep expanding experiments. Offer Option B for explicit owner decision: disclose release dates to anyone who has the Professional gift link, while keeping the Bitcoin time locks and signing keys unchanged. This is a privacy trade-off, not authorization to spend Bitcoin. Do not implement Option B or expose dates without separate approval. Retail/main stays untouched.
