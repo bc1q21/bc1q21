@@ -2,7 +2,8 @@
 // Each gift entry supplies PUBLIC schedule metadata and an exact gift link.
 // This prepares publishable static files but does NOT deploy them or modify retail.
 import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {giftLocator} from './gift-link-public-candidate.mjs';
 import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
 
@@ -31,7 +32,7 @@ export function buildOptionBPublicPages(gifts,outputDirectory) {
  return Object.freeze({giftCount:prepared.length,addresses:Object.freeze(prepared.map(x=>x.address)),deployed:false});
 }
 
-if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href) {
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
  const [input,output]=process.argv.slice(2);
  if(!input||!output||process.argv.length!==4)throw Error('Usage: node Professional/build-option-b-public-pages.mjs gifts.json NEW_OUTPUT_DIRECTORY');
  const parsed=JSON.parse(readFileSync(input,'utf8'));
