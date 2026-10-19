@@ -70,3 +70,28 @@ test('Option B rejects forged funding locator mapping before writing',()=>{
   assert.equal(existsSync(output),false);
  } finally {rmSync(root,{recursive:true,force:true});}
 });
+
+test('offline QR route manifest, mapped page address and displayed dates agree end to end',()=>{
+ const root=mkdtempSync(join(tmpdir(),'bc1q21-route-audit-'));
+ try {
+  const fundingAddress='bcrt1q'+'q'.repeat(38);
+  const mappedUrl='https://example.invalid/gift/'+fundingAddress+'?interval=month';
+  const output=join(root,'public');
+  const result=buildOptionBPublicPages([{giftUrl:mappedUrl,published,
+   commitment:{fundingAddress,releaseScriptsHex:published.outputScriptsHex}}],output);
+  const manifest=JSON.parse(readFileSync(join(output,'professional-gift-routes.json'),'utf8'));
+  assert.equal(manifest.format,'bc1q21-professional-option-b-routes-v1');
+  assert.equal(manifest.deployed,false);
+  assert.equal(result.routes.length,1);
+  for(const route of manifest.routes){
+   assert.equal(route.giftAddress,fundingAddress);
+   assert.equal(route.relativeUrl,'gift/'+fundingAddress+'/?interval=month');
+   assert.equal(route.outputFile,'gift/'+fundingAddress+'/index.html');
+   const html=readFileSync(join(output,...route.outputFile.split('/')),'utf8');
+   assert.ok(html.includes('const value="'+route.giftAddress+'";'));
+   for(const date of dates)assert.ok(html.includes('<td>'+date+'</td>'));
+   assert.match(html,/id="sign" disabled/);
+   assert.match(html,/connect-src 'none'/);
+  }
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
