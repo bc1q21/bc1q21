@@ -21,7 +21,7 @@ export function buildOptionBPublicPages(gifts,outputDirectory) {
   if(seen.has(locator.fundingAddress))throw Error('Duplicate gift locator');
   seen.add(locator.fundingAddress);
   const html=renderOptionBRecipientPage(item.giftUrl,item.published);
-  prepared.push({address:locator.fundingAddress,html});
+  prepared.push({address:locator.fundingAddress,interval:locator.interval,html});
  }
  mkdirSync(outputDirectory,{recursive:false});
  for(const item of prepared) {
@@ -30,7 +30,18 @@ export function buildOptionBPublicPages(gifts,outputDirectory) {
   mkdirSync(giftDir,{recursive:true});
   writeFileSync(join(giftDir,'index.html'),item.html,{flag:'wx',mode:0o600});
  }
- return Object.freeze({giftCount:prepared.length,addresses:Object.freeze(prepared.map(x=>x.address)),deployed:false});
+ // A public-only routing manifest allows an offline QR/link audit before hosting.
+ // No xpub, fingerprint, wallet secret, seed, or signer metadata is exported.
+ const routes=prepared.map(item=>Object.freeze({
+  giftAddress:item.address,
+  interval:item.interval,
+  relativeUrl:'gift/'+item.address+'/?interval='+item.interval,
+  outputFile:'gift/'+item.address+'/index.html'
+ }));
+ writeFileSync(join(outputDirectory,'professional-gift-routes.json'),
+  JSON.stringify({format:'bc1q21-professional-option-b-routes-v1',deployed:false,routes},null,2)+'\n',
+  {flag:'wx',mode:0o600});
+ return Object.freeze({giftCount:prepared.length,addresses:Object.freeze(prepared.map(x=>x.address)),routes:Object.freeze(routes),deployed:false});
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
