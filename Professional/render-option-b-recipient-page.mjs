@@ -25,6 +25,10 @@ export function renderOptionBRecipientPage(url,published) {
   'Public schedule demonstration; no real Bitcoin.');
  html=html.replace('These are known public synthetic fixtures from our isolated regtest work—not live balances, spendable UTXO discoveries, or dates derived from the recipient\'s real gift.',
   'These dates match supplied public scripts, but this offline page does not establish on-chain funding, confirmations, or spendability. Anyone with the link and published schedule can view the dates.');
+ html=html.replace('The four regtest spends have been tested independently.',
+  'Offline regtest signing has been tested independently.');
+ html=html.replace('This prototype does not yet connect a gift link to verified on-chain release discovery, unsigned PSBT construction, offline QR signing, or broadcasting.',
+  'This public schedule view does not establish live on-chain funding, release discovery, unsigned PSBT construction, offline QR signing, or broadcasting.');
  html=html.replace('This prototype never queries that address or assumes possession of it authorizes spending.',
   'This prototype never queries that address or assumes possession of it authorizes spending.');
  // Bind the verified public gift address to this generated page rather than
