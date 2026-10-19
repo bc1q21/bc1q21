@@ -32,7 +32,7 @@ test('renders original funding-address gift locator with explicit public mapping
  const html=renderOptionBRecipientPage(originalGiftUrl,published,commitment);
  for(const date of dates)assert.ok(html.includes('<td>'+date+'</td>'));
  assert.ok(html.includes('const value="'+fundingAddress+'";'));
- assert.match(html,/mapping to release scripts is supplied, not independently authenticated/);
+ assert.match(html,/No live funding or Bitcoin spending is established/);
  assert.match(html,/id="sign" disabled/);
  assert.match(html,/connect-src 'none'/);
  assert.throws(()=>renderOptionBRecipientPage(originalGiftUrl,published,
