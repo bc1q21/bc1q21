@@ -4,6 +4,8 @@ on:
     branches: [professional/isolated-release-prototype]
     paths:
       - 'Professional/gift-specific-public-preview*.mjs'
+      - 'Professional/gift-specific-option-b-view*.mjs'
+      - 'Professional/public-retail-schedule-verify*.mjs'
       - 'Professional/gift-specific-release-boundary*.mjs'
       - 'Professional/gift-specific-funding-binding*.mjs'
       - 'Professional/gift-specific-core-utxo-gate*.mjs'
@@ -36,3 +38,5 @@ jobs:
           node Professional/gift-specific-core-continuity.check.mjs
           node Professional/gift-specific-cltv-maturity.check.mjs
           node Professional/gift-specific-recipient-release-gate.check.mjs
+          node Professional/gift-specific-option-b-view.check.mjs
+          node Professional/public-retail-schedule-verify.check.mjs
