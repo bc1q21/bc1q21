@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deriveJadePublicCltvHandoff } from './jade-xpub-cltv-handoff.mjs';
 import { retailDateToCltvTimestamp } from './retail-calendar-cltv.mjs';
-import { verifyPublicRetailSchedule } from './public-retail-schedule-verify.mjs';
+import { verifyPublicRetailSchedule, buildProfessionalLinkVisibleSchedule } from './public-retail-schedule-verify.mjs';
 
 const accountXpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZqxDEvpqTnNmMXp2HjinP9Sqakg78';
 const masterFingerprintHex='e29ac13c';
@@ -35,4 +35,16 @@ test('reject altered output script, false date, false interval',()=>{
   {interval:'year'}
  ]) assert.throws(()=>verifyPublicRetailSchedule({accountXpub,masterFingerprintHex,
    firstDate:dates[0],interval:'month',outputScriptsHex,...patch}));
+});
+
+test('Option B: script-verified public dates never grant release authority',()=>{
+ const dates=['2031-01-15','2031-02-15'];
+ const input={accountXpub,masterFingerprintHex,firstDate:dates[0],interval:'month',outputScriptsHex:scripts(dates)};
+ const result=buildProfessionalLinkVisibleSchedule(input);
+ assert.deepEqual(result.releases.map(x=>x.date),dates);
+ assert.equal(result.visibility,'anyone-with-gift-link-and-published-schedule');
+ for(const flag of ['authenticated','authorized','canSign','canBroadcast'])assert.equal(result[flag],false);
+ assert.equal(JSON.stringify(result).includes(accountXpub),false);
+ assert.equal(JSON.stringify(result).includes('redeemScriptHex'),false);
+ assert.throws(()=>buildProfessionalLinkVisibleSchedule({...input,firstDate:'2031-01-16'}));
 });
