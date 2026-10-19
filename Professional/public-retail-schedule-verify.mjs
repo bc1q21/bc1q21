@@ -32,3 +32,27 @@ export function verifyPublicRetailSchedule({accountXpub,masterFingerprintHex,fir
  return Object.freeze({network:'regtest',interval,firstDate,releaseCount:releases.length,
    releases:Object.freeze(releases),secretsReceived:false,verifiedAgainstOutputScripts:true});
 }
+
+
+// Option B (Professional only): publish dates from independently script-verified,
+// explicitly supplied public schedule metadata. No seed or Jade unlock is needed
+// for viewing; possession of this data never authorizes a Bitcoin release.
+// This is NOT a way to derive dates from a gift link alone.
+export function buildProfessionalLinkVisibleSchedule(evidence) {
+ const verified=verifyPublicRetailSchedule(evidence);
+ return Object.freeze({
+  format:'bc1q21-professional-link-visible-schedule-v1',
+  network:'regtest',
+  visibility:'anyone-with-gift-link-and-published-schedule',
+  privacyTradeoffAccepted:true,
+  firstDate:verified.firstDate,
+  interval:verified.interval,
+  releaseCount:verified.releaseCount,
+  releases:Object.freeze(verified.releases.map(item=>Object.freeze({
+   index:item.index,date:item.date,locktime:item.locktime
+  }))),
+  verifiedAgainstOutputScripts:true,
+  authenticated:false,authorized:false,
+  canSign:false,canBroadcast:false
+ });
+}
