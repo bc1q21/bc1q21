@@ -6,7 +6,7 @@ export function inspectGiftSpecificPreview(url, transactions) {
   const locator = giftLocator(url);
   const inspected = inspectCandidates(locator, transactions);
   // Ambiguity and lack of cryptographic gift binding are explicit blockers.
-  const candidate = inspected.state === 'preview-only' ? inspected.candidates[0] : null;
+  // Public preview remains untrusted; a matching locator is not a gift binding.\n  const candidate = inspected.state === 'preview-only' ? inspected.candidates[0] : null;
   return Object.freeze({
     format: 'bc1q21-professional-public-preview-v1',
     network: 'regtest',
