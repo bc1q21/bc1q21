@@ -6,7 +6,7 @@ import {verifyGiftSpecificFundingBinding} from './gift-specific-funding-binding.
 import {verifyProfessionalPublicHandoff} from './public-handoff.mjs';
 
 export function inspectGiftSpecificCoreUtxo(url, handoff, funding, gettxoutResponse) {
-  const bound=verifyGiftSpecificFundingBinding(url,handoff,funding);
+  verifyGiftSpecificFundingBinding(url,handoff,funding);
   const wallet=verifyProfessionalPublicHandoff(handoff);
   const utxo=parseBitcoinCoreGettxout(funding.expectedTxid,funding.vout,gettxoutResponse);
   assert.equal(utxo.valueSats,funding.expectedSats,'Bitcoin Core UTXO amount differs');
