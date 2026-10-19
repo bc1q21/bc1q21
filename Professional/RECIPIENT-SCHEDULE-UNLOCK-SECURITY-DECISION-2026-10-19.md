@@ -39,3 +39,9 @@ Blockstream's documented Jade QR capabilities include PSBT signing and message s
 Under the owner's explicit timebox, STOP the native-Jade date-unlock investigation here. Do not begin a larger metadata redesign or repeat physical hardware tests. Present the owner with a separate Option B decision: whether the Professional gift's release dates may be visible to anyone holding its gift link. Until explicit approval, dates remain hidden, and all recipient authorization and broadcast gates remain closed. This review is not proof that no future Jade firmware or other hardware design could solve the problem.
 
 Sources: https://help.blockstream.com/blockstream-jade/use-jade-air-gapped/supported-air-gapped-functionality-via-qr ; https://github.com/Blockstream/Jade/blob/master/docs/index.rst
+
+## Owner decision — Option B approved
+
+Owner explicitly approved Option B: anyone with the Professional gift QR/link may view release dates. This applies only to the isolated Professional prototype; retail stays unchanged. Date disclosure is a privacy concession, not spending authority. No recovery words, derived private keys, or AES secrets may enter the browser. Release signing and broadcast remain independently gated.
+
+Implementation: `public-retail-schedule-verify.mjs` exposes `buildProfessionalLinkVisibleSchedule`, which returns dates only after verifying supplied first date and interval against independently supplied expected output scripts and public account xpub. This does not magically discover dates from a bare link; the Professional gift creator/publication flow must provide the public schedule metadata and verifiable output scripts. The recipient release gate remains fail-closed. No live deployment or production route was changed.
