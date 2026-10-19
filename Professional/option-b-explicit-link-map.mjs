@@ -17,6 +17,8 @@ export function mapProfessionalGiftLocatorToSchedule(giftUrl,published,commitmen
  assert.ok(Array.isArray(commitment.releaseScriptsHex),'Release script mapping required');
  assert.deepEqual(commitment.releaseScriptsHex,published.outputScriptsHex,
   'Gift mapping release scripts do not match schedule');
+ // The caller-provided mapping and caller-provided scripts agreeing is not
+ // independent proof of funding, creator identity, or on-chain provenance.
  const first=deriveJadePublicCltvHandoff({
   accountXpub:published.accountXpub,masterFingerprintHex:published.masterFingerprintHex,
   childIndex:0,locktime:retailDateToCltvTimestamp(verified.firstDate)});
@@ -26,6 +28,7 @@ export function mapProfessionalGiftLocatorToSchedule(giftUrl,published,commitmen
   addressesDistinct:locator.fundingAddress!==first.fundingAddress,
   releases:verified.releases,releaseCount:verified.releaseCount,
   scriptsMatchSuppliedMapping:true,
+  evidenceLevel:'caller-supplied-public-metadata-only',
   mappingAuthenticated:false,chainVerified:false,recipientAuthenticated:false,
   readyForLiveRouting:false,canSign:false,canBroadcast:false
  });
