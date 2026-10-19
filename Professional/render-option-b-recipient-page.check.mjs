@@ -24,3 +24,19 @@ test('renders Option B dates from verified scripts, never signing or networking'
 test('does not render an altered schedule',()=>{
  assert.throws(()=>renderOptionBRecipientPage(url,{...published,firstDate:'2031-01-16'}));
 });
+
+test('renders original funding-address gift locator with explicit public mapping',()=>{
+ const fundingAddress='bcrt1q'+'q'.repeat(38);
+ const originalGiftUrl='https://example.invalid/gift/'+fundingAddress+'?interval=month';
+ const commitment={fundingAddress,releaseScriptsHex:published.outputScriptsHex};
+ const html=renderOptionBRecipientPage(originalGiftUrl,published,commitment);
+ for(const date of dates)assert.ok(html.includes('<td>'+date+'</td>'));
+ assert.ok(html.includes('const value="'+fundingAddress+'";'));
+ assert.match(html,/mapping to release scripts is supplied, not independently authenticated/);
+ assert.match(html,/id="sign" disabled/);
+ assert.match(html,/connect-src 'none'/);
+ assert.throws(()=>renderOptionBRecipientPage(originalGiftUrl,published,
+  {...commitment,fundingAddress:handoffs[0].fundingAddress}),/disagree/);
+ assert.throws(()=>renderOptionBRecipientPage(originalGiftUrl,published,
+  {...commitment,releaseScriptsHex:['a914'+'00'.repeat(20)+'87']}),/do not match/);
+});
