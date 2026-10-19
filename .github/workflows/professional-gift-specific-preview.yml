@@ -4,6 +4,7 @@ on:
     branches: [professional/isolated-release-prototype]
     paths:
       - 'Professional/gift-specific-public-preview*.mjs'
+      - 'Professional/gift-specific-release-boundary*.mjs'
       - 'Professional/gift-link-public-candidate.mjs'
       - '.github/workflows/professional-gift-specific-preview.yml'
   workflow_dispatch:
@@ -20,4 +21,6 @@ jobs:
         with:
           node-version: '22'
       - name: Check fail-closed public preview
-        run: node Professional/gift-specific-public-preview.check.mjs
+        run: |
+          node Professional/gift-specific-public-preview.check.mjs
+          node Professional/gift-specific-release-boundary.check.mjs
