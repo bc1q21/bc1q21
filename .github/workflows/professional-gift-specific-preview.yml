@@ -6,6 +6,7 @@ on:
       - 'Professional/gift-specific-public-preview*.mjs'
       - 'Professional/gift-specific-release-boundary*.mjs'
       - 'Professional/gift-specific-funding-binding*.mjs'
+      - 'Professional/gift-specific-core-utxo-gate*.mjs'
       - 'Professional/gift-link-public-candidate.mjs'
       - '.github/workflows/professional-gift-specific-preview.yml'
   workflow_dispatch:
@@ -28,3 +29,4 @@ jobs:
           node Professional/gift-specific-public-preview.check.mjs
           node Professional/gift-specific-release-boundary.check.mjs
           node Professional/gift-specific-funding-binding.check.mjs
+          node Professional/gift-specific-core-utxo-gate.check.mjs
