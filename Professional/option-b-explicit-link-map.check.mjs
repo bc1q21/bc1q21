@@ -17,6 +17,7 @@ test('explicit mapping preserves distinct creator locator and first release addr
  assert.equal(mapped.giftLocatorAddress,fundingAddress);
  assert.equal(mapped.firstReleaseAddress,h.fundingAddress);
  assert.equal(mapped.addressesDistinct,true);
+ assert.equal(mapped.evidenceLevel,'caller-supplied-public-metadata-only');
  assert.equal(mapped.releases[0].date,firstDate);
  for(const key of ['mappingAuthenticated','chainVerified','recipientAuthenticated','readyForLiveRouting','canSign','canBroadcast'])
   assert.equal(mapped[key],false);
