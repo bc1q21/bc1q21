@@ -1,7 +1,7 @@
 // Build an isolated, offline collection of Professional gift-specific pages.
 // Each gift entry supplies PUBLIC schedule metadata and an exact gift link.
 // This prepares publishable static files but does NOT deploy them or modify retail.
-import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
+import {readFileSync,mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {giftLocator} from './gift-link-public-candidate.mjs';
@@ -10,6 +10,7 @@ import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
 export function buildOptionBPublicPages(gifts,outputDirectory) {
  if(!Array.isArray(gifts)||gifts.length<1||gifts.length>120)throw Error('Invalid public gift count');
  if(typeof outputDirectory!=='string'||!outputDirectory)throw Error('Output directory required');
+ if(existsSync(outputDirectory))throw Error('Refusing to overwrite an existing output directory');
  const prepared=[],seen=new Set();
  // Validate every gift before writing anything.
  for(const item of gifts) {
