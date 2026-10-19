@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import bitcoin from 'bitcoinjs-lib';
+import {inspectGiftSpecificCoreUtxo} from './gift-specific-core-utxo-gate.mjs';
+const pub=Buffer.from('032608573c95e22ac1b2fb4094d5fd7c79a3dd8aeacb3293e6b120dc830deeffbd','hex');
+const locktime=110;
+const redeem=bitcoin.script.compile([bitcoin.script.number.encode(locktime),bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,bitcoin.opcodes.OP_DROP,pub,bitcoin.opcodes.OP_CHECKSIG]);
+const payment=bitcoin.payments.p2sh({redeem:{output:redeem},network:bitcoin.networks.regtest});
+const handoff={version:1,network:'regtest',signerPubkeyHex:pub.toString('hex'),locktime,redeemScriptHex:redeem.toString('hex'),fundingAddress:payment.address};
+const tx=new bitcoin.Transaction();tx.version=2;tx.addInput(Buffer.alloc(32,1),0);tx.addOutput(payment.output,100000);
+const funding={fundingTxHex:tx.toHex(),vout:0,expectedTxid:tx.getId(),expectedSats:100000,masterFingerprintHex:'e29ac13c',derivationPath:[0x80000054,0x80000000,0x80000000,1,10],destinationScriptHex:'0014'+'ab'.repeat(20),destinationSats:99000};
+const core={value:0.001,confirmations:2,scriptPubKey:{hex:payment.output.toString('hex')}};
+const url='https://example.invalid/gift/'+payment.address;
+const ok=inspectGiftSpecificCoreUtxo(url,handoff,funding,core);
+assert.equal(ok.responseMatchesFunding,true);
+for(const k of ['rpcProvenanceVerified','chainVerified','authenticated','scheduleUnlocked','canSign','canBroadcast']) assert.equal(ok[k],false);
+for(const bad of [null,{...core,value:0.0009},{...core,confirmations:0},{...core,scriptPubKey:{hex:'0014'+'ab'.repeat(20)}}]) assert.throws(()=>inspectGiftSpecificCoreUtxo(url,handoff,funding,bad));
+console.log('PASS — gift-specific Bitcoin Core UTXO response reconciliation remains non-authorizing');
