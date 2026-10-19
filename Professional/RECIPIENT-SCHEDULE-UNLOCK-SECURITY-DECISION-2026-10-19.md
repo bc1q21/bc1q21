@@ -31,3 +31,11 @@ Investigate whether an existing air-gapped Jade message-signing operation can au
 ## Owner-directed timebox and fallback (2026-10-19)
 
 Do not spend days on the Jade schedule-unlock question. Limit Option A to one focused review of supported Jade QR/message-signing capabilities and, only if evidence supports it, one small isolated proof of concept. If there is no practical path, stop and report that clearly to the owner; do not keep expanding experiments. Offer Option B for explicit owner decision: disclose release dates to anyone who has the Professional gift link, while keeping the Bitcoin time locks and signing keys unchanged. This is a privacy trade-off, not authorization to spend Bitcoin. Do not implement Option B or expose dates without separate approval. Retail/main stays untouched.
+
+## Focused Jade feasibility review — outcome
+
+Blockstream's documented Jade QR capabilities include PSBT signing and message signing. The documented firmware interface also exposes BIP32 xpub and identity operations, but no demonstrated general-purpose operation to decrypt the existing BC1Q21G1 AES-GCM date envelope inside Jade while keeping the wallet-derived secret on-device. Message signing may prove key control but does not decrypt existing date metadata. The original twelve-word backup and separate recipient transaction signing remain unaffected.
+
+Under the owner's explicit timebox, STOP the native-Jade date-unlock investigation here. Do not begin a larger metadata redesign or repeat physical hardware tests. Present the owner with a separate Option B decision: whether the Professional gift's release dates may be visible to anyone holding its gift link. Until explicit approval, dates remain hidden, and all recipient authorization and broadcast gates remain closed. This review is not proof that no future Jade firmware or other hardware design could solve the problem.
+
+Sources: https://help.blockstream.com/blockstream-jade/use-jade-air-gapped/supported-air-gapped-functionality-via-qr ; https://github.com/Blockstream/Jade/blob/master/docs/index.rst
