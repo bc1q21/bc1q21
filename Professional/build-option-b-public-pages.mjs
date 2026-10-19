@@ -15,12 +15,12 @@ export function buildOptionBPublicPages(gifts,outputDirectory) {
  // Validate every gift before writing anything.
  for(const item of gifts) {
   if(!item||typeof item!=='object'||Array.isArray(item)||
-     Object.keys(item).sort().join(',')!=='giftUrl,published')
+     !['giftUrl,published','commitment,giftUrl,published'].includes(Object.keys(item).sort().join(',')))
    throw Error('Only giftUrl and published schedule metadata accepted');
   const locator=giftLocator(item.giftUrl);
   if(seen.has(locator.fundingAddress))throw Error('Duplicate gift locator');
   seen.add(locator.fundingAddress);
-  const html=renderOptionBRecipientPage(item.giftUrl,item.published);
+  const html=renderOptionBRecipientPage(item.giftUrl,item.published,item.commitment);
   prepared.push({address:locator.fundingAddress,interval:locator.interval,html});
  }
  mkdirSync(outputDirectory,{recursive:false});
