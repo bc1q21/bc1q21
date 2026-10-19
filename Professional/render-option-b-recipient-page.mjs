@@ -27,7 +27,9 @@ export function renderOptionBRecipientPage(url,published) {
   'These dates match supplied public scripts, but this offline page does not establish on-chain funding, confirmations, or spendability. Anyone with the link and published schedule can view the dates.');
  html=html.replace('This prototype never queries that address or assumes possession of it authorizes spending.',
   'This prototype never queries that address or assumes possession of it authorizes spending.');
- // The template uses a query-string locator; the caller can open this generated
- // static page with the public gift address in ?a=... to display the locator.
+ // Bind the verified public gift address to this generated page rather than
+ // trusting a different address supplied later in a viewer's query string.
+ html=html.replace("const value=params.get('a')||params.get('address')||'';",
+  'const value='+JSON.stringify(view.fundingAddress)+';');
  return html;
 }
