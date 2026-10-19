@@ -19,6 +19,11 @@ test('Option B generates /gift/<address>/index.html with verified dates',()=>{
   const result=buildOptionBPublicPages([{giftUrl,published}],join(root,'public'));
   assert.equal(result.giftCount,1);
   assert.equal(result.deployed,false);
+  const manifest=JSON.parse(readFileSync(join(root,'public','professional-gift-routes.json'),'utf8'));
+  assert.equal(manifest.deployed,false);
+  assert.deepEqual(manifest.routes,[{giftAddress:handoffs[0].fundingAddress,interval:'month',relativeUrl:'gift/'+handoffs[0].fundingAddress+'/?interval=month',outputFile:'gift/'+handoffs[0].fundingAddress+'/index.html'}]);
+  assert.ok(!JSON.stringify(manifest).includes(accountXpub));
+  assert.ok(!JSON.stringify(manifest).includes(masterFingerprintHex));
   const html=readFileSync(join(root,'public','gift',handoffs[0].fundingAddress,'index.html'),'utf8');
   for(const date of dates)assert.ok(html.includes('<td>'+date+'</td>'));
   assert.match(html,/id="sign" disabled/);
