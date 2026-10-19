@@ -2,7 +2,7 @@
 // Mirrors retail address -> transactions -> candidate filter, but never equates
 // a candidate with an authenticated gift. No signing or private wallet operations.
 import assert from 'node:assert/strict';
-const ADDRESS=/^(?:[13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1q[ac-hj-np-z02-9]{11,87}|bcrt1q[ac-hj-np-z02-9]{11,87})$/;
+const ADDRESS=/^(?:[123mn][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1q[ac-hj-np-z02-9]{11,87}|bcrt1q[ac-hj-np-z02-9]{11,87})$/;
 const TXID=/^[a-f0-9]{64}$/;
 const SCRIPT=/^a914[a-f0-9]{40}87$/;
 export function giftLocator(urlString) {
