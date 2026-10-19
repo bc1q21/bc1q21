@@ -40,3 +40,33 @@ test('Option B rejects mismatched schedule before writing files',()=>{
   assert.equal(existsSync(output),false);
  }finally{rmSync(root,{recursive:true,force:true});}
 });
+
+test('Option B generates original funding-address QR route using explicit public script mapping',()=>{
+ const root=mkdtempSync(join(tmpdir(),'bc1q21-mapped-pages-'));
+ try {
+  const fundingAddress='bcrt1q'+'q'.repeat(38);
+  const mappedUrl='https://example.invalid/gift/'+fundingAddress+'?interval=month';
+  const commitment={fundingAddress,releaseScriptsHex:published.outputScriptsHex};
+  const output=join(root,'public');
+  const result=buildOptionBPublicPages([{giftUrl:mappedUrl,published,commitment}],output);
+  assert.deepEqual(result.addresses,[fundingAddress]);
+  const html=readFileSync(join(output,'gift',fundingAddress,'index.html'),'utf8');
+  for(const date of dates)assert.ok(html.includes('<td>'+date+'</td>'));
+  assert.ok(html.includes('const value="'+fundingAddress+'";'));
+  assert.match(html,/id="sign" disabled/);
+  const manifest=JSON.parse(readFileSync(join(output,'professional-gift-routes.json'),'utf8'));
+  assert.equal(manifest.routes[0].giftAddress,fundingAddress);
+  assert.ok(!JSON.stringify(manifest).includes(accountXpub));
+ } finally {rmSync(root,{recursive:true,force:true});}
+});
+test('Option B rejects forged funding locator mapping before writing',()=>{
+ const root=mkdtempSync(join(tmpdir(),'bc1q21-mapped-reject-'));
+ try {
+  const fundingAddress='bcrt1q'+'q'.repeat(38);
+  const mappedUrl='https://example.invalid/gift/'+fundingAddress+'?interval=month';
+  const output=join(root,'public');
+  assert.throws(()=>buildOptionBPublicPages([{giftUrl:mappedUrl,published,
+   commitment:{fundingAddress:handoffs[0].fundingAddress,releaseScriptsHex:published.outputScriptsHex}}],output),/disagree/);
+  assert.equal(existsSync(output),false);
+ } finally {rmSync(root,{recursive:true,force:true});}
+});
