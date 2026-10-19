@@ -7,7 +7,7 @@ export function inspectRecipientReleaseReadiness({url,handoff,funding,checkpoint
  const maturity=inspectGiftSpecificCltvMaturity(url,handoff,funding,checkpoint,coreEvidence,chainTip);
  const blockers=[
   'Trusted Bitcoin Core RPC provenance and current chain-tip continuity are not established',
-  'Hardware-authenticated private schedule unlocking is not established',
+  'Publicly visible schedule does not establish beneficiary authorization',
   'Gift-specific beneficiary authorization is not established',
   'One-time recipient approval of exact release intent is not established'
  ];
