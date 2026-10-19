@@ -23,3 +23,7 @@ C. **Offline companion fallback (not equivalent to Jade unlock):** recipient res
 STOP at authorization. Existing public funding, UTXO, chain-continuity and CLTV maturity checks remain non-authorizing. Do not build a production recipient unlock or claim integrated end-to-end acceptance until one of the above designs is explicitly approved and validated.
 
 No mainnet, real Bitcoin, retail/main edits, production deployment, Start9 changes or repeat Jade signing tests.
+
+## Next investigation: Jade message-signing feasibility
+
+Investigate whether an existing air-gapped Jade message-signing operation can authenticate a gift-bound challenge without exposing the 12-word recovery phrase. Signing a challenge is not equivalent to decrypting the existing encrypted schedule. Keep dates hidden until a separate, validated decryption path exists. Preserve original 12-word recovery, avoid changes to retail, and do not authorize signing or broadcasting from a public gift link. If secure date unlocking proves impractical, return to the owner for an explicit decision on the privacy trade-off rather than making dates public automatically.
