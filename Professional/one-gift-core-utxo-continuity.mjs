@@ -18,7 +18,7 @@ export function inspectOneGiftCoreUtxos(binding,chainInfo,observations) {
   assert.match(expected.scriptPubKeyHex,/^(?:[0-9a-f]{2})+$/,'Invalid release script');
   const item=observations[i];
   assert.ok(item&&typeof item==='object'&&!Array.isArray(item),'Missing Core observation');
-  assert.deepEqual(Object.keys(item).sort(),['txid','vout','response'],'Unexpected observation fields');
+  assert.deepEqual(Object.keys(item).sort(),['response','txid','vout'],'Unexpected observation fields');
   assert.equal(item.txid,binding.fundingTxid,'Observed transaction differs');
   assert.equal(item.vout,expected.vout,'Observed output index differs');
   const parsed=parseBitcoinCoreGettxout(item.txid,item.vout,item.response);
