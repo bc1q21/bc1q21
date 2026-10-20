@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/source"
-          gh run download 39471688702 --repo "$GITHUB_REPOSITORY" --name professional-one-funded-24-release-regtest-proof --dir "$RUNNER_TEMP/source"
+          gh run download 39472333991 --repo "$GITHUB_REPOSITORY" --name professional-one-funded-24-release-regtest-proof --dir "$RUNNER_TEMP/source"
       - name: Independently verify exact unsigned handoff and snapshot bytes
         run: |
           set -euo pipefail
