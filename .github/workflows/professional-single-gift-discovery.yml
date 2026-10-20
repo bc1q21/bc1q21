@@ -26,7 +26,7 @@ jobs:
       - name: Generate synthetic public xpub release descriptors
         run: node Professional/build-watchonly-public-fixture.mjs "$RUNNER_TEMP/public-gift-input.json"
       - name: Install independent Bitcoin transaction decoder (test only)
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @scure/bip32@1.7.0 @noble/curves@1.9.7
       - name: Start entirely disposable Bitcoin Core 28 regtest
         run: |
           set -euo pipefail
