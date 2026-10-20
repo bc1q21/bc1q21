@@ -31,4 +31,4 @@ jobs:
           mkdir -p "$RUNNER_TEMP/input"
           gh run download 39472333991 --repo "$GITHUB_REPOSITORY" --name professional-one-funded-24-release-regtest-proof --dir "$RUNNER_TEMP/input"
       - name: Verify captured Jade signed QR, matching unsigned PSBT and ECDSA
-        run: node Professional/verify-same-gift-jade-signed-qr.mjs "Professional/jade-same-gift-release1-signed-qr-capture-2026-10-20.txt" "$RUNNER_TEMP/input/same-gift-unsigned-handoff.json"
+        run: node Professional/verify-same-gift-jade-signed-qr.mjs "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt" "$RUNNER_TEMP/input/same-gift-unsigned-handoff.json"
