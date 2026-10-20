@@ -69,7 +69,7 @@ jobs:
           h=json.load(open(root+'same-gift-unsigned-handoff.json'))
           f=json.load(open(root+'single-funded-gift-proof.json'))
           def rpc(*args):
-              cmd=['docker','exec','bc1q21-same-gift-restore','bitcoin-cli','-datadir=/work','-regtest','-rpcuser=regtest','-rpcpassword=disposable']+list(map(str,args))
+              cmd=['docker','exec','bc1q21-same-gift-restore','bitcoin-cli','-datadir=/work','-regtest','-rpcuser=regtest','-rpcpassword=disposable']+[('true' if x is True else 'false' if x is False else str(x)) for x in args]
               return json.loads(subprocess.check_output(cmd,text=True))
           chain=rpc('getblockchaininfo')
           assert chain['chain']=='regtest'
