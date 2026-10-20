@@ -1,0 +1,96 @@
+name: Professional same Jade gift cross-run regtest restoration
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - '.github/workflows/professional-same-jade-gift-restore.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  restore-same-gift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install pinned public-only verifier libraries
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+      - name: Download exact prior successful Jade-public gift artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/previous"
+          gh run download 39470109383 --repo "$GITHUB_REPOSITORY" --name professional-one-funded-24-release-regtest-proof --dir "$RUNNER_TEMP/previous"
+      - name: Verify public handoff and restore protected chain snapshot
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {auditSameGiftUnsignedHandoff} from './Professional/audit-same-gift-unsigned-handoff.mjs';
+          import {verifyOfflineRegtestSnapshot,restoreOfflineRegtestSnapshot} from './Professional/regtest-snapshot-offline.mjs';
+          const root=process.env.RUNNER_TEMP+'/previous';
+          const handoff=JSON.parse(readFileSync(root+'/same-gift-unsigned-handoff.json','utf8'));
+          const funded=JSON.parse(readFileSync(root+'/single-funded-gift-proof.json','utf8'));
+          assert.equal(funded.network,'regtest');
+          assert.equal(funded.fundingTxid,handoff.fundingTxid);
+          assert.equal(funded.all24OutputsFundedAndUnspent,true);
+          const audited=auditSameGiftUnsignedHandoff(handoff);
+          assert.equal(audited.exactUnsignedPsbtVerified,true);
+          const snapshot=root+'/same-gift-chain-snapshot';
+          const m=verifyOfflineRegtestSnapshot(snapshot);
+          assert.ok(m.files.length>=3);
+          restoreOfflineRegtestSnapshot(snapshot,process.env.RUNNER_TEMP+'/restored');
+          console.log('PASS cross-run public handoff and snapshot hashes');
+          NODE
+      - name: Restart only saved isolated Bitcoin Core regtest, no network
+        run: |
+          set -euo pipefail
+          docker pull bitcoin/bitcoin:28.0
+          docker run -d --name bc1q21-same-gift-restore --network none -v "$RUNNER_TEMP/restored:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -txindex=1 -printtoconsole=0
+          for i in $(seq 1 90); do
+            if docker exec bc1q21-same-gift-restore bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable getblockcount >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+      - name: Independently check original outpoint against restored Core RPC
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,subprocess
+          from decimal import Decimal
+          root=os.environ['RUNNER_TEMP']+'/previous/'
+          h=json.load(open(root+'same-gift-unsigned-handoff.json'))
+          f=json.load(open(root+'single-funded-gift-proof.json'))
+          def rpc(*args):
+              cmd=['docker','exec','bc1q21-same-gift-restore','bitcoin-cli','-datadir=/work','-regtest','-rpcuser=regtest','-rpcpassword=disposable']+list(map(str,args))
+              return json.loads(subprocess.check_output(cmd,text=True))
+          chain=rpc('getblockchaininfo')
+          assert chain['chain']=='regtest'
+          assert chain['bestblockhash']==h['chainTipHash']
+          assert chain['blocks']+1==h['nextBlockHeight']
+          block=rpc('getblock',h['fundingBlockHash'],1)
+          assert h['fundingTxid'] in block['tx']
+          tx=rpc('getrawtransaction',h['fundingTxid'],True,h['fundingBlockHash'])
+          assert tx['txid']==f['fundingTxid']
+          outputs=[v for v in f['releaseOutputs'] if v['index']==h['releaseIndex']]
+          assert len(outputs)==1
+          o=outputs[0]
+          assert o['vout']==h['vout']
+          utxo=rpc('gettxout',h['fundingTxid'],h['vout'],True)
+          assert utxo is not None and utxo['confirmations']>=1
+          assert utxo['bestblock']==chain['bestblockhash']
+          assert utxo['scriptPubKey']['hex']==o['scriptPubKey']
+          assert int(Decimal(str(utxo['value']))*100000000)==h['inputSats']==o['sats']
+          assert h['signingAuthorized'] is False and h['broadcastAuthorized'] is False
+          print('PASS_SAME_GIFT_CROSS_RUN_CORE_RESTORATION',json.dumps({'chain':'regtest','height':chain['blocks'],'fundingTxid':h['fundingTxid'],'vout':h['vout'],'confirmedUnspent':True,'signed':False,'broadcast':False}))
+          PY
+      - name: Clean up isolated regtest
+        if: always()
+        run: docker rm -f bc1q21-same-gift-restore 2>/dev/null || true
