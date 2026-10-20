@@ -14,6 +14,7 @@ const fixture=JSON.parse(readFileSync(fixturePath,'utf8'));
 const discovery=JSON.parse(readFileSync(discoveryPath,'utf8'));
 assert.equal(fixture.network,'regtest');assert.equal(discovery.network,'regtest');
 assert.equal(fixture.privateKeysIncluded,false);
+assert.equal(fixture.masterFingerprintHex,'e29ac13c','Expected pinned disposable Jade public fingerprint');
 assert.equal(fixture.descriptors.length,24);assert.equal(discovery.releaseOutputs.length,24);
 const d=fixture.descriptors[0],release=discovery.releaseOutputs.find(x=>x.index===d.index);
 assert.ok(release,'First gift release must be present');
@@ -62,7 +63,7 @@ if(phase==='premature'){
  const result=buildUnsignedCltvPsbt({fundingTxHex:legacyHex,
   vout:match.vout,expectedTxid:discovery.fundingTxid,expectedSats:match.sats,
   redeemScriptHex:d.redeemScriptHex,signerPubkeyHex:d.publicKeyHex,
-  masterFingerprintHex:'00000000',
+  masterFingerprintHex:fixture.masterFingerprintHex,
   derivationPath:[0x80000054,0x80000000,0x80000000,1,d.index],
   locktime:d.locktime,destinationScriptHex:'0014'+'22'.repeat(20),destinationSats:payout});
  const psbt=bitcoin.Psbt.fromBase64(result.psbtBase64,{network:bitcoin.networks.regtest});
