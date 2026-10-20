@@ -36,6 +36,7 @@ jobs:
           set -euo pipefail
           docker pull bitcoin/bitcoin:28.0
           mkdir -p "$RUNNER_TEMP/single-gift-bitcoin"
+          printf '%s\\n' '{"purpose":"bc1q21-professional-disposable-regtest","acknowledged":true}' > "$RUNNER_TEMP/single-gift-bitcoin/.bc1q21-professional-disposable-regtest"
           docker run -d --name bc1q21-single-gift --network host -v "$RUNNER_TEMP/single-gift-bitcoin:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -fallbackfee=0.0001 -txindex=1 -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -printtoconsole=0
           for i in $(seq 1 90); do
             if docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable getblockcount >/dev/null 2>&1; then break; fi
@@ -62,6 +63,35 @@ jobs:
         run: |
           node --test Professional/audit-same-gift-unsigned-handoff.check.mjs
           node Professional/audit-same-gift-unsigned-handoff.mjs "$RUNNER_TEMP/same-gift-unsigned-handoff.json"
+      - name: Stop disposable Bitcoin Core and preserve verified public chain snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable stop
+          docker wait bc1q21-single-gift >/dev/null
+          docker rm bc1q21-single-gift
+          sudo chmod -R a+rX "$RUNNER_TEMP/single-gift-bitcoin/regtest"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {exportStoppedRegtestSnapshot,verifyOfflineRegtestSnapshot,restoreOfflineRegtestSnapshot} from './Professional/regtest-snapshot-offline.mjs';
+          const base=process.env.RUNNER_TEMP;
+          const handoff=JSON.parse(readFileSync(base+'/same-gift-unsigned-handoff.json','utf8'));
+          const funded=JSON.parse(readFileSync(base+'/single-funded-gift-proof.json','utf8'));
+          assert.equal(handoff.network,'regtest');
+          assert.equal(handoff.fundingTxid,funded.fundingTxid);
+          assert.equal(handoff.signingAuthorized,false);
+          assert.equal(handoff.broadcastAuthorized,false);
+          const snapshot=base+'/same-gift-chain-snapshot';
+          const exported=exportStoppedRegtestSnapshot(base+'/single-gift-bitcoin',snapshot,{coreStopped:true});
+          const verified=verifyOfflineRegtestSnapshot(snapshot);
+          assert.deepEqual(exported,verified,'Snapshot integrity mismatch');
+          const restored=restoreOfflineRegtestSnapshot(snapshot,base+'/same-gift-restored');
+          assert.deepEqual(restored,exported,'Restored chain file manifest mismatch');
+          console.log(JSON.stringify({result:'PASS_SAME_GIFT_STOPPED_CHAIN_SNAPSHOT',
+           network:'regtest',fundingTxid:funded.fundingTxid,
+           snapshotFiles:verified.files.length,signed:false,broadcast:false}));
+          NODE
       - name: Upload synthetic public-only verification evidence
         if: success()
         uses: actions/upload-artifact@v4
@@ -70,5 +100,9 @@ jobs:
           path: |
             ${{ runner.temp }}/single-funded-gift-proof.json
             ${{ runner.temp }}/same-gift-unsigned-handoff.json
+            ${{ runner.temp }}/same-gift-chain-snapshot/
           if-no-files-found: error
           retention-days: 7
+      - name: Remove disposable Bitcoin Core container
+        if: always()
+        run: docker rm -f bc1q21-single-gift 2>/dev/null || true
