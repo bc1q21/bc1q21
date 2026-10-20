@@ -11,13 +11,18 @@ const expected={network:'regtest',fundingTxid:'aa'.repeat(32),fundingVout:0,inpu
  signerPubkeyHex:'02'+'11'.repeat(32),redeemScriptHex:'01f4b1752102'+'11'.repeat(32)+'ac'};
 const approval={recipientAuthenticated:false,transactionIntentApproved:false,walletOriginAttested:false,fundingEvidenceCurrent:false};
 test('same-gift unsigned transaction and synthetic recipient never acquire signing or broadcast approval',()=>{
- assert.throws(()=>verifySameGiftExternalSignedReturn({unsignedPsbtBase64:p.toBase64(),signedPsbtBase64:p.toBase64(),expected,approval}),/Independent recipient\/intent\/funding approvals required/);
+ assert.throws(()=>verifySameGiftExternalSignedReturn({unsignedPsbtBase64:p.toBase64(),signedPsbtBase64:p.toBase64(),expected,approval}),/Authenticated recipient approval evidence is not implemented/);
 });
 test('missing signed return cannot pass even if caller forges every approval boolean',()=>{
  assert.throws(()=>verifySameGiftExternalSignedReturn({unsignedPsbtBase64:p.toBase64(),signedPsbtBase64:p.toBase64(),expected,
-  approval:{recipientAuthenticated:true,transactionIntentApproved:true,walletOriginAttested:true,fundingEvidenceCurrent:true}}),/no signing material/);
+  approval:{recipientAuthenticated:true,transactionIntentApproved:true,walletOriginAttested:true,fundingEvidenceCurrent:true}}),/Authenticated recipient approval evidence is not implemented/);
 });
 test('wrong gift and missing expected audit fields fail closed',()=>{
- assert.throws(()=>verifySameGiftExternalSignedReturn({unsignedPsbtBase64:p.toBase64(),signedPsbtBase64:'',expected:{...expected,fundingTxid:'bb'.repeat(32)},approval}),/Independent recipient/);
+ assert.throws(()=>verifySameGiftExternalSignedReturn({unsignedPsbtBase64:p.toBase64(),signedPsbtBase64:'',expected:{...expected,fundingTxid:'bb'.repeat(32)},approval}),/Authenticated recipient approval evidence is not implemented/);
  assert.throws(()=>verifySameGiftExternalSignedReturn({unsignedPsbtBase64:p.toBase64(),signedPsbtBase64:'',expected:{network:'regtest'},approval}),/fields missing/);
+});
+
+test('malicious caller-supplied approval cannot authorize finalization even when all flags true',()=>{
+ const forged={recipientAuthenticated:true,transactionIntentApproved:true,walletOriginAttested:true,fundingEvidenceCurrent:true};
+ assert.throws(()=>verifySameGiftExternalSignedReturn({unsignedPsbtBase64:p.toBase64(),signedPsbtBase64:p.toBase64(),expected,approval:forged}),/Authenticated recipient approval evidence is not implemented/);
 });
