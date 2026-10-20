@@ -6,6 +6,7 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {verifyReturnedSignedProfessionalPsbt} from './verify-signed-psbt-return.mjs';
 import bitcoin from 'bitcoinjs-lib';
+import {HDKey} from '@scure/bip32';
 import {createLocalRegtestReadOnlyRpc} from './one-gift-local-regtest-rpc.mjs';
 import {buildUnsignedCltvPsbt} from './unsigned-cltv-psbt.mjs';
 const [fixturePath,discoveryPath,phase,outputPath]=process.argv.slice(2);
@@ -59,13 +60,16 @@ if(phase==='premature'){
  const path=d.path.match(/^m\/84'\/0'\/0'\/1\/(\d+)$/);
  assert.ok(path&&Number(path[1])===d.index,'Unrecognized public derivation path');
  const payout=match.sats-1000;
+ const account=HDKey.fromExtendedKey(fixture.accountXpub);
+ const recipientPub=Buffer.from(account.deriveChild(0).deriveChild(0).publicKey);
+ const destinationScriptHex='0014'+createHash('ripemd160').update(createHash('sha256').update(recipientPub).digest()).digest('hex');
  // This destination is not associated with a user wallet: NO SIGNING.
  const result=buildUnsignedCltvPsbt({fundingTxHex:legacyHex,
   vout:match.vout,expectedTxid:discovery.fundingTxid,expectedSats:match.sats,
   redeemScriptHex:d.redeemScriptHex,signerPubkeyHex:d.publicKeyHex,
   masterFingerprintHex:fixture.masterFingerprintHex,
   derivationPath:[0x80000054,0x80000000,0x80000000,1,d.index],
-  locktime:d.locktime,destinationScriptHex:'0014'+'22'.repeat(20),destinationSats:payout});
+  locktime:d.locktime,destinationScriptHex:destinationScriptHex,destinationSats:payout});
  const psbt=bitcoin.Psbt.fromBase64(result.psbtBase64,{network:bitcoin.networks.regtest});
  assert.equal(psbt.txInputs.length,1);assert.equal(psbt.txOutputs.length,1);
  assert.equal(psbt.txInputs[0].index,match.vout);
@@ -96,7 +100,7 @@ if(phase==='premature'){
    nextBlockHeight,chainTipHash:after.bestblockhash,
    fundingBlockHash:tx.blockhash,confirmedUnspentAtObservation:true,
    signerPubkeyHex:d.publicKeyHex,redeemScriptHex:d.redeemScriptHex,
-   destinationScriptHex:'0014'+'22'.repeat(20),
+   destinationScriptHex:destinationScriptHex,
    payoutSats:payout,feeSats:1000,psbtSha256:approvedDigest,
    unsignedPsbtBase64:result.psbtBase64,
    publicOnly:true,disposableFixture:true,recipientAuthenticated:false,
