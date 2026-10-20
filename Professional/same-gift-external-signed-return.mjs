@@ -13,9 +13,10 @@ export function verifySameGiftExternalSignedReturn({unsignedPsbtBase64,signedPsb
  // The approval record is NOT established by a public link, test fixture,
  // synthetic fingerprint, or a matching signature. Only independent recipient
  // authorization can release this boundary.
- assert.ok(approval&&approval.recipientAuthenticated===true&&
-  approval.transactionIntentApproved===true&&approval.walletOriginAttested===true&&
-  approval.fundingEvidenceCurrent===true,'Independent recipient/intent/funding approvals required');
+ // Caller-supplied approval flags cannot attest recipient ownership or wallet
+ // origin. No verified approval issuer / signed capability is implemented yet.
+ // Fail closed even if every caller-controlled boolean claims true.
+ assert.fail('Authenticated recipient approval evidence is not implemented; reject caller-supplied approval flags');
  assert.equal(typeof unsignedPsbtBase64,'string');
  assert.equal(typeof signedPsbtBase64,'string');
  const sha=createHash('sha256').update(Buffer.from(unsignedPsbtBase64,'base64')).digest('hex');
