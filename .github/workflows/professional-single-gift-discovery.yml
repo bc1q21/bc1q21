@@ -57,6 +57,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: professional-one-funded-24-release-regtest-proof
-          path: |\n            ${{ runner.temp }}/single-funded-gift-proof.json\n            ${{ runner.temp }}/same-gift-unsigned-handoff.json
+          path: |
+            ${{ runner.temp }}/single-funded-gift-proof.json
+            ${{ runner.temp }}/same-gift-unsigned-handoff.json
           if-no-files-found: error
           retention-days: 7
