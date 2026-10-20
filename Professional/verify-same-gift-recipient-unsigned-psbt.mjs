@@ -3,6 +3,8 @@
 // Synthetic destination and fingerprint are NOT authorized recipient identity.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {verifyReturnedSignedProfessionalPsbt} from './verify-signed-psbt-return.mjs';
 import bitcoin from 'bitcoinjs-lib';
 import {createLocalRegtestReadOnlyRpc} from './one-gift-local-regtest-rpc.mjs';
 import {buildUnsignedCltvPsbt} from './unsigned-cltv-psbt.mjs';
@@ -71,5 +73,18 @@ if(phase==='premature'){
  assert.equal(result.summary.locktime,d.locktime);
  assert.equal(result.summary.feeSats,1000);
  assert.equal(psbt.data.inputs[0].partialSig,undefined,'PSBT must remain unsigned');
- console.log(JSON.stringify({result:'PASS_REAL_SAME_GIFT_UNSIGNED_CLTV_PSBT',network:'regtest',fundingTxid:discovery.fundingTxid,vout:match.vout,releaseIndex:d.index,locktime:d.locktime,nextBlockHeight,feeSats:1000,psbtBytes:Buffer.from(result.psbtBase64,'base64').length,syntheticDestination:true,fingerprintAttested:false,recipientAuthenticated:false,canSign:false,canBroadcast:false}));
+ // Connect the EXACT real-funded unsigned PSBT to the existing signed-return
+ // boundary. A missing signature MUST fail, and even a valid signature later
+ // would require independent recipient approval and current-Core rechecks.
+ const approvedDigest=createHash('sha256').update(Buffer.from(result.psbtBase64,'base64')).digest('hex');
+ assert.throws(()=>verifyReturnedSignedProfessionalPsbt(result.psbtBase64,result.psbtBase64,approvedDigest),
+  /no signing material/,'Unsigned handoff cannot masquerade as signed Jade return');
+ const altered=bitcoin.Psbt.fromBase64(result.psbtBase64,{network:bitcoin.networks.regtest});
+ altered.updateInput(0,{sighashType:bitcoin.Transaction.SIGHASH_NONE});
+ assert.throws(()=>verifyReturnedSignedProfessionalPsbt(result.psbtBase64,altered.toBase64(),approvedDigest),
+  /sighash metadata differs/,'Changed signed-return metadata must be rejected');
+ assert.throws(()=>verifyReturnedSignedProfessionalPsbt(result.psbtBase64,result.psbtBase64,'0'.repeat(64)),
+  /fingerprint mismatch/,'Mismatched approved unsigned fingerprint must be rejected');
+
+ console.log(JSON.stringify({result:'PASS_REAL_SAME_GIFT_UNSIGNED_CLTV_PSBT',network:'regtest',fundingTxid:discovery.fundingTxid,vout:match.vout,releaseIndex:d.index,locktime:d.locktime,nextBlockHeight,feeSats:1000,psbtBytes:Buffer.from(result.psbtBase64,'base64').length,signedReturnGuardExercised:true,signatureCryptographicallyVerified:false,syntheticDestination:true,fingerprintAttested:false,recipientAuthenticated:false,canSign:false,canBroadcast:false}));
 }
