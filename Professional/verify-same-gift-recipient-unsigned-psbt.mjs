@@ -102,7 +102,7 @@ if(phase==='premature'){
    walletOriginAttested:false,recipientIntentApproved:false,
    signingAuthorized:false,broadcastAuthorized:false};
   assert.ok(!Object.keys(manifest).some(k=>/seed|privateKey|secret|wif/i.test(k)));
-  writeFileSync(outputPath,JSON.stringify(manifest,null,2)+'\\n',{mode:0o600,flag:'wx'});
+  writeFileSync(outputPath,JSON.stringify(manifest,null,2)+'\n',{mode:0o600,flag:'wx'});
  }
  console.log(JSON.stringify({result:'PASS_REAL_SAME_GIFT_UNSIGNED_CLTV_PSBT',network:'regtest',fundingTxid:discovery.fundingTxid,vout:match.vout,releaseIndex:d.index,locktime:d.locktime,nextBlockHeight,feeSats:1000,psbtBytes:Buffer.from(result.psbtBase64,'base64').length,signedReturnGuardExercised:true,signatureCryptographicallyVerified:false,syntheticDestination:true,fingerprintAttested:false,recipientAuthenticated:false,canSign:false,canBroadcast:false}));
 }
