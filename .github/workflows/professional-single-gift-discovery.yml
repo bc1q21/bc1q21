@@ -8,6 +8,7 @@ on:
       - 'Professional/verify-one-funded-gift-local-core.mjs'
       - 'Professional/verify-same-gift-recipient-unsigned-psbt.mjs'
       - 'Professional/audit-same-gift-unsigned-handoff.mjs'
+      - 'Professional/audit-one-gift-public-signer-identity.mjs'
       - 'Professional/one-gift-local-regtest-rpc.mjs'
       - '.github/workflows/professional-single-gift-discovery.yml'
 permissions:
@@ -53,6 +54,9 @@ jobs:
           docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable generatetoaddress 380 "$MINER" >/dev/null
       - name: Build unsigned recipient PSBT for same confirmed gift after maturity
         run: node Professional/verify-same-gift-recipient-unsigned-psbt.mjs "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json" mature "$RUNNER_TEMP/same-gift-unsigned-handoff.json"
+      - name: Independently bind all gift public signing keys to public account xpub
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; import {auditOneGiftPublicSignerIdentity} from "./Professional/audit-one-gift-public-signer-identity.mjs"; const f=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/public-gift-input.json")); const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/single-funded-gift-proof.json")); console.log(JSON.stringify(auditOneGiftPublicSignerIdentity(f,d)));'
       - name: Independently audit exact same-gift unsigned handoff
         run: |
           node --test Professional/audit-same-gift-unsigned-handoff.check.mjs
