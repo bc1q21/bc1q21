@@ -5,6 +5,8 @@ on:
     branches: [professional/isolated-release-prototype]
     paths:
       - 'Professional/test-single-funded-gift-core.py'
+      - 'Professional/verify-one-funded-gift-local-core.mjs'
+      - 'Professional/one-gift-local-regtest-rpc.mjs'
       - '.github/workflows/professional-single-gift-discovery.yml'
 permissions:
   contents: read
@@ -23,18 +25,22 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional @scure/bip32@1.7.0
       - name: Generate synthetic public xpub release descriptors
         run: node Professional/build-watchonly-public-fixture.mjs "$RUNNER_TEMP/public-gift-input.json"
+      - name: Install independent Bitcoin transaction decoder (test only)
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
       - name: Start entirely disposable Bitcoin Core 28 regtest
         run: |
           set -euo pipefail
           docker pull bitcoin/bitcoin:28.0
           mkdir -p "$RUNNER_TEMP/single-gift-bitcoin"
-          docker run -d --name bc1q21-single-gift --network none -v "$RUNNER_TEMP/single-gift-bitcoin:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -fallbackfee=0.0001 -txindex=1 -printtoconsole=0
+          docker run -d --name bc1q21-single-gift --network host -v "$RUNNER_TEMP/single-gift-bitcoin:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -fallbackfee=0.0001 -txindex=1 -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -printtoconsole=0
           for i in $(seq 1 90); do
             if docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable getblockcount >/dev/null 2>&1; then break; fi
             sleep 2
           done
       - name: Fund one transaction and verify all 24 outputs and gift-link input origin
         run: python3 Professional/test-single-funded-gift-core.py "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json"
+      - name: Independently inspect same gift against local Bitcoin Core read-only RPC
+        run: node Professional/verify-one-funded-gift-local-core.mjs "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json"
       - name: Upload synthetic public-only verification evidence
         if: success()
         uses: actions/upload-artifact@v4
