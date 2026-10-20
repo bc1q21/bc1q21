@@ -1,0 +1,59 @@
+name: Professional same Jade gift offline QR preflight
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/build-same-gift-jade-release-qr.mjs'
+      - '.github/workflows/professional-same-gift-jade-qr.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  offline-jade-qr-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install pinned offline public-only QR tooling
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 jsqr@1.4.0 pngjs@7.0.0
+      - name: Download exact new Jade-public gift regtest artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/source"
+          gh run download 39471688702 --repo "$GITHUB_REPOSITORY" --name professional-one-funded-24-release-regtest-proof --dir "$RUNNER_TEMP/source"
+      - name: Independently verify exact unsigned handoff and snapshot bytes
+        run: |
+          set -euo pipefail
+          node Professional/audit-same-gift-unsigned-handoff.mjs "$RUNNER_TEMP/source/same-gift-unsigned-handoff.json"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {verifyOfflineRegtestSnapshot} from './Professional/regtest-snapshot-offline.mjs';
+          const root=process.env.RUNNER_TEMP+'/source';
+          const h=JSON.parse(readFileSync(root+'/same-gift-unsigned-handoff.json','utf8'));
+          const f=JSON.parse(readFileSync(root+'/single-funded-gift-proof.json','utf8'));
+          assert.equal(h.fundingTxid,f.fundingTxid);
+          assert.equal(h.network,'regtest');
+          assert.equal(h.signingAuthorized,false);
+          assert.equal(h.broadcastAuthorized,false);
+          const m=verifyOfflineRegtestSnapshot(root+'/same-gift-chain-snapshot');
+          assert.ok(m.files.length>=3);
+          console.log('PASS_JADE_QR_SNAPSHOT_AND_HANDOFF_INTEGRITY');
+          NODE
+      - name: Build QR images and byte-for-byte decode every frame
+        run: node Professional/build-same-gift-jade-release-qr.mjs "$RUNNER_TEMP/source/same-gift-unsigned-handoff.json" "$RUNNER_TEMP/same-gift-jade-release1-PREFLIGHT-DO-NOT-SIGN.html"
+      - name: Upload review-only offline QR preflight
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: professional-same-gift-jade-release1-qr-PREFLIGHT-DO-NOT-SIGN
+          path: ${{ runner.temp }}/same-gift-jade-release1-PREFLIGHT-DO-NOT-SIGN.html
+          retention-days: 7
+          if-no-files-found: error
