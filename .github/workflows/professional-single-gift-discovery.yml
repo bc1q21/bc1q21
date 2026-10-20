@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           docker pull bitcoin/bitcoin:28.0
           mkdir -p "$RUNNER_TEMP/single-gift-bitcoin"
-          printf '%s\\n' '{"purpose":"bc1q21-professional-disposable-regtest","acknowledged":true}' > "$RUNNER_TEMP/single-gift-bitcoin/.bc1q21-professional-disposable-regtest"
+          node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP+"/single-gift-bitcoin/.bc1q21-professional-disposable-regtest", JSON.stringify({purpose:"bc1q21-professional-disposable-regtest",acknowledged:true})+"\\n")'
           docker run -d --name bc1q21-single-gift --network host -v "$RUNNER_TEMP/single-gift-bitcoin:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -fallbackfee=0.0001 -txindex=1 -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -printtoconsole=0
           for i in $(seq 1 90); do
             if docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable getblockcount >/dev/null 2>&1; then break; fi
