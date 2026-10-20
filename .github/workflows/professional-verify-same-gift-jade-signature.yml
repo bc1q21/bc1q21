@@ -5,7 +5,7 @@ on:
     branches: [professional/isolated-release-prototype]
     paths:
       - 'Professional/verify-same-gift-jade-signed-qr.mjs'
-      - 'Professional/jade-same-gift-release1-signed-qr-capture-2026-10-20.txt'
+      - 'Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt'
       - '.github/workflows/professional-verify-same-gift-jade-signature.yml'
 permissions:
   contents: read
