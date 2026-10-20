@@ -6,6 +6,7 @@ on:
     paths:
       - 'Professional/test-single-funded-gift-core.py'
       - 'Professional/verify-one-funded-gift-local-core.mjs'
+      - 'Professional/verify-same-gift-recipient-unsigned-psbt.mjs'
       - 'Professional/one-gift-local-regtest-rpc.mjs'
       - '.github/workflows/professional-single-gift-discovery.yml'
 permissions:
@@ -41,6 +42,16 @@ jobs:
         run: python3 Professional/test-single-funded-gift-core.py "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json"
       - name: Independently inspect same gift against local Bitcoin Core read-only RPC
         run: node Professional/verify-one-funded-gift-local-core.mjs "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json"
+      - name: Reject premature recipient release for same regtest gift
+        run: node Professional/verify-same-gift-recipient-unsigned-psbt.mjs "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json" premature
+      - name: Advance same isolated regtest chain beyond first release CLTV height
+        shell: bash
+        run: |
+          set -euo pipefail
+          MINER=$(docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable -rpcwallet=test-gift-creator getnewaddress)
+          docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable generatetoaddress 380 "$MINER" >/dev/null
+      - name: Build unsigned recipient PSBT for same confirmed gift after maturity
+        run: node Professional/verify-same-gift-recipient-unsigned-psbt.mjs "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json" mature
       - name: Upload synthetic public-only verification evidence
         if: success()
         uses: actions/upload-artifact@v4
