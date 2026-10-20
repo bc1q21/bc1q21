@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import bitcoin from 'bitcoinjs-lib';
+import {deriveJadePublicCltvHandoff} from './jade-xpub-cltv-handoff.mjs';
+import {retailDateToCltvTimestamp} from './retail-calendar-cltv.mjs';
+import {inspectIntegratedOneGiftFunding} from './one-gift-integrated-funding.mjs';
+const xpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZqxDEvpqTnNmMXp2HjinP9Sqakg78';
+const masterFingerprintHex='e29ac13c';
+const date='2031-01-15';
+const h=deriveJadePublicCltvHandoff({accountXpub:xpub,masterFingerprintHex,childIndex:0,locktime:retailDateToCltvTimestamp(date)});
+const locator='bcrt1q'+'q'.repeat(38);
+const giftUrl='https://example.invalid/gift/'+locator+'?interval=month';
+const published={accountXpub:xpub,masterFingerprintHex,firstDate:date,interval:'month',outputScriptsHex:[h.fundingScriptPubKeyHex]};
+const commitment={fundingAddress:locator,releaseScriptsHex:published.outputScriptsHex};
+const tx=new bitcoin.Transaction();tx.version=2;tx.addInput(Buffer.alloc(32,1),0,0xfffffffe);tx.addOutput(Buffer.from(h.fundingScriptPubKeyHex,'hex'),120000);
+const rawFundingTxHex=tx.toHex(),fundingTxid=tx.getId(),bestblockhash='b'.repeat(64);
+const chainInfo={chain:'regtest',blocks:120,bestblockhash};
+const response={value:0.0012,confirmations:3,bestblock:bestblockhash,scriptPubKey:{hex:h.fundingScriptPubKeyHex}};
+const observations=[{txid:fundingTxid,vout:0,response}];
+const valid=()=>({giftUrl,published,commitment,rawFundingTxHex,chainInfo,observations});
+test('same gift public schedule binds serialized funding and Core-like UTXO without elevating trust',()=>{
+ const result=inspectIntegratedOneGiftFunding(valid());
+ assert.equal(result.fundingTxid,fundingTxid);
+ assert.equal(result.releaseOutputs[0].sats,120000);
+ assert.equal(result.coreResponsesConsistent,true);
+ assert.equal(result.rawTransactionBound,true);
+ for(const flag of ['rpcProvenanceVerified','chainVerified','fundingConfirmedAuthenticated','unspentAuthenticated','creatorAuthenticated','recipientAuthenticated','readyForLiveRouting','canSign','canBroadcast'])
+  assert.equal(result[flag],false,flag+' must remain fail closed');
+});
+test('tampering with same-gift transaction, Core amount, vout, chain tip, missing UTXO or gift mapping rejects',()=>{
+ const testReject=(patch,pattern)=>assert.throws(()=>inspectIntegratedOneGiftFunding({...valid(),...patch}),pattern);
+ const changed=new bitcoin.Transaction();changed.version=2;changed.addInput(Buffer.alloc(32,1),0,0xfffffffe);changed.addOutput(Buffer.from(h.fundingScriptPubKeyHex,'hex'),119999);
+ testReject({rawFundingTxHex:changed.toHex()},/transaction differs/);
+ testReject({observations:[{...observations[0],response:{...response,value:0.00120001}}]},/amount differs/);
+ testReject({observations:[{...observations[0],vout:1}]},/index differs/);
+ testReject({observations:[{...observations[0],response:{...response,bestblock:'c'.repeat(64)}}]},/chain tip differ/);
+ testReject({observations:[{...observations[0],response:null}]},/absent or spent/);
+ testReject({commitment:{fundingAddress:locator,releaseScriptsHex:[]}},/do not match/);
+ testReject({chainInfo:{...chainInfo,chain:'main'}},/Regtest/);
+});
