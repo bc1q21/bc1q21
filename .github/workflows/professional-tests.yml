@@ -37,7 +37,9 @@ jobs:
       - name: Verify integrated one-gift funding and Core consistency (untrusted observations)
         run: node --test Professional/one-gift-integrated-funding.check.mjs
       - name: Verify bounded read-only local regtest RPC acquisition guard
-        run: node --test Professional/one-gift-local-regtest-rpc.check.mjs      
+        run: node --test Professional/one-gift-local-regtest-rpc.check.mjs
+      - name: Verify external same-gift signed-return remains fail closed
+        run: node --test Professional/same-gift-external-signed-return.check.mjs      
       - name: Verify PSBT with independent Bitcoin library
         run: node --test Professional/bitcoinjs-compatibility.check.mjs Professional/qr-handoff.check.mjs Professional/crypto-psbt-frames.check.mjs Professional/verify-synthetic-signed-psbt.check.mjs Professional/finalize-synthetic-cltv.check.mjs Professional/independent-cltv-script-validation.check.mjs Professional/public-handoff.check.mjs Professional/public-funding-release-integration.check.mjs Professional/jade-xpub-cltv-handoff.check.mjs Professional/public-boundary-regression.check.mjs Professional/transaction-intent-regression.check.mjs Professional/approved-release-gate.check.mjs Professional/transaction-confirmation.check.mjs Professional/confirmation-session.check.mjs Professional/approved-psbt-handoff.check.mjs Professional/one-time-approved-handoff.check.mjs Professional/full-confirmed-release-flow.check.mjs Professional/controlled-qr-session.check.mjs Professional/controlled-qr-boundary.check.mjs Professional/verify-signed-psbt-return.check.mjs Professional/verify-returned-signature.check.mjs Professional/cltv-signed-return-negative.check.mjs Professional/finalize-verified-release.check.mjs Professional/audit-finalized-transaction.check.mjs Professional/finalize-and-audit-release.check.mjs Professional/controlled-signed-return.check.mjs Professional/hostile-signed-psbt-metadata.check.mjs Professional/in-memory-replay-guard.check.mjs Professional/local-durable-replay-guard.check.mjs
       - name: Verify captured Jade Plus V7 synthetic signing and CLTV finalization
