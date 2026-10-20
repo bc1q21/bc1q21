@@ -51,12 +51,12 @@ jobs:
           MINER=$(docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable -rpcwallet=test-gift-creator getnewaddress)
           docker exec bc1q21-single-gift bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable generatetoaddress 380 "$MINER" >/dev/null
       - name: Build unsigned recipient PSBT for same confirmed gift after maturity
-        run: node Professional/verify-same-gift-recipient-unsigned-psbt.mjs "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json" mature
+        run: node Professional/verify-same-gift-recipient-unsigned-psbt.mjs "$RUNNER_TEMP/public-gift-input.json" "$RUNNER_TEMP/single-funded-gift-proof.json" mature "$RUNNER_TEMP/same-gift-unsigned-handoff.json"
       - name: Upload synthetic public-only verification evidence
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: professional-one-funded-24-release-regtest-proof
-          path: ${{ runner.temp }}/single-funded-gift-proof.json
+          path: |\n            ${{ runner.temp }}/single-funded-gift-proof.json\n            ${{ runner.temp }}/same-gift-unsigned-handoff.json
           if-no-files-found: error
           retention-days: 7
