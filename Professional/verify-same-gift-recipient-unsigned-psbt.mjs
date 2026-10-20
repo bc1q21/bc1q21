@@ -2,13 +2,13 @@
 // Reuses the same 24-output funding transaction. Read-only RPC, no secrets/signing/broadcast.
 // Synthetic destination and fingerprint are NOT authorized recipient identity.
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {verifyReturnedSignedProfessionalPsbt} from './verify-signed-psbt-return.mjs';
 import bitcoin from 'bitcoinjs-lib';
 import {createLocalRegtestReadOnlyRpc} from './one-gift-local-regtest-rpc.mjs';
 import {buildUnsignedCltvPsbt} from './unsigned-cltv-psbt.mjs';
-const [fixturePath,discoveryPath,phase]=process.argv.slice(2);
+const [fixturePath,discoveryPath,phase,outputPath]=process.argv.slice(2);
 assert.ok(fixturePath&&discoveryPath&&['premature','mature'].includes(phase),'Expected public fixture, discovery and phase');
 const fixture=JSON.parse(readFileSync(fixturePath,'utf8'));
 const discovery=JSON.parse(readFileSync(discoveryPath,'utf8'));
@@ -86,5 +86,23 @@ if(phase==='premature'){
  assert.throws(()=>verifyReturnedSignedProfessionalPsbt(result.psbtBase64,result.psbtBase64,'0'.repeat(64)),
   /fingerprint mismatch/,'Mismatched approved unsigned fingerprint must be rejected');
 
+ if(outputPath){
+  // Unsigned/public-only review artifact. This fixture's xpub and arbitrary
+  // destination are NOT recipient authority or usable Jade wallet evidence.
+  const manifest={format:'bc1q21-professional-same-gift-unsigned-handoff-v1',
+   network:'regtest',fundingTxid:discovery.fundingTxid,vout:match.vout,
+   inputSats:match.sats,releaseIndex:d.index,locktime:d.locktime,
+   nextBlockHeight,chainTipHash:after.bestblockhash,
+   fundingBlockHash:tx.blockhash,confirmedUnspentAtObservation:true,
+   signerPubkeyHex:d.publicKeyHex,redeemScriptHex:d.redeemScriptHex,
+   destinationScriptHex:'0014'+'22'.repeat(20),
+   payoutSats:payout,feeSats:1000,psbtSha256:approvedDigest,
+   unsignedPsbtBase64:result.psbtBase64,
+   publicOnly:true,disposableFixture:true,recipientAuthenticated:false,
+   walletOriginAttested:false,recipientIntentApproved:false,
+   signingAuthorized:false,broadcastAuthorized:false};
+  assert.ok(!Object.keys(manifest).some(k=>/seed|privateKey|secret|wif/i.test(k)));
+  writeFileSync(outputPath,JSON.stringify(manifest,null,2)+'\\n',{mode:0o600,flag:'wx'});
+ }
  console.log(JSON.stringify({result:'PASS_REAL_SAME_GIFT_UNSIGNED_CLTV_PSBT',network:'regtest',fundingTxid:discovery.fundingTxid,vout:match.vout,releaseIndex:d.index,locktime:d.locktime,nextBlockHeight,feeSats:1000,psbtBytes:Buffer.from(result.psbtBase64,'base64').length,signedReturnGuardExercised:true,signatureCryptographicallyVerified:false,syntheticDestination:true,fingerprintAttested:false,recipientAuthenticated:false,canSign:false,canBroadcast:false}));
 }
