@@ -1,0 +1,81 @@
+name: Professional Jade same-gift Bitcoin Core acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches: [professional/isolated-release-prototype]
+    paths:
+      - 'Professional/finalize-same-gift-jade-captured-release.mjs'
+      - '.github/workflows/professional-same-gift-jade-core-acceptance.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verified-consensus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install pinned public-only dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2
+      - name: Download exact previously verified funded regtest snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/previous"
+          gh run download 39472333991 --repo "$GITHUB_REPOSITORY" --name professional-one-funded-24-release-regtest-proof --dir "$RUNNER_TEMP/previous"
+      - name: Restore file-hash verified stopped regtest chain
+        run: |
+          node --input-type=module <<'NODE'
+          import {restoreOfflineRegtestSnapshot} from './Professional/regtest-snapshot-offline.mjs';
+          const dir=process.env.RUNNER_TEMP;
+          const m=restoreOfflineRegtestSnapshot(dir+'/previous/same-gift-chain-snapshot',dir+'/restored');
+          if(m.files.length<3)throw Error('Missing chain files');
+          console.log('PASS_VERIFIED_CROSS_RUN_CHAIN_RESTORED',m.files.length);
+          NODE
+      - name: Finalize exact Jade-signed release offline, never broadcast
+        run: node Professional/finalize-same-gift-jade-captured-release.mjs "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt" "$RUNNER_TEMP/previous/same-gift-unsigned-handoff.json" "$RUNNER_TEMP/same-gift-finalized-DO-NOT-BROADCAST.hex"
+      - name: Start Bitcoin Core 28 regtest with no networking
+        run: |
+          set -euo pipefail
+          docker pull bitcoin/bitcoin:28.0
+          docker run -d --name bc1q21-jade-core-acceptance --network none -v "$RUNNER_TEMP/restored:/work" --entrypoint bitcoind bitcoin/bitcoin:28.0 -datadir=/work -regtest -server -rpcuser=regtest -rpcpassword=disposable -txindex=1 -printtoconsole=0
+          for i in $(seq 1 90); do
+            if docker exec bc1q21-jade-core-acceptance bitcoin-cli -datadir=/work -regtest -rpcuser=regtest -rpcpassword=disposable getblockcount >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+      - name: Check exact original UTXO and Bitcoin Core testmempoolaccept
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess
+          from decimal import Decimal
+          base=os.environ['RUNNER_TEMP']
+          h=json.load(open(base+'/previous/same-gift-unsigned-handoff.json'))
+          raw=open(base+'/same-gift-finalized-DO-NOT-BROADCAST.hex').read().strip()
+          assert len(raw)>100 and len(raw)%2==0
+          def rpc(method,*args):
+              cmd=['docker','exec','bc1q21-jade-core-acceptance','bitcoin-cli','-datadir=/work','-regtest','-rpcuser=regtest','-rpcpassword=disposable',method]+[str(x) for x in args]
+              return json.loads(subprocess.check_output(cmd,text=True))
+          c=rpc('getblockchaininfo')
+          assert c['chain']=='regtest' and c['bestblockhash']==h['chainTipHash']
+          assert c['blocks']+1==h['nextBlockHeight']
+          before=rpc('gettxout',h['fundingTxid'],h['vout'])
+          assert before is not None and before['confirmations']>=1
+          assert int(Decimal(str(before['value']))*100000000)==h['inputSats']
+          result=rpc('testmempoolaccept',json.dumps([raw]))
+          assert len(result)==1
+          assert result[0]['allowed'] is True,result
+          after=rpc('gettxout',h['fundingTxid'],h['vout'])
+          assert after is not None,'testmempoolaccept must not spend the output'
+          pool=rpc('getrawmempool')
+          assert result[0]['txid'] not in pool,'No broadcast allowed'
+          print('PASS_SAME_GIFT_JADE_BITCOIN_CORE_ACCEPTANCE',json.dumps({'txid':result[0]['txid'],'accepted':True,'confirmedUnspent':True,'broadcast':False,'network':'regtest'}))
+          PY
+      - name: Remove isolated disposable node
+        if: always()
+        run: docker rm -f bc1q21-jade-core-acceptance 2>/dev/null || true
