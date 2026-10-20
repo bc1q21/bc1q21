@@ -1,0 +1,53 @@
+// Professional isolated: render EXACT audited same-gift recipient PSBT as offline Jade BC-UR frames.
+// Does not sign, broadcast, grant recipient authority, or use any secret.
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {UR,URDecoder,UREncoder} from '@ngraveio/bc-ur';
+import cbor from 'cbor';
+import QRCode from 'qrcode';
+import jsQR from 'jsqr';
+import {PNG} from 'pngjs';
+import bitcoin from 'bitcoinjs-lib';
+import {auditSameGiftUnsignedHandoff} from './audit-same-gift-unsigned-handoff.mjs';
+const [source,target]=process.argv.slice(2);
+assert.ok(source&&target,'Expected exact same-gift public-only handoff JSON and output HTML');
+const gift=JSON.parse(readFileSync(source,'utf8'));
+auditSameGiftUnsignedHandoff(gift);
+assert.equal(gift.releaseIndex,0);
+assert.equal(gift.network,'regtest');
+assert.equal(gift.signingAuthorized,false);
+assert.equal(gift.broadcastAuthorized,false);
+const bytes=Buffer.from(gift.unsignedPsbtBase64,'base64');
+const psbt=bitcoin.Psbt.fromBuffer(bytes,{network:bitcoin.networks.regtest});
+const origins=psbt.data.inputs[0].bip32Derivation;
+assert.equal(origins?.length,1);
+assert.equal(origins[0].masterFingerprint.toString('hex'),'e29ac13c','Never package wrong signing fingerprint');
+assert.equal(origins[0].path,"m/84'/0'/0'/1/0");
+assert.equal(origins[0].pubkey.toString('hex'),gift.signerPubkeyHex);
+assert.equal(gift.destinationScriptHex,'0014'+'22'.repeat(20),'Destination remains an UNAPPROVED placeholder');
+const sha=b=>createHash('sha256').update(b).digest('hex');
+assert.equal(sha(bytes),gift.psbtSha256);
+const encoder=new UREncoder(new UR(cbor.encode(bytes),'crypto-psbt'),60,0);
+assert.ok(encoder.fragmentsLength>=1&&encoder.fragmentsLength<=64);
+const frames=[],images=[];
+for(let i=0;i<encoder.fragmentsLength;i++){
+ const frame=encoder.nextPart();
+ const pngBytes=await QRCode.toBuffer(frame,{type:'png',errorCorrectionLevel:'M',margin:4,scale:6});
+ const png=PNG.sync.read(pngBytes);
+ const decoded=jsQR(new Uint8ClampedArray(png.data),png.width,png.height,{inversionAttempts:'dontInvert'});
+ assert.ok(decoded,'Invalid QR image');
+ assert.equal(decoded.data.toLowerCase(),frame.toLowerCase(),'QR image does not match frame');
+ frames.push(frame);images.push('data:image/png;base64,'+pngBytes.toString('base64'));
+}
+const dec=new URDecoder();for(const f of [...frames].reverse())dec.receivePart(f);
+assert.equal(dec.isComplete(),true);assert.equal(dec.isSuccess(),true);
+assert.equal(dec.resultUR().type,'crypto-psbt');
+assert.deepEqual(cbor.decodeFirstSync(Buffer.from(dec.resultUR().cbor)),bytes,'QR to PSBT bytes mismatch');
+const escape=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fields=[['Regtest outpoint',gift.fundingTxid+':'+gift.vout],['Release',gift.releaseIndex+1],['CLTV block height',gift.locktime],['Signer path',origins[0].path],['Signer fingerprint',origins[0].masterFingerprint.toString('hex')],['Input test sats',gift.inputSats],['Output test sats',gift.payoutSats],['Test miner fee sats',gift.feeSats],['PSBT SHA-256',gift.psbtSha256]];
+const rows=fields.map(([k,v])=>'<tr><th>'+escape(k)+'</th><td>'+escape(v)+'</td></tr>').join('');
+const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';img-src data:;script-src 'unsafe-inline';style-src 'unsafe-inline';connect-src 'none';form-action 'none';base-uri 'none'"><title>bc1q21 Professional — Jade recipient release QR preflight</title><style>body{font:17px system-ui;max-width:800px;margin:20px auto;padding:20px;background:#17283d;color:#fff}p.alert{border:2px solid #f88;padding:15px;font-weight:bold}table{border-collapse:collapse;width:100%}th,td{padding:8px;border:1px solid #999;text-align:left;overflow-wrap:anywhere}img{display:block;width:440px;max-width:100%;margin:20px auto;background:white}button{font-size:17px;padding:10px;margin:5px}</style></head><body><h1>bc1q21 Professional — recipient release 1 QR</h1><p class="alert">DISPOSABLE REGTEST ONLY — UNAPPROVED PLACEHOLDER DESTINATION. DO NOT SCAN OR SIGN THIS QR WITH JADE. Review/preflight only. No live bitcoin and no broadcast.</p><table>${rows}</table><p>Offline image frames: ${images.length}. Each QR was pixel-decoded and the reconstructed PSBT matched the exact public handoff bytes. No device signature has been obtained.</p><img id="qr" alt="Unsigned PSBT QR" src="${images[0]}"><p id="status">Frame 1 of ${images.length} — paused</p><button onclick="move(-1)">Previous</button><button onclick="move(1)">Next</button><button id="toggle" onclick="toggle()">Start animation</button><script>'use strict';const images=${JSON.stringify(images)};let i=0,t=null;function show(){document.getElementById('qr').src=images[i];document.getElementById('status').textContent='Frame '+(i+1)+' of '+images.length+(t?' — animating':' — paused')}function move(n){if(t){clearInterval(t);t=null;}i=(i+n+images.length)%images.length;show()}function toggle(){if(t){clearInterval(t);t=null;document.getElementById('toggle').textContent='Start animation';}else{t=setInterval(()=>{i=(i+1)%images.length;show()},1500);document.getElementById('toggle').textContent='Pause animation';}show()}</script></body></html>`;
+assert.ok(!/https?:\/\//i.test(html));
+writeFileSync(target,html,{mode:0o600,flag:'wx'});
+console.log('PASS_JADE_SAME_GIFT_QR_PIXEL_PSBT_ROUNDTRIP',JSON.stringify({outpoint:gift.fundingTxid+':'+gift.vout,sha256:gift.psbtSha256,frames:frames.length,fingerprint:origins[0].masterFingerprint.toString('hex'),signed:false,recipientApproved:false,hardwareScanned:false,broadcast:false}));
