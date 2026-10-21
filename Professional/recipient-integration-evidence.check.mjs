@@ -33,16 +33,9 @@ const coreEvidence={chainInfo:{chain:'regtest'},
 const evidence={giftUrl,published,publicHandoff,funding,checkpoint,coreEvidence,
  chainTip:{chain:'regtest',blocks:110,bestblockhash:'c'.repeat(64)}};
 
-test('supplied consistent Core observations inspect maturity but never authorize QR',()=>{
- const result=inspectProfessionalRecipientIntegration(evidence);
- assert.equal(result.chainEvidenceInspected,true);
- assert.equal(result.chainProvenanceAuthenticated,false);
- assert.equal(result.beneficiaryAuthorized,false);
- assert.equal(result.ready,false);
- assert.equal(result.canExportSigningQr,false);
- assert.equal(result.canSign,false);
- assert.equal(result.canBroadcast,false);
- assert.match(result.blockers.join(' '),/Trusted Bitcoin Core RPC provenance/);
+test('calendar-based CLTV cannot pass the height-only recipient maturity gate',()=>{
+ assert.throws(()=>inspectProfessionalRecipientIntegration(evidence),
+  /Only height-based CLTV is supported by this gate/);
 });
 test('inconsistent chain evidence fails closed',()=>{
  assert.throws(()=>inspectProfessionalRecipientIntegration({...evidence,
