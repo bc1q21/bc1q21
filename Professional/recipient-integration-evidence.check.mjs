@@ -55,3 +55,26 @@ test('inconsistent chain evidence fails closed',()=>{
  assert.throws(()=>inspectProfessionalRecipientIntegration({...evidence,
   checkpoint:{...checkpoint,amountSats:100001}}));
 });
+
+test('retail funding-address locator binds to first release script before chain inspection',()=>{
+ const retailAddress='bcrt1q'+'q'.repeat(38);
+ const originalUrl='https://example.invalid/gift/'+retailAddress+'?interval=month';
+ const commitment={fundingAddress:retailAddress,releaseScriptsHex:published.outputScriptsHex};
+ const result=inspectProfessionalRecipientIntegration({...evidence,giftUrl:originalUrl,commitment,
+  chainTip:{...evidence.chainTip,mediantime:handoff.locktime+1}});
+ assert.equal(result.giftAddress,retailAddress);
+ assert.equal(result.chainEvidenceInspected,true);
+ assert.equal(result.chainProvenanceAuthenticated,false);
+ assert.equal(result.canExportSigningQr,false);
+ assert.equal(result.canSign,false);
+ assert.match(result.blockers.join(' '),/mapping has not been independently authenticated/);
+});
+test('retail gift mapping cannot redirect release evidence to another script',()=>{
+ const retailAddress='bcrt1q'+'q'.repeat(38);
+ const originalUrl='https://example.invalid/gift/'+retailAddress+'?interval=month';
+ const commitment={fundingAddress:retailAddress,releaseScriptsHex:published.outputScriptsHex};
+ const other=Object.fromEntries(Object.entries(publicHandoff));
+ other.signerPubkeyHex='02'+'11'.repeat(32);
+ assert.throws(()=>inspectProfessionalRecipientIntegration({...evidence,giftUrl:originalUrl,
+  commitment,publicHandoff:other,chainTip:{...evidence.chainTip,mediantime:handoff.locktime+1}}));
+});
