@@ -37,7 +37,7 @@ test('calendar-based CLTV checks median time past, but never authorizes QR',()=>
  const before=inspectProfessionalRecipientIntegration({...evidence,chainTip:{...evidence.chainTip,mediantime:handoff.locktime}});
  assert.equal(before.chainEvidenceInspected,true);
  assert.equal(before.canExportSigningQr,false);
- assert.match(before.blockers.join(' '),/CLTV height has not matured/);
+ assert.match(before.blockers.join(' '),/CLTV timestamp has not matured/);
  const after=inspectProfessionalRecipientIntegration({...evidence,chainTip:{...evidence.chainTip,mediantime:handoff.locktime+1}});
  assert.equal(after.chainEvidenceInspected,true);
  assert.equal(after.chainProvenanceAuthenticated,false);
