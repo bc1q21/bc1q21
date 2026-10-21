@@ -4,6 +4,8 @@
 import {readFileSync} from 'node:fs';
 import {buildGiftSpecificOptionBView} from './gift-specific-option-b-view.mjs';
 import {mapProfessionalGiftLocatorToSchedule} from './option-b-explicit-link-map.mjs';
+import {inspectProfessionalRecipientIntegration} from './recipient-integration-boundary.mjs';
+import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-step.mjs';
 
 function escapeHtml(v) {
  return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -11,6 +13,7 @@ function escapeHtml(v) {
 export function renderOptionBRecipientPage(url,published,commitment) {
  // An original gift-card funding locator requires explicit public script mapping;
  // the earlier prototype used the first CLTV release address instead.
+ const integration=inspectProfessionalRecipientIntegration({giftUrl:url,published,commitment});
  const mapped=commitment===undefined?null:mapProfessionalGiftLocatorToSchedule(url,published,commitment);
  const view=mapped?{fundingAddress:mapped.giftLocatorAddress,releases:mapped.releases,releaseCount:mapped.releaseCount}:
   buildGiftSpecificOptionBView(url,published);
@@ -40,6 +43,13 @@ export function renderOptionBRecipientPage(url,published,commitment) {
   'The verified gift address is embedded in this generated page.');
  html=html.replace('This prototype never queries that address or assumes possession of it authorizes spending.',
   'This prototype never queries that address or assumes possession of it authorizes spending.');
+ // Replace the mock signing section with the actual fail-closed Professional
+ // integration status. No PSBT or signing QR is issued by this renderer.
+ const signingSection=renderProfessionalOfflineSigningStep(integration);
+ const signingStart=html.indexOf('<section><h2>Release payments — offline signer</h2>');
+ const signingEnd=html.indexOf('</section>',signingStart);
+ if(signingStart<0||signingEnd<0) throw Error('Recipient signing section missing');
+ html=html.slice(0,signingStart)+signingSection+html.slice(signingEnd+'</section>'.length);
  // Bind the verified public gift address to this generated page rather than
  // trusting a different address supplied later in a viewer's query string.
  html=html.replace("const value=params.get('a')||params.get('address')||'';",
