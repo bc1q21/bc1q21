@@ -1,0 +1,47 @@
+// Regression for the real evidence branch (not just public schedule display).
+// Caller-supplied observations can establish consistency, never trusted RPC
+// provenance, beneficiary authorization or permission to issue signing QR.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import bitcoin from 'bitcoinjs-lib';
+import {deriveJadePublicCltvHandoff} from './jade-xpub-cltv-handoff.mjs';
+import {retailDateToCltvTimestamp} from './retail-calendar-cltv.mjs';
+import {inspectProfessionalRecipientIntegration} from './recipient-integration-boundary.mjs';
+
+const accountXpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZqxDEvpqTnNmMXp2HjinP9Sqakg78';
+const masterFingerprintHex='e29ac13c';
+const firstDate='2031-01-15';
+const handoff=deriveJadePublicCltvHandoff({accountXpub,masterFingerprintHex,childIndex:0,locktime:retailDateToCltvTimestamp(firstDate)});
+const published={accountXpub,masterFingerprintHex,firstDate,interval:'month',outputScriptsHex:[handoff.fundingScriptPubKeyHex]};
+const giftUrl='https://example.invalid/gift/'+handoff.fundingAddress+'?interval=month';
+const prev=new bitcoin.Transaction();prev.version=2;prev.addInput(Buffer.alloc(32,1),0);
+prev.addOutput(Buffer.from(handoff.fundingScriptPubKeyHex,'hex'),100000);
+const funding={fundingTxHex:prev.toHex(),vout:0,expectedTxid:prev.getId(),expectedSats:100000,
+ masterFingerprintHex,derivationPath:[0x80000054,0x80000000,0x80000000,1,0],
+ destinationScriptHex:'0014'+'ab'.repeat(20),destinationSats:99000};
+const checkpoint={version:1,chain:'regtest',fundingTxid:prev.getId(),vout:0,
+ amountSats:100000,scriptPubKeyHex:handoff.fundingScriptPubKeyHex,
+ fundingBlockHash:'b'.repeat(64),fundingBlockHeight:100};
+const coreEvidence={chainInfo:{chain:'regtest'},
+ transaction:{txid:prev.getId(),blockhash:checkpoint.fundingBlockHash,
+  vout:[{n:0,value:0.001,scriptPubKey:{hex:checkpoint.scriptPubKeyHex}}]},
+ blockHeader:{hash:checkpoint.fundingBlockHash,height:100,confirmations:2},
+ txout:{value:0.001,confirmations:2,scriptPubKey:{hex:checkpoint.scriptPubKeyHex}}};
+const evidence={giftUrl,published,publicHandoff:handoff,funding,checkpoint,coreEvidence,
+ chainTip:{chain:'regtest',blocks:110,bestblockhash:'c'.repeat(64)}};
+
+test('supplied consistent Core observations inspect maturity but never authorize QR',()=>{
+ const result=inspectProfessionalRecipientIntegration(evidence);
+ assert.equal(result.chainEvidenceInspected,true);
+ assert.equal(result.chainProvenanceAuthenticated,false);
+ assert.equal(result.beneficiaryAuthorized,false);
+ assert.equal(result.ready,false);
+ assert.equal(result.canExportSigningQr,false);
+ assert.equal(result.canSign,false);
+ assert.equal(result.canBroadcast,false);
+ assert.match(result.blockers.join(' '),/Trusted Bitcoin Core RPC provenance/);
+});
+test('inconsistent chain evidence fails closed',()=>{
+ assert.throws(()=>inspectProfessionalRecipientIntegration({...evidence,
+  checkpoint:{...checkpoint,amountSats:100001}}));
+});
