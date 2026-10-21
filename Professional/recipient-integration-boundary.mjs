@@ -4,6 +4,7 @@
 import {buildGiftSpecificOptionBView} from './gift-specific-option-b-view.mjs';
 import {mapProfessionalGiftLocatorToSchedule} from './option-b-explicit-link-map.mjs';
 import {inspectRecipientReleaseReadiness} from './gift-specific-recipient-release-gate.mjs';
+import {verifyProfessionalPublicHandoff} from './public-handoff.mjs';
 
 // Separate public schedule visibility from spending authority. Even a matching
 // script and a caller-supplied Bitcoin Core response are not trusted provenance.
@@ -21,16 +22,19 @@ export function inspectProfessionalRecipientIntegration({
     blockers.push('Creator gift-link mapping has not been independently authenticated');
   }
   if(publicHandoff&&funding&&checkpoint&&coreEvidence&&chainTip) {
-    // Only the legacy first-release-address locator can be checked by the
-    // existing release gate. Never misapply it to a creator funding locator.
-    if(commitment===undefined) {
-      release=inspectRecipientReleaseReadiness({
-        url:giftUrl,handoff:publicHandoff,funding,checkpoint,coreEvidence,chainTip
-      });
-      blockers.push(...release.blockers);
-    } else {
-      blockers.push('Creator funding locator to release-outpoint chain binding is not implemented');
-    }
+    // Retail gift card locator can differ from its individual release outputs.
+    // First validate the explicit script mapping, then bind the selected release
+    // to its verified CLTV script. Never pass the creator locator as a release URL.
+    const releaseUrl=commitment===undefined?giftUrl:(()=>{
+      const verified=verifyProfessionalPublicHandoff(publicHandoff);
+      if(verified.fundingScriptPubKeyHex.toLowerCase()!==commitment.releaseScriptsHex[0].toLowerCase())
+        throw Error('Selected release script does not match retail gift mapping');
+      return 'https://professional-regtest.invalid/gift/'+verified.fundingAddress;
+    })();
+    release=inspectRecipientReleaseReadiness({
+      url:releaseUrl,handoff:publicHandoff,funding,checkpoint,coreEvidence,chainTip
+    });
+    blockers.push(...release.blockers);
   } else {
     blockers.push('Gift-specific trusted chain and funding evidence not supplied');
   }
