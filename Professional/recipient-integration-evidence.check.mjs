@@ -33,9 +33,23 @@ const coreEvidence={chainInfo:{chain:'regtest'},
 const evidence={giftUrl,published,publicHandoff,funding,checkpoint,coreEvidence,
  chainTip:{chain:'regtest',blocks:110,bestblockhash:'c'.repeat(64)}};
 
-test('calendar-based CLTV cannot pass the height-only recipient maturity gate',()=>{
- assert.throws(()=>inspectProfessionalRecipientIntegration(evidence),
-  /Only height-based CLTV is supported by this gate/);
+test('calendar-based CLTV checks median time past, but never authorizes QR',()=>{
+ const before=inspectProfessionalRecipientIntegration({...evidence,chainTip:{...evidence.chainTip,mediantime:handoff.locktime}});
+ assert.equal(before.chainEvidenceInspected,true);
+ assert.equal(before.canExportSigningQr,false);
+ assert.match(before.blockers.join(' '),/CLTV height has not matured/);
+ const after=inspectProfessionalRecipientIntegration({...evidence,chainTip:{...evidence.chainTip,mediantime:handoff.locktime+1}});
+ assert.equal(after.chainEvidenceInspected,true);
+ assert.equal(after.chainProvenanceAuthenticated,false);
+ assert.equal(after.beneficiaryAuthorized,false);
+ assert.equal(after.ready,false);
+ assert.equal(after.canExportSigningQr,false);
+ assert.equal(after.canSign,false);
+ assert.equal(after.canBroadcast,false);
+ assert.match(after.blockers.join(' '),/Trusted Bitcoin Core RPC provenance/);
+});
+test('calendar locktime rejects missing median time past',()=>{
+ assert.throws(()=>inspectProfessionalRecipientIntegration(evidence),/median time past/);
 });
 test('inconsistent chain evidence fails closed',()=>{
  assert.throws(()=>inspectProfessionalRecipientIntegration({...evidence,
