@@ -24,8 +24,9 @@ export function inspectProfessionalRecipientIntegration({
     // Only the legacy first-release-address locator can be checked by the
     // existing release gate. Never misapply it to a creator funding locator.
     if(commitment===undefined) {
-      release=inspectRecipientReleaseReadiness(
-        giftUrl,publicHandoff,funding,checkpoint,coreEvidence,chainTip);
+      release=inspectRecipientReleaseReadiness({
+        url:giftUrl,handoff:publicHandoff,funding,checkpoint,coreEvidence,chainTip
+      });
       blockers.push(...release.blockers);
     } else {
       blockers.push('Creator funding locator to release-outpoint chain binding is not implemented');
