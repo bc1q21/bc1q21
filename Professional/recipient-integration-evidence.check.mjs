@@ -13,6 +13,9 @@ const masterFingerprintHex='e29ac13c';
 const firstDate='2031-01-15';
 const handoff=deriveJadePublicCltvHandoff({accountXpub,masterFingerprintHex,childIndex:0,locktime:retailDateToCltvTimestamp(firstDate)});
 const published={accountXpub,masterFingerprintHex,firstDate,interval:'month',outputScriptsHex:[handoff.fundingScriptPubKeyHex]};
+// The xpub derivation includes extra public metadata; the release gate accepts
+// only the exact six-field public handoff schema.
+const publicHandoff=Object.fromEntries(['version','network','signerPubkeyHex','locktime','redeemScriptHex','fundingAddress'].map(k=>[k,handoff[k]]));
 const giftUrl='https://example.invalid/gift/'+handoff.fundingAddress+'?interval=month';
 const prev=new bitcoin.Transaction();prev.version=2;prev.addInput(Buffer.alloc(32,1),0);
 prev.addOutput(Buffer.from(handoff.fundingScriptPubKeyHex,'hex'),100000);
@@ -27,7 +30,7 @@ const coreEvidence={chainInfo:{chain:'regtest'},
   vout:[{n:0,value:0.001,scriptPubKey:{hex:checkpoint.scriptPubKeyHex}}]},
  blockHeader:{hash:checkpoint.fundingBlockHash,height:100,confirmations:2},
  txout:{value:0.001,confirmations:2,scriptPubKey:{hex:checkpoint.scriptPubKeyHex}}};
-const evidence={giftUrl,published,publicHandoff:handoff,funding,checkpoint,coreEvidence,
+const evidence={giftUrl,published,publicHandoff,funding,checkpoint,coreEvidence,
  chainTip:{chain:'regtest',blocks:110,bestblockhash:'c'.repeat(64)}};
 
 test('supplied consistent Core observations inspect maturity but never authorize QR',()=>{
