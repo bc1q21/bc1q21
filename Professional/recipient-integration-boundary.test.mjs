@@ -1,21 +1,22 @@
+// Lightweight source-boundary regression: the isolated test job deliberately
+// does not install full wallet dependencies. Runtime integration is a separate gate.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {inspectProfessionalRecipientIntegration} from './recipient-integration-boundary.mjs';
 
-test('recipient integration exposes no signing or broadcasting API',()=>{
-  const source=readFileSync(new URL('./recipient-integration-boundary.mjs',import.meta.url),'utf8');
+const source=readFileSync(new URL('./recipient-integration-boundary.mjs',import.meta.url),'utf8');
+test('recipient integration uses existing public gift and release gates',()=>{
   assert.match(source,/inspectRecipientReleaseReadiness/);
   assert.match(source,/mapProfessionalGiftLocatorToSchedule/);
+  assert.match(source,/buildGiftSpecificOptionBView/);
+});
+test('recipient integration never exposes signing or broadcasting authorization',()=>{
   assert.doesNotMatch(source,/\b(?:mnemonicToSeed|createPrivateKey|broadcastTransaction)\s*\(/);
   assert.match(source,/canExportSigningQr:false,canSign:false,canBroadcast:false/);
+  assert.match(source,/beneficiaryAuthorized:false/);
+  assert.match(source,/chainProvenanceAuthenticated:false/);
 });
-test('missing gift link fails closed',()=>{
-  assert.throws(()=>inspectProfessionalRecipientIntegration({giftUrl:''}),/Gift link required/);
-});
-test('unverified schedule cannot become a signing request',()=>{
-  assert.throws(()=>inspectProfessionalRecipientIntegration({
-    giftUrl:'https://example.invalid/gift/3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA?interval=month',
-    published:null
-  }));
+test('integration rejects missing gift link and requires supplied schedule',()=>{
+  assert.match(source,/if\(typeof giftUrl!=='string'\|\|!giftUrl\) throw Error\('Gift link required'\)/);
+  assert.match(source,/buildGiftSpecificOptionBView\(giftUrl,published\)/);
 });
