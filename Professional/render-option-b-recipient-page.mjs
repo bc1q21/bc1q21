@@ -50,6 +50,10 @@ export function renderOptionBRecipientPage(url,published,commitment) {
  const signingEnd=html.indexOf('</section>',signingStart);
  if(signingStart<0||signingEnd<0) throw Error('Recipient signing section missing');
  html=html.slice(0,signingStart)+signingSection+html.slice(signingEnd+'</section>'.length);
+ // The removed mock section owned the old explain button; do not leave a
+ // dangling event listener that breaks the generated page on load.
+ html=html.replace("document.getElementById('explain').addEventListener('click',()=>{",
+  "document.getElementById('explain')?.addEventListener('click',()=>{");
  // Bind the verified public gift address to this generated page rather than
  // trusting a different address supplied later in a viewer's query string.
  html=html.replace("const value=params.get('a')||params.get('address')||'';",
