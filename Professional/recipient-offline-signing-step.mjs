@@ -21,7 +21,7 @@ export function renderProfessionalOfflineSigningStep(integration) {
  '<li>Review and approve on Jade, then scan its signed QR return.</li>'+
  '<li>Verify the signed transaction before any separately authorized broadcast.</li></ol>'+
  '<p role="status">Offline QR signing is not available for this gift yet.</p>'+
- '<button id="sign" type="button" disabled aria-disabled="true">Prepare offline signing QR</button>'+
+ '<button id="sign" disabled aria-disabled="true" type="button">Prepare offline signing QR</button>'+
  '<details><summary>Why is release unavailable?</summary><ul>'+reasons+'</ul></details>'+
  '<p><small>Professional regtest prototype only. No transaction is signed or broadcast by this page.</small></p>'+
  '</section>';
