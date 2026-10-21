@@ -11,7 +11,7 @@ export function inspectRecipientReleaseReadiness({url,handoff,funding,checkpoint
   'Gift-specific beneficiary authorization is not established',
   'One-time recipient approval of exact release intent is not established'
  ];
- if(!maturity.cltvMatureForNextBlock)blockers.unshift('CLTV height has not matured');
+ if(!maturity.cltvMatureForNextBlock)blockers.unshift('CLTV '+maturity.locktimeType+' has not matured');
  return Object.freeze({
   format:'bc1q21-professional-recipient-readiness-v1',
   network:'regtest',outpoint:maturity.outpoint,
