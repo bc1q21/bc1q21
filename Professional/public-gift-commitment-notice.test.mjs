@@ -5,7 +5,7 @@ import {createPublicGiftCommitmentNotice,compareRecipientGiftCommitment} from '.
 const binding={network:'regtest',fundingTxid:'a'.repeat(64),
  releaseOutputs:Array.from({length:24},(_,index)=>({
   index,vout:index,sats:12000+index*1000,
-  scriptPubKeyHex:'0014'+index.toString(16).padStart(2,'0').repeat(20
+  scriptPubKeyHex:'0014'+index.toString(16).padStart(2,'0').repeat(20)
  }))};
 
 test('creator notice is public-only and recipient can compare all 64 digits',()=>{
