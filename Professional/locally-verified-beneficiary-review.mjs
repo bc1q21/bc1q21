@@ -5,12 +5,14 @@ import assert from 'node:assert/strict';
 import {createRegtestReadOnlyRpc} from './local-regtest-readonly-transport.mjs';
 import {inspectAllGiftOutputsWithLocalCore} from './local-regtest-all-gift-outputs.mjs';
 import {prepareRestrictedBeneficiaryQrBoundary} from './restricted-beneficiary-qr-boundary.mjs';
+import {verifyProfessionalGiftBindingCommitment} from './public-gift-binding-commitment.mjs';
 
 export async function prepareLocallyVerifiedBeneficiaryReview({
- authorization,port,binding,releaseIndex,publicHandoff,funding,approvedIntent
+ authorization,port,binding,expectedBindingDigest,releaseIndex,publicHandoff,funding,approvedIntent
 }) {
  assert.equal(binding?.network,'regtest','Regtest gift binding required');
  assert.ok(Array.isArray(binding?.releaseOutputs),'Gift release binding required');
+ verifyProfessionalGiftBindingCommitment(binding,expectedBindingDigest);
  const rpc=createRegtestReadOnlyRpc({authorization,port});
  const giftEvidence=await inspectAllGiftOutputsWithLocalCore({rpc,binding});
  assert.equal(giftEvidence.outputsConsistent,true,'All gift outputs must match Core');
