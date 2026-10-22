@@ -4,6 +4,7 @@ import http from 'node:http';
 import bitcoin from 'bitcoinjs-lib';
 import {secp256k1} from '@noble/curves/secp256k1';
 import {prepareLocallyVerifiedBeneficiaryReview} from './locally-verified-beneficiary-review.mjs';
+import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mjs';
 
 const pub=n=>Buffer.from(secp256k1.getPublicKey(Buffer.from([...Buffer.alloc(31),n]),true));
 const signer=pub(9),locktime=110,tip='a'.repeat(64),block='b'.repeat(64);
@@ -52,7 +53,7 @@ async function withCore({spent=false,wrongNetwork=false}={},run) {
  finally{await new Promise(resolve=>server.close(resolve));}
 }
 const start=port=>prepareLocallyVerifiedBeneficiaryReview({
- port,authorization,binding,releaseIndex:0,publicHandoff:handoff,funding,approvedIntent:intent
+ port,authorization,binding,expectedBindingDigest:digestProfessionalGiftBinding(binding),releaseIndex:0,publicHandoff:handoff,funding,approvedIntent:intent
 });
 
 test('credentialed Core evidence is collected internally before one-time approval',async()=>{
@@ -71,7 +72,7 @@ test('credentialed Core evidence is collected internally before one-time approva
 test('wrong RPC credentials, wrong network and spent gift output fail closed',async()=>{
  await withCore({},async port=>{
   await assert.rejects(prepareLocallyVerifiedBeneficiaryReview({
-   port,authorization:'Basic invalid',binding,releaseIndex:0,
+   port,authorization:'Basic invalid',binding,expectedBindingDigest:digestProfessionalGiftBinding(binding),releaseIndex:0,
    publicHandoff:handoff,funding,approvedIntent:intent
   }),/rejected/);
  });
@@ -80,5 +81,17 @@ test('wrong RPC credentials, wrong network and spent gift output fail closed',as
  });
  await withCore({spent:true},async port=>{
   await assert.rejects(start(port),/spent or unconfirmed/);
+ });
+});
+
+test('missing or altered independently held gift commitment fails before Core access',async()=>{
+ await withCore({},async port=>{
+  await assert.rejects(prepareLocallyVerifiedBeneficiaryReview({
+   port,authorization,binding,releaseIndex:0,publicHandoff:handoff,funding,approvedIntent:intent
+  }),/Independent gift commitment/);
+  await assert.rejects(prepareLocallyVerifiedBeneficiaryReview({
+   port,authorization,binding,expectedBindingDigest:'f'.repeat(64),releaseIndex:0,
+   publicHandoff:handoff,funding,approvedIntent:intent
+  }),/differs from independently held commitment/);
  });
 });
