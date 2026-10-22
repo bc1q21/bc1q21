@@ -34,7 +34,7 @@ export function createProfessionalTransactionConfirmation(publicHandoff,funding,
   fundingTxid:txid,fundingVout:input.index,inputSats:sats,
   destinationAddress:address,destinationScriptHex:output.script.toString('hex'),
   payoutSats:output.value,feeSats:fee,
-  locktime:psbt.locktime,locktimeType:'block-height',
+  locktime:psbt.locktime,locktimeType:psbt.locktime>=500000000?'timestamp':'block-height',
   sequence:input.sequence,signerPubkeyHex:script[3].toString('hex'),
   psbtSha256:psbtHash,approvalVerified:release.approvalVerified,
   signed:false,broadcast:false
