@@ -50,5 +50,5 @@ test('exact mature gift approval is one-time and never grants QR export',async()
 
 test('immature and modified transaction cannot reach approval',async()=>{
  await assert.rejects(make(109),/not mature/);
- await assert.rejects(make(110,{...intent,destinationSats:98000}),/Approval mismatch: destinationSats/);
+ await assert.rejects(make(110,{...intent,destinationSats:98000}),/Funding payout differs from approval/);
 });
