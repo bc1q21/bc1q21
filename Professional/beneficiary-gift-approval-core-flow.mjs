@@ -3,6 +3,7 @@
 // gift output and maturity snapshot; QR export remains unavailable until a
 // separate trusted-provenance and authorization boundary is implemented.
 import assert from 'node:assert/strict';
+import {issueInternalGiftApprovalReceipt} from './internal-gift-approval-provenance.mjs';
 import {prepareGiftBoundBeneficiaryReview} from './gift-bound-beneficiary-review.mjs';
 import {inspectGiftBoundMaturityWithCore} from './gift-bound-core-maturity-preflight.mjs';
 import {createMatureGiftApprovalReview} from './mature-gift-approval-review.mjs';
@@ -34,7 +35,7 @@ export async function prepareBeneficiaryGiftApprovalWithCore({
    assert.equal(session.view().explicitlyApproved,true,'Explicit fingerprint approval required');
    consumed=true;
    session.revoke();
-   return Object.freeze({
+   return issueInternalGiftApprovalReceipt({
     network:'regtest',releaseIndex,observedTip:maturity.observedTip,
     psbtSha256:fingerprint,approvalRecorded:true,
     // Recording approval cannot export QR or sign.
