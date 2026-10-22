@@ -1,0 +1,31 @@
+// Professional-only trusted-local composition. The Core evidence is collected
+// within this function through a credentialed loopback transport; callers
+// cannot substitute an arbitrary giftEvidence object. Still no QR export.
+import assert from 'node:assert/strict';
+import {createRegtestReadOnlyRpc} from './local-regtest-readonly-transport.mjs';
+import {inspectAllGiftOutputsWithLocalCore} from './local-regtest-all-gift-outputs.mjs';
+import {prepareRestrictedBeneficiaryQrBoundary} from './restricted-beneficiary-qr-boundary.mjs';
+
+export async function prepareLocallyVerifiedBeneficiaryReview({
+ authorization,port,binding,releaseIndex,publicHandoff,funding,approvedIntent
+}) {
+ assert.equal(binding?.network,'regtest','Regtest gift binding required');
+ assert.ok(Array.isArray(binding?.releaseOutputs),'Gift release binding required');
+ const rpc=createRegtestReadOnlyRpc({authorization,port});
+ const giftEvidence=await inspectAllGiftOutputsWithLocalCore({rpc,binding});
+ assert.equal(giftEvidence.outputsConsistent,true,'All gift outputs must match Core');
+ const restricted=await prepareRestrictedBeneficiaryQrBoundary({
+  rpc,giftEvidence,releaseIndex,publicHandoff,funding,approvedIntent
+ });
+ return Object.freeze({
+  review:()=>restricted.review(),
+  approve:confirmation=>restricted.approve(confirmation),
+  revoke:()=>restricted.revoke(),
+  finalizeReview:()=>restricted.finalizeReview(),
+  // Authentication of the local RPC connection does not prove the creator
+  // or beneficiary identity, nor independent chain provenance.
+  rpcTransportScope:'credentialed-loopback-only',
+  creatorAuthenticated:false,beneficiaryAuthorized:false,
+  canExportSigningQr:false,canSign:false,canBroadcast:false
+ });
+}
