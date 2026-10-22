@@ -188,6 +188,11 @@
       border: 1px solid #e5e7eb;
       border-radius: .5rem;
     }
+    .tbl-wrap th {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
 
     table {
       width: 100%;
