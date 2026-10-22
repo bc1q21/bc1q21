@@ -200,7 +200,6 @@ class TransactionManager {
       if (!o.address || valueSats <= 0) throw new Error(`Invalid output: ${JSON.stringify(o)}`);
       tx.addOutputAddress(o.address, BigInt(valueSats));
     }
-    console.log("buildAndSignRelease tx",tx);
     tx.sign(privKey);
     tx.finalize();
 
