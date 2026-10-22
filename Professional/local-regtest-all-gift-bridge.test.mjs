@@ -25,13 +25,15 @@ async function serveCore({wrongNetwork=false,spentIndex=-1}={},fn) {
      n:r.vout,value:r.sats/1e8,scriptPubKey:{hex:r.scriptPubKeyHex}
     }))},
     getblockheader:{hash:block,confirmations:6},
-    gettxout:params[1]===spentIndex?null:{
-     bestblock:tip,confirmations:6,value:releases[params[1]].sats/1e8,
-     scriptPubKey:{hex:releases[params[1]].scriptPubKeyHex}
-    }
+    gettxout:null
    };
    res.writeHead(200,{'content-type':'application/json'});
-   res.end(JSON.stringify({result:values[method],error:null}));
+   const output=method==='gettxout'&&Number.isSafeInteger(params[1])?releases[params[1]]:null;
+   const result=method==='gettxout'?(output&&params[1]!==spentIndex?{
+    bestblock:tip,confirmations:6,value:output.sats/1e8,
+    scriptPubKey:{hex:output.scriptPubKeyHex}
+   }:null):values[method];
+   res.end(JSON.stringify({result,error:null}));
   });
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
