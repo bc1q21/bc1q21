@@ -18,7 +18,10 @@ export async function prepareRestrictedBeneficiaryQrBoundary({
    assert.equal(finalized,false,'QR boundary already finalized');
    return sequence.approve(confirmation);
   },
-  revoke:()=>sequence.revoke(),
+  revoke:()=>{
+   assert.equal(finalized,false,'QR boundary already finalized');
+   return sequence.revoke();
+  },
   finalizeReview:async()=>{
    assert.equal(finalized,false,'QR boundary already finalized');
    finalized=true; // Consume before awaiting RPC; failure cannot be retried.
