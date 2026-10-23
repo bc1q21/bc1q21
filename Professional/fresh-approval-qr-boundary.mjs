@@ -4,6 +4,7 @@
 // not be exposed as the integrated beneficiary flow until refactored.
 import assert from 'node:assert/strict';
 import {createProfessionalTransactionConfirmation} from './transaction-confirmation.mjs';
+import bitcoin from 'bitcoinjs-lib';
 
 export function inspectFreshApprovalForControlledQr({
  freshness,giftEvidence,releaseIndex,publicHandoff,funding,approvedIntent
@@ -28,6 +29,10 @@ export function inspectFreshApprovalForControlledQr({
  assert.equal(record.fundingTxid,output.txid,'PSBT funding txid changed');
  assert.equal(record.fundingVout,output.vout,'PSBT funding output changed');
  assert.equal(record.inputSats,output.sats,'PSBT funding amount changed');
+ const fundingTx=bitcoin.Transaction.fromHex(funding?.fundingTxHex??'');
+ assert.equal(fundingTx.getId(),output.txid,'Funding transaction hex differs from verified gift');
+ assert.equal(fundingTx.outs[output.vout]?.script.toString('hex'),output.scriptPubKeyHex,
+  'PSBT funding locking script differs from verified gift');
  return Object.freeze({
   network:'regtest',releaseIndex,observedTip:freshness.observedTip,
   psbtSha256:record.psbtSha256,exactApprovedPsbtMatched:true,
