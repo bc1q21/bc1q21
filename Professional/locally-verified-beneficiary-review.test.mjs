@@ -139,3 +139,24 @@ test('trusted-local failed finalization permanently consumes that review',async(
   await assert.rejects(flow.finalizeReview(),/already finalized/);
  });
 });
+
+test('trusted-local review completion is private and cannot be forged or replayed',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  assert.equal(flow.reviewCompleted(),false);
+  assert.equal(flow.canExportSigningQr,false);
+  await assert.rejects(flow.finalizeReview(),/Explicit fingerprint approval required/);
+  assert.equal(flow.reviewCompleted(),false);
+  await assert.rejects(flow.finalizeReview(),/Trusted review already finalized/);
+  assert.equal(typeof flow.exportQrFrames,'undefined');
+ });
+ await withCore({},async port=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  const result=await flow.finalizeReview();
+  assert.equal(result.reviewFinalized,true);
+  assert.equal(flow.reviewCompleted(),true);
+  await assert.rejects(flow.finalizeReview(),/Trusted review already finalized/);
+  assert.equal(typeof flow.exportQrFrames,'undefined');
+ });
+});
