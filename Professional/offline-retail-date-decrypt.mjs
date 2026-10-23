@@ -18,7 +18,12 @@ function validateDate(plain) {
     throw new Error('Invalid decrypted release date');
   return plain;
 }
-export function decryptRetailDateOffline({ encryptedHex, currentPassphrase, legacyPassphrase }) {
+export function decryptRetailDateOffline({ encryptedHex, currentPassphrase, legacyPassphrase, retailFirstDateHex = false }) {
+  const decodeDate = plain => {
+    if (!retailFirstDateHex) return validateDate(plain);
+    if (!/^(?:[0-9a-f]{2}){10}$/.test(plain)) throw new Error('Invalid retail first-date hex');
+    return validateDate(Buffer.from(plain, 'hex').toString('utf8'));
+  };
   const blob = bytesFromHex(encryptedHex);
   if (blob.length < 8) throw new Error('Encrypted data too short');
   if (blob.subarray(0, 8).equals(header)) {
@@ -32,14 +37,14 @@ export function decryptRetailDateOffline({ encryptedHex, currentPassphrase, lega
     const decipher = createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAAD(header);
     decipher.setAuthTag(tag);
-    return validateDate(Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8'));
+    return decodeDate(Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8'));
   }
   if (blob.subarray(0, 8).equals(legacyHeader)) {
     if (blob.length < 32 || (blob.length - 16) % 16 !== 0) throw new Error('Invalid legacy ciphertext');
     if (typeof legacyPassphrase !== 'string' || !legacyPassphrase) throw new Error('Missing legacy passphrase');
     const derived = pbkdf2Sync(Buffer.from(legacyPassphrase, 'utf8'), blob.subarray(8, 16), 1, 48, 'sha256');
     const decipher = createDecipheriv('aes-256-cbc', derived.subarray(0, 32), derived.subarray(32, 48));
-    return validateDate(Buffer.concat([decipher.update(blob.subarray(16)), decipher.final()]).toString('utf8'));
+    return decodeDate(Buffer.concat([decipher.update(blob.subarray(16)), decipher.final()]).toString('utf8'));
   }
   throw new Error('Unknown encrypted data format');
 }
