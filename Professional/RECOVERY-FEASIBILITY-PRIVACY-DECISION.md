@@ -35,3 +35,11 @@ Option 4 — bounded public script/date search with a **trusted offline xpub exp
 
 ## Recommendation
 Do not keep adding cosmetic tests or present a false hardware milestone. Keep Jade QR as the proven offline Bitcoin signer. Select and validate one exact private recovery architecture with its threat model. The smallest currently conceivable implementation without new Jade firmware is the dedicated air-gapped recovery component; it may use an existing spare Windows laptop, but only after controlled reinstallation and true offline handling are approved by the user. Do not request real seed words over chat, browser, CI or GitHub. Stay on isolated regtest and Professional branch.
+
+## October 23 engineering update — offline recovery integration, not Jade capability
+
+GitHub Actions `39992714564` passed the disposable BIP39-derived retail secret → actual retail first-date hexadecimal plaintext → BC1Q21G1 ciphertext → offline date recovery test. Runs `39992980788` and `39992947396` passed the isolated offline public schedule reconstruction checks. Both runs for commit `29b8503955d21e8eaf6af8a9b61478e013196d2c` (`39993211538` and `39993207983`) passed gift-binding and durable one-use challenge tests including restart and invalid-return nonce consumption.
+
+**Boundary remains unchanged:** these are disposable software-fixture tests. They do not establish that Jade firmware can derive the retail /0/2 encryption secret or decrypt BC1Q21G1 internally. The documented Jade interface supports PSBT signing and public xpub operations, not the required arbitrary AES-GCM decryption. Never route real mnemonic, private child, or wallet-derived passphrase through the networked recipient viewer.
+
+**Architecture decision still required:** a trusted air-gapped recovery component using the same 12-word backup, audited future Jade firmware support, or an explicitly accepted new-gift metadata architecture. No option has been selected or authorized for deployment. Jade remains an offline signing device only; hardware recovery and independent beneficiary acceptance remain **NO-GO**.
