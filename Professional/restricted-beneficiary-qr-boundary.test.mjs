@@ -21,12 +21,12 @@ const intent={destinationScriptHex:funding.destinationScriptHex,destinationSats:
  signerPubkeyHex:handoff.signerPubkeyHex};
 const giftEvidence={network:'regtest',outputsConsistent:true,tipStableDuringRead:true,
  observedTip:tip,fundingTxid:tx.getId(),releaseCount:1,
- verifiedOutputs:[{index:0,txid:tx.getId(),vout:0,sats:100000}]};
+ verifiedOutputs:[{index:0,txid:tx.getId(),vout:0,sats:100000,scriptPubKeyHex:payment.output.toString('hex')}]};
 const rpc=async method=>{
  if(method==='getbestblockhash')return tip;
  if(method==='getblockchaininfo')return {chain:'regtest',bestblockhash:tip,blocks:110};
  if(method==='getblockheader')return {hash:tip,height:110,mediantime:1800000000};
- if(method==='gettxout')return {bestblock:tip,confirmations:2,value:0.001};
+ if(method==='gettxout')return {bestblock:tip,confirmations:2,value:0.001,scriptPubKey:{hex:payment.output.toString('hex')}};
  throw Error('Unexpected RPC');
 };
 
