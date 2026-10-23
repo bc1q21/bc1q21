@@ -43,3 +43,27 @@ test('rejects chain tip change, wrong network and altered gift evidence',async()
  await assert.rejects(inspect(rpcFor(),{...giftEvidence,observedTip:'c'.repeat(64)}),/Recollect/);
  await assert.rejects(inspect(rpcFor(),giftEvidence,{...review,transactionConfirmation:{...review.transactionConfirmation,inputSats:9999}}),/Expected values to be strictly equal/);
 });
+
+test('retail UTC calendar date is gated by Bitcoin Core median time past',async()=>{
+ const {retailDateToCltvTimestamp}=await import('./retail-calendar-cltv.mjs');
+ for(const date of ['2028-02-29','2030-01-01','2031-12-31']) {
+  const timestamp=retailDateToCltvTimestamp(date);
+  const datedReview={...review,transactionConfirmation:{
+   ...review.transactionConfirmation,locktime:timestamp,locktimeType:'timestamp'
+  }};
+  const before=await inspect(rpcFor({mtp:timestamp-1}),giftEvidence,datedReview);
+  const at=await inspect(rpcFor({mtp:timestamp}),giftEvidence,datedReview);
+  const after=await inspect(rpcFor({mtp:timestamp+1}),giftEvidence,datedReview);
+  assert.equal(before.cltvMatureForNextBlock,false,date+' before');
+  assert.equal(at.cltvMatureForNextBlock,false,date+' equal');
+  assert.equal(after.cltvMatureForNextBlock,true,date+' after');
+  assert.equal(after.canExportSigningQr,false);
+ }
+});
+
+test('calendar timestamp locktime cannot masquerade as height locktime',async()=>{
+ const dated={...review,transactionConfirmation:{
+  ...review.transactionConfirmation,locktime:1893456000,locktimeType:'block-height'
+ }};
+ await assert.rejects(inspect(rpcFor({mtp:1893456001}),giftEvidence,dated));
+});
