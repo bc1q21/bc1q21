@@ -243,3 +243,24 @@ test('concurrent QR export attempts never both succeed',async()=>{
   assert.match(attempts.find(x=>x.status==='rejected').reason.message,/already consumed/);
  });
 });
+
+test('invalid QR encoding options permanently consume approved export',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  await assert.rejects(flow.exportQrFrames({frameCount:0}),/Invalid frame count/);
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
+
+test('failed beneficiary review cannot export QR even when supplied readiness flags',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  await assert.rejects(flow.finalizeReview(),/Explicit fingerprint approval required/);
+  await assert.rejects(flow.exportQrFrames({
+   approvalRecorded:true,reviewFinalized:true,canExportSigningQr:true
+  }),/Successful beneficiary review required/);
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
