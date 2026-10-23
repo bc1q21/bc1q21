@@ -23,6 +23,8 @@ export async function prepareLocallyVerifiedBeneficiaryReview({
   review:()=>restricted.review(),
   approve:confirmation=>restricted.approve(confirmation),
   revoke:()=>restricted.revoke(),
+  // No unsigned PSBT bytes or QR frames are available through this trusted-local facade.
+  // Legacy standalone QR approval must not be treated as beneficiary authorization.
   finalizeReview:()=>restricted.finalizeReview(),
   // Authentication of the local RPC connection does not prove the creator
   // or beneficiary identity, nor independent chain provenance.
