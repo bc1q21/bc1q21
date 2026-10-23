@@ -113,3 +113,29 @@ test('altered recipient gift binding fails even if the attacker supplies a new d
   }),/Gift output script mismatch/);
  });
 });
+
+test('trusted-local beneficiary facade cannot finalize or reapprove twice',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  const digest=flow.review().psbtSha256;
+  flow.approve({acknowledged:true,confirmedDigest:digest});
+  const result=await flow.finalizeReview();
+  assert.equal(result.canExportSigningQr,false);
+  await assert.rejects(flow.finalizeReview(),/already finalized/);
+  assert.throws(()=>flow.approve({acknowledged:true,confirmedDigest:digest}),
+   /already finalized/);
+  assert.throws(()=>flow.revoke(),/already finalized/);
+  assert.equal(typeof flow.exportQrFrames,'undefined');
+  assert.equal(typeof flow.completeSignedReturn,'undefined');
+ });
+});
+
+test('trusted-local failed finalization permanently consumes that review',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  await assert.rejects(flow.finalizeReview(),/Explicit fingerprint approval required/);
+  assert.throws(()=>flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256}),
+   /already finalized/);
+  await assert.rejects(flow.finalizeReview(),/already finalized/);
+ });
+});
