@@ -27,3 +27,23 @@ test('wrong disposable wallet secret and tampered retail ciphertext fail closed'
  altered[altered.length-1]^=1;
  assert.throws(()=>decryptRetailDateOffline({encryptedHex:altered.toString('hex'),currentPassphrase:fixtureSecret}));
 });
+
+test('same disposable 12-word wallet-derived key decrypts actual retail hex-encoded OP_RETURN date',async()=>{
+ const walletDerivedPassphrase=deriveDisposableRetailEncryptionPassphraseOffline();
+ const date='2031-01-15';
+ const retailPlaintext=Buffer.from(date,'utf8').toString('hex');
+ const encryptedHex=await encryptShortHex(retailPlaintext,walletDerivedPassphrase);
+ assert.equal(await decryptShortHex(encryptedHex,'unused-legacy',walletDerivedPassphrase),retailPlaintext);
+ assert.equal(decryptRetailDateOffline({
+  encryptedHex,currentPassphrase:walletDerivedPassphrase,retailFirstDateHex:true
+ }),date);
+ assert.throws(()=>decryptRetailDateOffline({
+  encryptedHex,currentPassphrase:'wrong-disposable-wallet',retailFirstDateHex:true
+ }));
+ const altered=Buffer.from(encryptedHex,'hex');
+ altered[altered.length-1]^=1;
+ assert.throws(()=>decryptRetailDateOffline({
+  encryptedHex:altered.toString('hex'),currentPassphrase:walletDerivedPassphrase,
+  retailFirstDateHex:true
+ }));
+});
