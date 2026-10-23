@@ -9,6 +9,7 @@ export function inspectExactUnsignedPsbtForRestrictedQr({
  checkedReview,publicHandoff,funding,approvedIntent
 }) {
  assert.equal(checkedReview?.network,'regtest','Regtest checked review required');
+ assert.equal(checkedReview?.reviewFinalized,true,'Finalized review required for integrity check');
  assert.equal(checkedReview?.exactApprovedPsbtMatched,true,'Exact checked PSBT required');
  assert.equal(checkedReview?.canExportSigningQr,false,'Review must not authorize QR export');
  assert.equal(checkedReview?.canSign,false,'Review must not authorize signing');
