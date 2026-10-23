@@ -85,10 +85,10 @@ test('calendar-timestamp gift completes local review and single-use unsigned QR 
  });
 });
 
-test('calendar-timestamp gift cannot start beneficiary approval before median-time maturity',async()=>{
+test('calendar-timestamp gift remains unsigned before human approval',async()=>{
  await withCore({},async port=>{
-  // The RPC mock uses MTP one second after 2030-01-01. The exact
-  // equality/before boundary is separately covered by Core-maturity tests.
+  // This fixture is already mature (MTP one second after 2030-01-01).
+  // Before/equal MTP rejection is covered by the separate Core-maturity tests.
   const flow=await start(port);
   assert.equal(flow.reviewCompleted(),false);
   assert.equal(flow.canSign,false);
