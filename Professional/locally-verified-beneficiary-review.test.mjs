@@ -26,13 +26,22 @@ const binding={network:'regtest',fundingTxid:tx.getId(),releaseOutputs:[{
 }]};
 const authorization='Basic '+Buffer.from('local-fixture:disposable').toString('base64');
 async function withCore({spent=false,wrongNetwork=false,changedScript=false}={},run) {
- const state={spent,changedScript,changedTip:false};
+ const state={spent,changedScript,changedTip:false,failNextTipRead:false,tipReads:0};
  const server=http.createServer((req,res)=>{
   if(req.headers.authorization!==authorization){res.writeHead(401);res.end();return;}
   let body='';
   req.on('data',part=>body+=part);
   req.on('end',()=>{
    const {method,params}=JSON.parse(body);
+   if(method==='getbestblockhash'){
+    state.tipReads++;
+    if(state.failNextTipRead){
+     state.failNextTipRead=false;
+     res.writeHead(500,{'content-type':'application/json'});
+     res.end(JSON.stringify({result:null,error:{code:-1,message:'Injected Core failure'}}));
+     return;
+    }
+   }
    const results={
     getbestblockhash:state.changedTip?'c'.repeat(64):tip,
     getblockchaininfo:{chain:wrongNetwork?'main':'regtest',bestblockhash:tip,blocks:110},
@@ -262,5 +271,33 @@ test('failed beneficiary review cannot export QR even when supplied readiness fl
    approvalRecorded:true,reviewFinalized:true,canExportSigningQr:true
   }),/Successful beneficiary review required/);
   await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
+
+test('transient Core failure during QR export consumes authorization',async()=>{
+ await withCore({},async(port,state)=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  state.failNextTipRead=true;
+  await assert.rejects(flow.exportQrFrames(),/Core|RPC|Injected|failed|rejected/i);
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
+
+test('no signing or broadcast capability is exposed by the trusted QR handoff',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  const handoff=await flow.exportQrFrames({frameCount:8});
+  assert.equal(handoff.signed,false);
+  assert.equal(handoff.broadcast,false);
+  assert.equal(typeof flow.sign,'undefined');
+  assert.equal(typeof flow.broadcast,'undefined');
+  assert.equal(typeof flow.completeSignedReturn,'undefined');
+  assert.equal(typeof handoff.sign,'undefined');
+  assert.equal(typeof handoff.broadcastTransaction,'undefined');
+  assert.equal(Object.isFrozen(handoff),true);
  });
 });
