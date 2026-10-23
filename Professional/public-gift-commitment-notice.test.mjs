@@ -28,3 +28,20 @@ test('recipient rejects abbreviated, altered or mismatched gift fingerprints',()
  assert.throws(()=>compareRecipientGiftCommitment({...binding,fundingTxid:'b'.repeat(64)},notice.fingerprint),/differs/);
  assert.throws(()=>compareRecipientGiftCommitment(binding,undefined),/Recipient-supplied/);
 });
+
+test('recipient rejects noncanonical formatting and control characters without normalizing',()=>{
+ const notice=createPublicGiftCommitmentNotice(binding);
+ for(const altered of [
+  notice.fingerprint.toUpperCase(),
+  ' '+notice.fingerprint,
+  notice.fingerprint+' ',
+  notice.fingerprint+'\\n',
+  notice.fingerprint+'\\t',
+  notice.fingerprint.slice(0,8)+'  '+notice.fingerprint.slice(8),
+  notice.fingerprint.replace(/(.{4})/g,'$1 ').trim()
+ ]) {
+  assert.throws(()=>compareRecipientGiftCommitment(binding,altered),
+   /Independent gift commitment/);
+ }
+ assert.equal(compareRecipientGiftCommitment(binding,notice.displayFingerprint).commitmentMatches,true);
+});
