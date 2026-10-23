@@ -31,3 +31,16 @@ test('offline date recovery rejects invalid retail calendar values',async()=>{
    currentPassphrase:passphrase}),/Invalid decrypted release date/);
  }
 });
+
+test('retail OP_RETURN first-date hex plaintext round-trips offline',async()=>{
+ const password='synthetic-format-test-only';
+ const date='2030-01-01';
+ const hexDate=Buffer.from(date,'utf8').toString('hex');
+ const blob=await encryptShortHex(hexDate,password);
+ assert.equal(decryptRetailDateOffline({
+  encryptedHex:blob,currentPassphrase:password,retailFirstDateHex:true
+ }),date);
+ assert.throws(()=>decryptRetailDateOffline({
+  encryptedHex:blob,currentPassphrase:password
+ }),/Invalid decrypted release date/);
+});
