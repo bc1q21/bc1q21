@@ -72,10 +72,11 @@ test('no approval cannot be finalized or subsequently reused',async()=>{
 test('two simultaneous finalization attempts cannot consume approval twice',async()=>{
  let unblock;
  let waiting=false;
+ let holdFinalization=false;
  const gate=new Promise(resolve=>{unblock=resolve;});
  const base=rpcFor();
  const rpc=async(method,params)=>{
-  if(method==='getbestblockhash'&&!waiting){
+  if(method==='getbestblockhash'&&holdFinalization&&!waiting){
    waiting=true;
    await gate;
   }
@@ -83,6 +84,7 @@ test('two simultaneous finalization attempts cannot consume approval twice',asyn
  };
  const flow=await make(rpc);
  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+ holdFinalization=true;
  const first=flow.finalizeApproval();
  await assert.rejects(flow.finalizeApproval(),/already consumed/);
  unblock();
