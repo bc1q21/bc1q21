@@ -16,6 +16,8 @@ export async function inspectFreshApprovedGiftOutpoint({rpc,giftEvidence,approva
  const output=giftEvidence.verifiedOutputs?.[releaseIndex];
  assert.ok(output&&output.index===releaseIndex&&output.txid===giftEvidence.fundingTxid,
   'Approved release not in verified gift');
+ assert.ok(giftEvidence.verifiedOutputs.length===giftEvidence.releaseCount&&
+  giftEvidence.releaseCount>0,'Complete verified gift release set required');
  const start=await rpc('getbestblockhash',[]);
  assert.equal(start,approvalReceipt.observedTip,'Chain tip changed since approval; re-review required');
  const chain=await rpc('getblockchaininfo',[]);
