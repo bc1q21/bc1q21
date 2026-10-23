@@ -316,3 +316,33 @@ test('QR export fails closed if the Core tip changes after frame construction',a
   await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
  });
 });
+
+test('recipient-retained original digest rejects altered release schedule before any Core access',async()=>{
+ const expectedBindingDigest=digestProfessionalGiftBinding(binding);
+ const mutated=[
+  {...binding,fundingTxid:'f'.repeat(64)},
+  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],sats:99999}]},
+  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],vout:1}]},
+  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],scriptPubKeyHex:'0014'+'aa'.repeat(20)}]},
+  {...binding,releaseOutputs:[...binding.releaseOutputs,{index:1,vout:1,sats:100000,
+   scriptPubKeyHex:payment.output.toString('hex')}]}
+ ];
+ for(const alteredBinding of mutated) {
+  await assert.rejects(prepareLocallyVerifiedBeneficiaryReview({
+   port:1,authorization,binding:alteredBinding,expectedBindingDigest,
+   releaseIndex:0,publicHandoff:handoff,funding,approvedIntent:intent
+  }),/differs from independently held commitment/);
+ }
+});
+
+test('matching original digest is not a claim of creator authentication',async()=>{
+ await withCore({},async port=>{
+  const flow=await prepareLocallyVerifiedBeneficiaryReview({
+   port,authorization,binding,expectedBindingDigest:digestProfessionalGiftBinding(binding),
+   releaseIndex:0,publicHandoff:handoff,funding,approvedIntent:intent
+  });
+  assert.equal(flow.creatorAuthenticated,false);
+  assert.equal(flow.beneficiaryAuthorized,false);
+  assert.equal(flow.reviewCompleted(),false);
+ });
+});
