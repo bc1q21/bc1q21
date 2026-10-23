@@ -25,6 +25,8 @@ export async function inspectFreshApprovedGiftOutpoint({rpc,giftEvidence,approva
  assert.ok(utxo&&utxo.bestblock===start,'Approved gift output spent or tip changed');
  assert.ok(Number.isSafeInteger(utxo.confirmations)&&utxo.confirmations>0,'Unconfirmed gift output');
  assert.equal(utxo.value*100000000,output.sats,'Approved gift amount changed');
+ assert.match(output.scriptPubKeyHex??'',/^(?:[a-f0-9]{2})+$/,'Verified gift output script required');
+ assert.equal(utxo.scriptPubKey?.hex,output.scriptPubKeyHex,'Approved gift locking script changed');
  const end=await rpc('getbestblockhash',[]);
  assert.equal(end,start,'Chain tip changed during recheck');
  return Object.freeze({
