@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install test-only libraries
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @noble/curves@1.9.7
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @noble/curves@1.9.7 @ngraveio/bc-ur@1.1.13
       - name: Start disposable Bitcoin Core regtest (no mainnet network)
         run: |
           docker run -d --name professional-bitcoin-regtest --network host \
