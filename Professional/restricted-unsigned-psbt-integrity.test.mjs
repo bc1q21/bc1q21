@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {inspectExactUnsignedPsbtForRestrictedQr} from './restricted-unsigned-psbt-integrity.mjs';
 
 const checkedReview=Object.freeze({
- network:'regtest',exactApprovedPsbtMatched:true,
+ network:'regtest',reviewFinalized:true,exactApprovedPsbtMatched:true,
  canExportSigningQr:false,canSign:false,canBroadcast:false,
  psbtSha256:'a'.repeat(64)
 });
@@ -15,6 +15,7 @@ test('unsigned PSBT integrity gate rejects forged QR readiness and wrong network
  for(const altered of [
   {network:'mainnet'},
   {network:'testnet'},
+  {reviewFinalized:false},
   {exactApprovedPsbtMatched:false},
   {canExportSigningQr:true},
   {canSign:true},
