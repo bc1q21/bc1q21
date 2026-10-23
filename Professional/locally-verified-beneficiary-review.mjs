@@ -2,6 +2,7 @@
 // within this function through a credentialed loopback transport; callers
 // cannot substitute an arbitrary giftEvidence object. Still no QR export.
 import assert from 'node:assert/strict';
+import {inspectExactUnsignedPsbtForRestrictedQr} from './restricted-unsigned-psbt-integrity.mjs';
 import {createRegtestReadOnlyRpc} from './local-regtest-readonly-transport.mjs';
 import {inspectAllGiftOutputsWithLocalCore} from './local-regtest-all-gift-outputs.mjs';
 import {prepareRestrictedBeneficiaryQrBoundary} from './restricted-beneficiary-qr-boundary.mjs';
@@ -25,7 +26,14 @@ export async function prepareLocallyVerifiedBeneficiaryReview({
   revoke:()=>restricted.revoke(),
   // No unsigned PSBT bytes or QR frames are available through this trusted-local facade.
   // Legacy standalone QR approval must not be treated as beneficiary authorization.
-  finalizeReview:()=>restricted.finalizeReview(),
+  finalizeReview:async()=>{
+   const checked=await restricted.finalizeReview();
+   const integrity=inspectExactUnsignedPsbtForRestrictedQr({
+    checkedReview:checked,publicHandoff,funding,approvedIntent
+   });
+   assert.equal(integrity.exactUnsignedBytesMatched,true,'Unsigned PSBT integrity check failed');
+   return checked;
+  },
   // Authentication of the local RPC connection does not prove the creator
   // or beneficiary identity, nor independent chain provenance.
   rpcTransportScope:'credentialed-loopback-only',
