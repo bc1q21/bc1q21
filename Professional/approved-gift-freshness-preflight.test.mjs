@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {inspectFreshApprovedGiftOutpoint} from './approved-gift-freshness-preflight.mjs';
 const txid='a'.repeat(64),tip='b'.repeat(64),digest='c'.repeat(64),script='0014'+'11'.repeat(20);
 const giftEvidence={network:'regtest',outputsConsistent:true,tipStableDuringRead:true,
- observedTip:tip,fundingTxid:txid,verifiedOutputs:[{index:0,txid,vout:0,sats:12000,scriptPubKeyHex:script}]};
+ observedTip:tip,fundingTxid:txid,releaseCount:1,verifiedOutputs:[{index:0,txid,vout:0,sats:12000,scriptPubKeyHex:script}]};
 const receipt={network:'regtest',approvalRecorded:true,releaseIndex:0,observedTip:tip,psbtSha256:digest};
 const rpcFor=({moving=false,spent=false,wrongAmount=false,wrongScript=false}={})=>{
  let tips=0;
@@ -36,4 +36,9 @@ test('approval is invalid after reorg or if UTXO is spent',async()=>{
 test('approval for another release or unrecorded approval is rejected',async()=>{
  await assert.rejects(inspect(rpcFor(),giftEvidence,{...receipt,releaseIndex:1}),/another release/);
  await assert.rejects(inspect(rpcFor(),giftEvidence,{...receipt,approvalRecorded:false}),/Explicit approval/);
+});
+
+test('incomplete gift release set cannot reuse a valid approval receipt',async()=>{
+ await assert.rejects(inspect(rpcFor(),{...giftEvidence,releaseCount:2}),
+  /Complete verified gift release set required/);
 });
