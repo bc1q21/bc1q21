@@ -26,6 +26,7 @@ const binding={network:'regtest',fundingTxid:tx.getId(),releaseOutputs:[{
 }]};
 const authorization='Basic '+Buffer.from('local-fixture:disposable').toString('base64');
 async function withCore({spent=false,wrongNetwork=false,changedScript=false}={},run) {
+ const state={spent,changedScript,changedTip:false};
  const server=http.createServer((req,res)=>{
   if(req.headers.authorization!==authorization){res.writeHead(401);res.end();return;}
   let body='';
@@ -33,7 +34,7 @@ async function withCore({spent=false,wrongNetwork=false,changedScript=false}={},
   req.on('end',()=>{
    const {method,params}=JSON.parse(body);
    const results={
-    getbestblockhash:tip,
+    getbestblockhash:state.changedTip?'c'.repeat(64):tip,
     getblockchaininfo:{chain:wrongNetwork?'main':'regtest',bestblockhash:tip,blocks:110},
     getrawtransaction:{txid:tx.getId(),blockhash:block,vout:[{
      n:0,value:0.001,scriptPubKey:{hex:payment.output.toString('hex')}
@@ -41,15 +42,15 @@ async function withCore({spent=false,wrongNetwork=false,changedScript=false}={},
     getblockheader:params[0]===tip?{hash:tip,height:110,mediantime:1800000000}:{
      hash:block,confirmations:5
     },
-    gettxout:spent?null:{bestblock:tip,confirmations:5,value:0.001,
-     scriptPubKey:{hex:changedScript?'0014'+'22'.repeat(20):payment.output.toString('hex')}}
+    gettxout:state.spent?null:{bestblock:tip,confirmations:5,value:0.001,
+     scriptPubKey:{hex:state.changedScript?'0014'+'22'.repeat(20):payment.output.toString('hex')}}
    };
    res.writeHead(200,{'content-type':'application/json'});
    res.end(JSON.stringify({result:results[method],error:null}));
   });
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- try{await run(server.address().port);}
+ try{await run(server.address().port,state);}
  finally{await new Promise(resolve=>server.close(resolve));}
 }
 const start=port=>prepareLocallyVerifiedBeneficiaryReview({
@@ -191,5 +192,54 @@ test('trusted QR export rejects spent output after approval and consumes attempt
   await flow.finalizeReview();
   await assert.rejects(flow.exportQrFrames({fragmentLength:10}),/Invalid fragment length/);
   await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
+
+test('spent gift output after finalized approval prevents QR export permanently',async()=>{
+ await withCore({},async(port,state)=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  state.spent=true;
+  await assert.rejects(flow.exportQrFrames(),/spent or tip changed/);
+  state.spent=false;
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
+
+test('changed Core tip after finalized approval prevents QR export permanently',async()=>{
+ await withCore({},async(port,state)=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  state.changedTip=true;
+  await assert.rejects(flow.exportQrFrames(),/Chain tip changed since approval/);
+  state.changedTip=false;
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
+
+test('changed gift locking script after approval prevents QR export',async()=>{
+ await withCore({},async(port,state)=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  state.changedScript=true;
+  await assert.rejects(flow.exportQrFrames(),/locking script changed/);
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
+
+test('concurrent QR export attempts never both succeed',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  const attempts=await Promise.allSettled([
+   flow.exportQrFrames({frameCount:8}),flow.exportQrFrames({frameCount:8})
+  ]);
+  assert.equal(attempts.filter(x=>x.status==='fulfilled').length,1);
+  assert.equal(attempts.filter(x=>x.status==='rejected').length,1);
+  assert.match(attempts.find(x=>x.status==='rejected').reason.message,/already consumed/);
  });
 });
