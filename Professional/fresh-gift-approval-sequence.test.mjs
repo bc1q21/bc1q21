@@ -68,3 +68,34 @@ test('no approval cannot be finalized or subsequently reused',async()=>{
  await assert.rejects(flow.finalizeApproval(),/Explicit fingerprint approval required/);
  await assert.rejects(flow.finalizeApproval(),/already consumed/);
 });
+
+test('two simultaneous finalization attempts cannot consume approval twice',async()=>{
+ let unblock;
+ let waiting=false;
+ const gate=new Promise(resolve=>{unblock=resolve;});
+ const base=rpcFor();
+ const rpc=async(method,params)=>{
+  if(method==='getbestblockhash'&&!waiting){
+   waiting=true;
+   await gate;
+  }
+  return base(method,params);
+ };
+ const flow=await make(rpc);
+ flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+ const first=flow.finalizeApproval();
+ await assert.rejects(flow.finalizeApproval(),/already consumed/);
+ unblock();
+ const result=await first;
+ assert.equal(result.approvalConsumed,true);
+ assert.equal(result.canExportSigningQr,false);
+});
+
+test('rejected fresh Core check cannot be recovered by reapproving same session',async()=>{
+ const flow=await make(rpcFor({spent:true}));
+ flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+ await assert.rejects(flow.finalizeApproval(),/spent or tip changed/);
+ assert.throws(()=>flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256}),
+  /already consumed/);
+ await assert.rejects(flow.finalizeApproval(),/already consumed/);
+});
