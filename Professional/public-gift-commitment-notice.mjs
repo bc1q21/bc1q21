@@ -22,7 +22,13 @@ export function compareRecipientGiftCommitment(binding,receivedFingerprint) {
  assert.equal(typeof receivedFingerprint,'string','Recipient-supplied fingerprint required');
  // Spaces are permitted for reading and manual comparison, but not changes
  // in case, symbols, missing digits, or abbreviated prefixes.
- // Accept only the canonical 64 lowercase hex digits, optionally grouped\n // in eight blocks of eight separated by single spaces. Do not silently\n // strip arbitrary whitespace or control characters from the handoff.\n assert.ok(/^[a-f0-9]{64}$/.test(receivedFingerprint)||\n  /^(?:[a-f0-9]{8} ){7}[a-f0-9]{8}$/.test(receivedFingerprint),\n  'Independent gift commitment required in canonical fingerprint format');\n const compact=receivedFingerprint.replace(/ /g,'');
+ // Accept only the canonical 64 lowercase hex digits, optionally grouped
+ // in eight blocks of eight separated by single spaces. Do not silently
+ // strip arbitrary whitespace or control characters from the handoff.
+ assert.ok(/^[a-f0-9]{64}$/.test(receivedFingerprint)||
+  /^(?:[a-f0-9]{8} ){7}[a-f0-9]{8}$/.test(receivedFingerprint),
+  'Independent gift commitment required in canonical fingerprint format');
+ const compact=receivedFingerprint.replace(/ /g,'');
  const checked=verifyProfessionalGiftBindingCommitment(binding,compact);
  return Object.freeze({
   ...checked,recipientComparedCommitment:true,
