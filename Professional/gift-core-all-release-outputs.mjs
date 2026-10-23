@@ -33,7 +33,7 @@ export function verifyScheduledGiftCoreOutputs(binding, coreTransaction, observe
   assert.equal(utxo.bestblock, bestBlockHash, 'UTXO observed at wrong chain tip');
   assert.equal(utxo.scriptPubKey?.hex, release.scriptPubKeyHex, 'Unspent script mismatch');
   assert.equal(satoshis(utxo.value), release.sats, 'Unspent amount mismatch');
-  return Object.freeze({index,txid:binding.fundingTxid,vout:release.vout,sats:release.sats});
+  return Object.freeze({index,txid:binding.fundingTxid,vout:release.vout,sats:release.sats,scriptPubKeyHex:release.scriptPubKeyHex});
  });
  return Object.freeze({
   network:'regtest',fundingTxid:binding.fundingTxid,
