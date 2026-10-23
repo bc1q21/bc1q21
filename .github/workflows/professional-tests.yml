@@ -82,7 +82,7 @@ jobs:
         run: |
           node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const s=fs.readFileSync("Professional/synthetic-transaction-confirmation.html","utf8"); for (const good of ["DISPOSABLE REGTEST DEMO ONLY","Not approved.","button.disabled","ack.checked","digest.value.trim()===expected","No signing or broadcasting performed."]) assert.ok(s.includes(good),good); for (const bad of ["<script src=","<link href=","XMLHttpRequest","WebSocket","fetch("]) assert.ok(!s.includes(bad),bad); console.log("Offline confirmation demo verified",s.length,"bytes")'
       - name: Install Chromium for isolated browser regression
-        run: npx --prefix Professional playwright install --with-deps chromium
+        run: npx --prefix Professional playwright install chromium
       - name: Exercise confirmation screen in real Chromium
         run: node Professional/confirmation-browser.check.mjs
       - name: Publish offline transaction confirmation demonstration
