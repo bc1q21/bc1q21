@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {inspectFreshApprovalForControlledQr} from './fresh-approval-qr-boundary.mjs';
 
 const tip='a'.repeat(64),txid='b'.repeat(64),digest='c'.repeat(64);
-const giftEvidence={observedTip:tip,verifiedOutputs:[{index:0,txid,vout:0,sats:12000}]};
+const giftEvidence={observedTip:tip,releaseCount:1,verifiedOutputs:[{index:0,txid,vout:0,sats:12000,scriptPubKeyHex:'0014'+'11'.repeat(20)}]};
 const freshness={network:'regtest',freshOutpointMatched:true,approvalStillTipBound:true,
  approvalConsumed:true,canExportSigningQr:false,observedTip:tip,releaseIndex:0,
  txid,vout:0,psbtSha256:digest};
@@ -27,4 +27,11 @@ test('wrong funding output or amount is rejected before PSBT construction',()=>{
   freshness,giftEvidence,releaseIndex:0,publicHandoff:{},
   funding:{expectedSats:11000},approvedIntent:{}
  }),/Wrong funding amount/);
+});
+
+test('QR inspection rejects incomplete release evidence and missing funding script',()=>{
+ assert.throws(()=>check(freshness,{...giftEvidence,releaseCount:2}),
+  /Complete verified gift release set required/);
+ assert.throws(()=>check(freshness,{...giftEvidence,verifiedOutputs:[{...giftEvidence.verifiedOutputs[0],scriptPubKeyHex:undefined}]}),
+  /Verified funding script required/);
 });
