@@ -20,6 +20,8 @@ export async function prepareLocallyVerifiedBeneficiaryReview({
  const restricted=await prepareRestrictedBeneficiaryQrBoundary({
   rpc,giftEvidence,releaseIndex,publicHandoff,funding,approvedIntent
  });
+ let finalizationStarted=false;
+ let finalizationSucceeded=false;
  return Object.freeze({
   review:()=>restricted.review(),
   approve:confirmation=>restricted.approve(confirmation),
@@ -27,15 +29,20 @@ export async function prepareLocallyVerifiedBeneficiaryReview({
   // No unsigned PSBT bytes or QR frames are available through this trusted-local facade.
   // Legacy standalone QR approval must not be treated as beneficiary authorization.
   finalizeReview:async()=>{
+   assert.equal(finalizationStarted,false,'Trusted review already finalized');
+   finalizationStarted=true;
    const checked=await restricted.finalizeReview();
    const integrity=inspectExactUnsignedPsbtForRestrictedQr({
     checkedReview:checked,publicHandoff,funding,approvedIntent
    });
    assert.equal(integrity.exactUnsignedBytesMatched,true,'Unsigned PSBT integrity check failed');
+   finalizationSucceeded=true;
    return checked;
   },
   // Authentication of the local RPC connection does not prove the creator
   // or beneficiary identity, nor independent chain provenance.
+  // State is private: caller-supplied readiness flags cannot change it.
+  reviewCompleted:()=>finalizationSucceeded,
   rpcTransportScope:'credentialed-loopback-only',
   creatorAuthenticated:false,beneficiaryAuthorized:false,
   canExportSigningQr:false,canSign:false,canBroadcast:false
