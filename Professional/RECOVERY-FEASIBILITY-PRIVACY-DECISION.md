@@ -43,3 +43,15 @@ GitHub Actions `39992714564` passed the disposable BIP39-derived retail secret â
 **Boundary remains unchanged:** these are disposable software-fixture tests. They do not establish that Jade firmware can derive the retail /0/2 encryption secret or decrypt BC1Q21G1 internally. The documented Jade interface supports PSBT signing and public xpub operations, not the required arbitrary AES-GCM decryption. Never route real mnemonic, private child, or wallet-derived passphrase through the networked recipient viewer.
 
 **Architecture decision still required:** a trusted air-gapped recovery component using the same 12-word backup, audited future Jade firmware support, or an explicitly accepted new-gift metadata architecture. No option has been selected or authorized for deployment. Jade remains an offline signing device only; hardware recovery and independent beneficiary acceptance remain **NO-GO**.
+
+## Binding owner decision â€” October 23: fixed one-signer Professional architecture
+
+**DO NOT pursue** any second offline computer, companion signer, additional recovery phrase, Jade firmware decrypt service, or new wallet architecture for this project. The user requires the retail-equivalent gift and beneficiary journey with **one** offline hardware signer restored from the **same 12 words** and QR-based PSBT signing. Jade Plus is the current test device, not a mandatory vendor.
+
+**This privacy decision was already made October 19:** the owner approved Professional Option B, in which anyone possessing the Professional gift link may view the gift's public release dates. The retail site's existing encrypted-date format need not be decrypted by Jade for the **Professional** recipient journey. Preserve existing retail unchanged. Publishing gift-specific dates is an accepted Professional-only privacy trade-off, not a claim of recipient authorization or permission to sign/broadcast.
+
+**Engineering target:** create and verify a complete gift-specific public schedule from creator-published first date + interval + xpub-derived scripts + real funded outputs, bound to the recipient's independently retained creator commitment. The current `buildProfessionalLinkVisibleSchedule` and `mapProfessionalGiftLocatorToSchedule` verify caller-supplied metadata/scripts but do **not** authenticate their creator or prove funding. Do not claim the gift link alone reveals the schedule. Keep the full gift binding and Core UTXO validation fail-closed.
+
+**STOP/NO-GO condition:** if the approved public schedule cannot be linked securely to a funded gift and verified independently without a second secret-bearing device or exposing private wallet data, report the exact blocking technical evidence to the owner. Do not invent alternate architecture. Existing offline AES compatibility tests remain valid regression evidence but are **not** the required Professional recipient schedule-unlock path.
+
+No hardware interaction until explicitly authorized final acceptance; no changes outside isolated Professional branch/paths.
