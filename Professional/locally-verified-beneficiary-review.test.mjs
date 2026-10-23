@@ -59,7 +59,7 @@ const start=port=>prepareLocallyVerifiedBeneficiaryReview({
 test('credentialed Core evidence is collected internally before one-time approval',async()=>{
  await withCore({},async port=>{
   const flow=await start(port);
-  assert.equal(typeof flow.exportQrFrames,'undefined');
+  assert.equal(typeof flow.exportQrFrames,'function');
   flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
   const result=await flow.finalizeReview();
   assert.equal(result.exactApprovedPsbtMatched,true);
@@ -125,7 +125,7 @@ test('trusted-local beneficiary facade cannot finalize or reapprove twice',async
   assert.throws(()=>flow.approve({acknowledged:true,confirmedDigest:digest}),
    /already finalized/);
   assert.throws(()=>flow.revoke(),/already finalized/);
-  assert.equal(typeof flow.exportQrFrames,'undefined');
+  assert.equal(typeof flow.exportQrFrames,'function');
   assert.equal(typeof flow.completeSignedReturn,'undefined');
  });
 });
@@ -148,7 +148,7 @@ test('trusted-local review completion is private and cannot be forged or replaye
   await assert.rejects(flow.finalizeReview(),/Explicit fingerprint approval required/);
   assert.equal(flow.reviewCompleted(),false);
   await assert.rejects(flow.finalizeReview(),/Trusted review already finalized/);
-  assert.equal(typeof flow.exportQrFrames,'undefined');
+  assert.equal(typeof flow.exportQrFrames,'function');
  });
  await withCore({},async port=>{
   const flow=await start(port);
@@ -157,6 +157,39 @@ test('trusted-local review completion is private and cannot be forged or replaye
   assert.equal(result.reviewFinalized,true);
   assert.equal(flow.reviewCompleted(),true);
   await assert.rejects(flow.finalizeReview(),/Trusted review already finalized/);
-  assert.equal(typeof flow.exportQrFrames,'undefined');
+  assert.equal(typeof flow.exportQrFrames,'function');
+ });
+});
+
+test('trusted QR export is single-use and only follows successful finalized review',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  await assert.rejects(flow.exportQrFrames(),/Successful beneficiary review required/);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+ await withCore({},async port=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  const result=await flow.exportQrFrames({frameCount:8});
+  assert.equal(result.network,'regtest');
+  assert.equal(result.psbtSha256,flow.review().psbtSha256);
+  assert.equal(result.frames.length,8);
+  assert.ok(result.frames.every(frame=>frame.startsWith('ur:crypto-psbt/')));
+  assert.equal(result.signed,false);
+  assert.equal(result.broadcast,false);
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+ });
+});
+
+test('trusted QR export rejects spent output after approval and consumes attempt',async()=>{
+ await withCore({},async port=>{
+  const flow=await start(port);
+  flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
+  await flow.finalizeReview();
+  await assert.rejects(flow.exportQrFrames({fragmentLength:10}),/Invalid fragment length/);
+  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
  });
 });
