@@ -45,3 +45,24 @@ test('recipient rejects noncanonical formatting and control characters without n
  }
  assert.equal(compareRecipientGiftCommitment(binding,notice.displayFingerprint).commitmentMatches,true);
 });
+
+test('independently retained fingerprint fails closed for every release field',()=>{
+ const fingerprint=createPublicGiftCommitmentNotice(binding).fingerprint;
+ const alteredDigit=(fingerprint[0]==='a'?'b':'a')+fingerprint.slice(1);
+ assert.throws(()=>compareRecipientGiftCommitment(binding,alteredDigit),/differs/);
+ const change=(index,patch)=>({...binding,releaseOutputs:binding.releaseOutputs.map(
+  (release,i)=>i===index?{...release,...patch}:release)});
+ for(const altered of [
+  {...binding,fundingTxid:'b'.repeat(64)},
+  change(5,{sats:binding.releaseOutputs[5].sats+1}),
+  change(5,{vout:99}),
+  change(5,{scriptPubKeyHex:'0014'+'fe'.repeat(20)}),
+  {...binding,releaseOutputs:[...binding.releaseOutputs].reverse()},
+  {...binding,releaseOutputs:binding.releaseOutputs.slice(0,-1)},
+  {...binding,releaseOutputs:[...binding.releaseOutputs,
+   {index:24,vout:24,sats:10000,scriptPubKeyHex:'0014'+'ab'.repeat(20)}]}
+ ]) {
+  assert.throws(()=>compareRecipientGiftCommitment(altered,fingerprint));
+ }
+ assert.equal(compareRecipientGiftCommitment(binding,fingerprint).creatorAuthenticated,false);
+});
