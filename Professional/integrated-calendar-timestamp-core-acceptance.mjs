@@ -7,6 +7,8 @@ import bitcoin from 'bitcoinjs-lib';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { Buffer } from 'node:buffer';
 import { prepareProfessionalReleaseFromPublicHandoff } from './public-funding-release-integration.mjs';
+import { prepareLocallyVerifiedBeneficiaryReview } from './locally-verified-beneficiary-review.mjs';
+import { digestProfessionalGiftBinding } from './public-gift-binding-commitment.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const auth='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -64,6 +66,35 @@ assert.equal(unsigned.locktime,locktime);
 assert.equal(unsigned.data.inputs[0].redeemScript.toString('hex'),redeem.toString('hex'));
 assert.equal(unsigned.data.inputs[0].nonWitnessUtxo.toString('hex'),fundingHex);
 assert.equal(unsigned.data.inputs[0].bip32Derivation[0].pubkey.toString('hex'),pubkey.toString('hex'));
+
+// Same genuinely funded output, checked via credentialed loopback Core (not a mock).
+// The commitment is freshly calculated for this disposable test; it is NOT an
+// independently authenticated creator-to-recipient delivery.
+const binding={network:'regtest',fundingTxid:txid,releaseOutputs:[{
+ index:0,vout,sats:inputSats,scriptPubKeyHex:p2sh.output.toString('hex')
+}]};
+const approvedIntent={destinationScriptHex:details.destinationScriptHex,
+ destinationSats:details.destinationSats,expectedTxid:txid,vout,
+ expectedSats:inputSats,locktime,signerPubkeyHex:pubkey.toString('hex')};
+const local=await prepareLocallyVerifiedBeneficiaryReview({
+ port,authorization:auth,binding,expectedBindingDigest:digestProfessionalGiftBinding(binding),
+ releaseIndex:0,publicHandoff:handoff,funding:details,approvedIntent
+});
+assert.equal(local.creatorAuthenticated,false);
+assert.equal(local.beneficiaryAuthorized,false);
+assert.equal(local.review().psbtSha256,built.psbtSha256);
+local.approve({acknowledged:true,confirmedDigest:local.review().psbtSha256});
+const finalized=await local.finalizeReview();
+assert.equal(finalized.reviewFinalized,true);
+const qr=await local.exportQrFrames({frameCount:8});
+assert.equal(qr.psbtSha256,local.review().psbtSha256);
+assert.equal(qr.frames.length,8);
+assert.ok(qr.frames.every(frame=>frame.startsWith('ur:crypto-psbt/')));
+assert.equal(qr.signed,false);
+assert.equal(qr.broadcast,false);
+await assert.rejects(local.exportQrFrames(),/already consumed/);
+console.log('PASS: same funded calendar gift -> live Core -> local review -> one-use unsigned QR; creator authenticity NOT proven');
+
 const baseTx=bitcoin.Transaction.fromBuffer(unsigned.data.globalMap.unsignedTx.toBuffer());
 const signedTx=(opts={})=>{
  const tx=bitcoin.Transaction.fromBuffer(baseTx.toBuffer());
