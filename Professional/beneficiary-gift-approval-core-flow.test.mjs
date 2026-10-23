@@ -52,3 +52,39 @@ test('immature and modified transaction cannot reach approval',async()=>{
  await assert.rejects(make(109),/not mature/);
  await assert.rejects(make(110,{...intent,destinationSats:98000}),/Funding payout differs from approval/);
 });
+
+test('calendar-timestamp gift approval is blocked until Core MTP strictly exceeds locktime',async()=>{
+ const {retailDateToCltvTimestamp}=await import('./retail-calendar-cltv.mjs');
+ const calendarLock=retailDateToCltvTimestamp('2030-01-01');
+ const calendarRedeem=bitcoin.script.compile([bitcoin.script.number.encode(calendarLock),
+  bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,bitcoin.opcodes.OP_DROP,signer,bitcoin.opcodes.OP_CHECKSIG]);
+ const calendarPayment=bitcoin.payments.p2sh({
+  redeem:{output:calendarRedeem},network:bitcoin.networks.regtest
+ });
+ const calendarTx=new bitcoin.Transaction();
+ calendarTx.version=2;
+ calendarTx.addInput(Buffer.alloc(32,2),0);
+ calendarTx.addOutput(calendarPayment.output,100000);
+ const calendarHandoff={...handoff,locktime:calendarLock,
+  redeemScriptHex:calendarRedeem.toString('hex'),fundingAddress:calendarPayment.address};
+ const calendarFunding={...funding,fundingTxHex:calendarTx.toHex(),
+  expectedTxid:calendarTx.getId()};
+ const calendarIntent={...intent,expectedTxid:calendarTx.getId(),locktime:calendarLock};
+ const calendarGift={...giftEvidence,fundingTxid:calendarTx.getId(),
+  verifiedOutputs:[{index:0,txid:calendarTx.getId(),vout:0,sats:100000,
+   scriptPubKeyHex:calendarPayment.output.toString('hex')}]};
+ const start=mtp=>prepareBeneficiaryGiftApprovalWithCore({
+  rpc:async method=>{
+   if(method==='getbestblockhash')return tip;
+   if(method==='getblockchaininfo')return {chain:'regtest',bestblockhash:tip,blocks:110};
+   if(method==='getblockheader')return {hash:tip,height:110,mediantime:mtp};
+   throw Error('Unexpected RPC');
+  },giftEvidence:calendarGift,releaseIndex:0,publicHandoff:calendarHandoff,
+  funding:calendarFunding,approvedIntent:calendarIntent
+ });
+ await assert.rejects(start(calendarLock-1),/Release not mature for approval/);
+ await assert.rejects(start(calendarLock),/Release not mature for approval/);
+ const flow=await start(calendarLock+1);
+ assert.equal(flow.review().canExportSigningQr,false);
+ assert.equal(flow.review().psbtSha256.length,64);
+});
