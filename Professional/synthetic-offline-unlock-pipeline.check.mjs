@@ -35,3 +35,19 @@ test('offline refusal and incorrect decryption secret emit no response',()=>{
  assert.throws(()=>unlockSyntheticRetailScheduleOffline({...args,approved:false}));
  assert.throws(()=>unlockSyntheticRetailScheduleOffline({...args,currentPassphrase:'incorrect'}));
 });
+
+test('offline schedule pipeline handles retail hex first date without exposing passphrase',()=>{
+ const plaintext=Buffer.from(firstDate,'utf8').toString('hex');
+ const header=Buffer.from('BC1Q21G1'),salt=Buffer.alloc(16,3),iv=Buffer.alloc(12,4);
+ const key=pbkdf2Sync(currentPassphrase,salt,100000,32,'sha256');
+ const cipher=createCipheriv('aes-256-gcm',key,iv);cipher.setAAD(header);
+ const encryptedHex=Buffer.concat([header,salt,iv,cipher.update(plaintext,'utf8'),
+  cipher.final(),cipher.getAuthTag()]).toString('hex');
+ const response=unlockSyntheticRetailScheduleOffline({...args,encryptedHex,retailFirstDateHex:true});
+ assert.equal(response.firstDate,firstDate);
+ assert.equal(JSON.stringify(response).includes(currentPassphrase),false);
+ assert.deepEqual(verifyPublicScheduleReturn({challenge,response,giftTxid,outputScriptsHex,
+  accountXpub,masterFingerprintHex}).schedule.releases.map(x=>x.date),dates);
+ assert.throws(()=>unlockSyntheticRetailScheduleOffline({...args,encryptedHex,
+  retailFirstDateHex:true,currentPassphrase:'incorrect'}));
+});
