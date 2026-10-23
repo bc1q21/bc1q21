@@ -21,7 +21,7 @@ const approvedIntent={destinationScriptHex:funding.destinationScriptHex,destinat
  expectedTxid:funding.expectedTxid,vout:0,expectedSats:100000,locktime:110,
  signerPubkeyHex:publicHandoff.signerPubkeyHex};
 const giftEvidence={network:'regtest',outputsConsistent:true,tipStableDuringRead:true,
- fundingTxid:tx.getId(),releaseCount:1,verifiedOutputs:[{index:0,txid:tx.getId(),vout:0,sats:100000}]};
+ fundingTxid:tx.getId(),releaseCount:1,verifiedOutputs:[{index:0,txid:tx.getId(),vout:0,sats:100000,scriptPubKeyHex:payment.output.toString('hex')}]};
 const review=(e=giftEvidence,f=funding,a=approvedIntent)=>prepareGiftBoundBeneficiaryReview({
  giftEvidence:e,releaseIndex:0,publicHandoff,funding:f,approvedIntent:a
 });
@@ -43,4 +43,13 @@ test('changed gift outpoint, amount or destination fails before review',()=>{
  assert.throws(()=>review({...giftEvidence,verifiedOutputs:[{index:0,txid:tx.getId(),vout:0,sats:99999}]}),/amount mismatch/);
  assert.throws(()=>review(giftEvidence,{...funding,destinationSats:98000}),/Funding payout differs/);
  assert.throws(()=>review(giftEvidence,funding,{...approvedIntent,destinationScriptHex:'0014'+'aa'.repeat(20)}),/Approval mismatch: destinationScriptHex/);
+});
+
+test('gift approval refuses a substituted locking script before issuing approval',()=>{
+ assert.throws(()=>review({...giftEvidence,verifiedOutputs:[{
+  ...giftEvidence.verifiedOutputs[0],scriptPubKeyHex:'0014'+'11'.repeat(20)
+ }]}),/Funding locking script differs from gift/);
+ assert.throws(()=>review({...giftEvidence,verifiedOutputs:[{
+  ...giftEvidence.verifiedOutputs[0],scriptPubKeyHex:undefined
+ }]}),/Verified gift locking script required/);
 });
