@@ -311,7 +311,7 @@ test('QR export fails closed if the Core tip changes after frame construction',a
   const before=state.tipReads;
   // A changed tip during export must prevent frames being returned.
   // Flip on the final tip read after the three freshness tip reads.
-  state.flipTipAtRead=before+4;
+  state.flipTipAtRead=before+3;
   await assert.rejects(flow.exportQrFrames({frameCount:8}),/Chain tip changed/);
   await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
  });
