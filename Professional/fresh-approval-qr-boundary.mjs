@@ -3,7 +3,6 @@
 // A standalone QR session's own approve() remains a separate path and must
 // not be exposed as the integrated beneficiary flow until refactored.
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
 import {createProfessionalTransactionConfirmation} from './transaction-confirmation.mjs';
 
 export function inspectFreshApprovalForControlledQr({
@@ -21,6 +20,9 @@ export function inspectFreshApprovalForControlledQr({
  assert.equal(output.txid,freshness.txid,'Wrong funding transaction');
  assert.equal(output.vout,freshness.vout,'Wrong funding outpoint');
  assert.equal(output.sats,funding?.expectedSats,'Wrong funding amount');
+ assert.match(output.scriptPubKeyHex??'',/^(?:[a-f0-9]{2})+$/,'Verified funding script required');
+ assert.equal(giftEvidence?.verifiedOutputs?.length,giftEvidence?.releaseCount,
+  'Complete verified gift release set required');
  const record=createProfessionalTransactionConfirmation(publicHandoff,funding,approvedIntent);
  assert.equal(record.psbtSha256,freshness.psbtSha256,'Approved PSBT fingerprint changed');
  assert.equal(record.fundingTxid,output.txid,'PSBT funding txid changed');
