@@ -25,7 +25,7 @@ const binding={network:'regtest',fundingTxid:tx.getId(),releaseOutputs:[{
  index:0,vout:0,sats:100000,scriptPubKeyHex:payment.output.toString('hex')
 }]};
 const authorization='Basic '+Buffer.from('local-fixture:disposable').toString('base64');
-async function withCore({spent=false,wrongNetwork=false}={},run) {
+async function withCore({spent=false,wrongNetwork=false,changedScript=false}={},run) {
  const server=http.createServer((req,res)=>{
   if(req.headers.authorization!==authorization){res.writeHead(401);res.end();return;}
   let body='';
@@ -42,7 +42,7 @@ async function withCore({spent=false,wrongNetwork=false}={},run) {
      hash:block,confirmations:5
     },
     gettxout:spent?null:{bestblock:tip,confirmations:5,value:0.001,
-     scriptPubKey:{hex:payment.output.toString('hex')}}
+     scriptPubKey:{hex:changedScript?'0014'+'22'.repeat(20):payment.output.toString('hex')}}
    };
    res.writeHead(200,{'content-type':'application/json'});
    res.end(JSON.stringify({result:results[method],error:null}));
@@ -93,5 +93,23 @@ test('missing or altered independently held gift commitment fails before Core ac
    port,authorization,binding,expectedBindingDigest:'f'.repeat(64),releaseIndex:0,
    publicHandoff:handoff,funding,approvedIntent:intent
   }),/differs from independently held commitment/);
+ });
+});
+
+test('locally acquired Core script substitution fails before beneficiary approval',async()=>{
+ await withCore({changedScript:true},async port=>{
+  await assert.rejects(start(port),/Unspent script mismatch/);
+ });
+});
+
+test('altered recipient gift binding fails even if the attacker supplies a new digest',async()=>{
+ await withCore({},async port=>{
+  const modified={...binding,releaseOutputs:[{...binding.releaseOutputs[0],
+   scriptPubKeyHex:'0014'+'22'.repeat(20)}]};
+  await assert.rejects(prepareLocallyVerifiedBeneficiaryReview({
+   port,authorization,binding:modified,
+   expectedBindingDigest:digestProfessionalGiftBinding(modified),
+   releaseIndex:0,publicHandoff:handoff,funding,approvedIntent:intent
+  }),/Gift output script mismatch/);
  });
 });
