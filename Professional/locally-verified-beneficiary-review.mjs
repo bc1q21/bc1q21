@@ -1,6 +1,7 @@
 // Professional-only trusted-local composition. The Core evidence is collected
 // within this function through a credentialed loopback transport; callers
-// cannot substitute an arbitrary giftEvidence object. Still no QR export.
+// cannot substitute an arbitrary giftEvidence object. Unsigned regtest QR
+// export is gated by this closure, not by the legacy standalone approval.
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {inspectFreshApprovedGiftOutpoint} from './approved-gift-freshness-preflight.mjs';
@@ -32,8 +33,8 @@ export async function prepareLocallyVerifiedBeneficiaryReview({
   review:()=>restricted.review(),
   approve:confirmation=>restricted.approve(confirmation),
   revoke:()=>restricted.revoke(),
-  // No unsigned PSBT bytes or QR frames are available through this trusted-local facade.
-  // Legacy standalone QR approval must not be treated as beneficiary authorization.
+  // The legacy standalone QR approval is not beneficiary authorization.
+  // This facade exports unsigned frames only after finalized local review.
   finalizeReview:async()=>{
    assert.equal(finalizationStarted,false,'Trusted review already finalized');
    finalizationStarted=true;
