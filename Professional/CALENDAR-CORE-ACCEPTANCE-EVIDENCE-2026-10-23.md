@@ -18,3 +18,13 @@
 Join one **new prospective, explicitly authenticated** disposable regtest gift's creator funding evidence to the trusted-local beneficiary review, fresh UTXO checks and one-time unsigned QR export against the *same live disposable Core chain*. Include a before/after MTP maturity transition if feasible. Never fabricate historical commitment for the original October 20 gift. Continue to hold physical Jade until a separately approved single final test.
 
 **Gate:** genuine calendar CLTV Core acceptance **PASS (software only)**; complete beneficiary lifecycle **OPEN / NO-GO**.
+
+## Integrated same-gift local Core beneficiary QR acceptance — 2026-10-23 update
+
+**PASS — software-only:** GitHub Actions **39990733268**, commit `4bf8c153d5e047811d6b9db99f4f2ff900f52171`, completed successfully. Parallel isolated tests **39990733388** also passed.
+
+The extended `integrated-calendar-timestamp-core-acceptance.mjs` now funds a **new disposable** timestamp-CLTV output in Bitcoin Core, verifies that output using the trusted local credentialed read-only Core transport, checks the complete one-output public gift binding against a digest freshly computed for this test, reviews the exact unsigned PSBT, records approval, finalizes the review, and exports **one-use unsigned UR:crypto-psbt QR frames**. A second QR export is rejected. The same test subsequently validates the signed software-fixture transaction through Core `testmempoolaccept`, without broadcast. Runner output confirms both `PASS: same funded calendar gift -> live Core -> local review -> one-use unsigned QR; creator authenticity NOT proven` and `PASS: genuine calendar-timestamp CLTV regtest UTXO -> public-only Professional PSBT -> disposable signature -> Bitcoin Core acceptance. No broadcast.`
+
+**Security limitations still blocking beneficiary acceptance:** The public digest was computed within this test from the same gift data; no independent creator delivery or recipient authentication is demonstrated. This uses a single already-mature output and disposable software signer, not the original 24-output gift, physical Jade, full recipient website/card route, calendar MTP transition on-chain, or original 12-word offline restoration. Do not promote these results to creator-authenticated or production-ready status.
+
+**Gate:** integrated same-gift Core → local beneficiary review → one-use unsigned QR **PASS (regtest software)**; complete end-to-end recipient/Jade/recovery/provenance **OPEN / NO-GO**.
