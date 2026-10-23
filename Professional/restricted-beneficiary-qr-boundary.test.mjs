@@ -39,6 +39,8 @@ test('full beneficiary preflight produces no bypass to legacy QR export',async()
  assert.equal(flow.canExportSigningQr,false);
  await assert.rejects(flow.finalizeReview(),/Explicit fingerprint approval required/);
  await assert.rejects(flow.finalizeReview(),/already finalized/);
+ assert.throws(()=>flow.revoke(),/already finalized/);
+ assert.throws(()=>flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256}),/already finalized/);
 });
 
 test('exact approved review is one-time and remains non-signing',async()=>{
