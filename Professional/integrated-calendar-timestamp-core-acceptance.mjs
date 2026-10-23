@@ -3,6 +3,7 @@
 // Never broadcast. No Jade, mainnet, seed phrase, or production funding.
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import { createHash } from 'node:crypto';
 import bitcoin from 'bitcoinjs-lib';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { Buffer } from 'node:buffer';
@@ -10,6 +11,7 @@ import { prepareProfessionalReleaseFromPublicHandoff } from './public-funding-re
 import { prepareLocallyVerifiedBeneficiaryReview } from './locally-verified-beneficiary-review.mjs';
 import { digestProfessionalGiftBinding } from './public-gift-binding-commitment.mjs';
 
+const requirePsbtDigest=base64=>createHash('sha256').update(Buffer.from(base64,'base64')).digest('hex');
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const auth='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
 async function rpc(method,params=[],wallet=''){
@@ -82,7 +84,7 @@ const local=await prepareLocallyVerifiedBeneficiaryReview({
 });
 assert.equal(local.creatorAuthenticated,false);
 assert.equal(local.beneficiaryAuthorized,false);
-assert.equal(local.review().psbtSha256,built.psbtSha256);
+assert.equal(local.review().psbtSha256,requirePsbtDigest(built.unsignedPsbtBase64));
 local.approve({acknowledged:true,confirmedDigest:local.review().psbtSha256});
 const finalized=await local.finalizeReview();
 assert.equal(finalized.reviewFinalized,true);
