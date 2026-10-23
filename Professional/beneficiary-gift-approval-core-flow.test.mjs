@@ -21,7 +21,7 @@ const intent={destinationScriptHex:funding.destinationScriptHex,destinationSats:
 const tip='a'.repeat(64);
 const giftEvidence={network:'regtest',outputsConsistent:true,tipStableDuringRead:true,
  observedTip:tip,fundingTxid:tx.getId(),releaseCount:1,
- verifiedOutputs:[{index:0,txid:tx.getId(),vout:0,sats:100000}]};
+ verifiedOutputs:[{index:0,txid:tx.getId(),vout:0,sats:100000,scriptPubKeyHex:payment.output.toString('hex')}]};
 const rpc=(height=110)=>async method=>{
  if(method==='getbestblockhash')return tip;
  if(method==='getblockchaininfo')return {chain:'regtest',bestblockhash:tip,blocks:height};
