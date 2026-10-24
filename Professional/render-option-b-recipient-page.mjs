@@ -3,6 +3,7 @@
 // This is not a production HTTP route and never authorizes spending.
 import {readFileSync} from 'node:fs';
 import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mjs';
+import {verifyPublicRetailSchedule} from './public-retail-schedule-verify.mjs';
 import {buildGiftSpecificOptionBView} from './gift-specific-option-b-view.mjs';
 import {mapProfessionalGiftLocatorToSchedule} from './option-b-explicit-link-map.mjs';
 import {inspectProfessionalRecipientIntegration} from './recipient-integration-boundary.mjs';
@@ -94,9 +95,10 @@ export function renderOptionBRecipientPage(url,published,commitment,verifiedFund
  let expectedDigest=null;
  if(verifiedFundingBinding!==undefined) {
   if(!mapped) throw Error('Verified binding requires an explicit gift locator mapping');
-  if(verifiedFundingBinding.releaseOutputs?.length!==mapped.releaseCount)
+  const verifiedSchedule=verifyPublicRetailSchedule(published);
+  if(verifiedFundingBinding.releaseOutputs?.length!==verifiedSchedule.releaseCount)
    throw Error('Binding release count differs from verified public schedule');
-  for(const release of mapped.releases) {
+  for(const release of verifiedSchedule.releases) {
    const bound=verifiedFundingBinding.releaseOutputs[release.index];
    if(bound?.index!==release.index||
       bound?.scriptPubKeyHex!==release.fundingScriptPubKeyHex)
