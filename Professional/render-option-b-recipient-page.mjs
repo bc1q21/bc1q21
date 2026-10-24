@@ -2,6 +2,7 @@
 // recipient page from the script-verified view model. No network or secrets.
 // This is not a production HTTP route and never authorizes spending.
 import {readFileSync} from 'node:fs';
+import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mjs';
 import {buildGiftSpecificOptionBView} from './gift-specific-option-b-view.mjs';
 import {mapProfessionalGiftLocatorToSchedule} from './option-b-explicit-link-map.mjs';
 import {inspectProfessionalRecipientIntegration} from './recipient-integration-boundary.mjs';
@@ -10,7 +11,7 @@ import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-
 function escapeHtml(v) {
  return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-export function renderOptionBRecipientPage(url,published,commitment) {
+export function renderOptionBRecipientPage(url,published,commitment,verifiedFundingBinding) {
  // An original gift-card funding locator requires explicit public script mapping;
  // the earlier prototype used the first CLTV release address instead.
  const integration=inspectProfessionalRecipientIntegration({giftUrl:url,published,commitment});
@@ -88,16 +89,23 @@ export function renderOptionBRecipientPage(url,published,commitment) {
   'const value='+JSON.stringify(view.fundingAddress)+';');
  // Format-only input is intentionally disconnected from all funding and
  // signing operations. Do not persist the value or send it over a network.
+ // Optional comparison is against caller-supplied regtest binding bytes only.
+ // This page does not establish the source, chain state, or identity.
+ const expectedDigest=verifiedFundingBinding===undefined?null:
+  digestProfessionalGiftBinding(verifiedFundingBinding);
  const fingerprintScript='<script>(function(){'+
   'const input=document.getElementById("recipientFingerprint");'+
   'const button=document.getElementById("checkFingerprint");'+
   'const result=document.getElementById("fingerprintResult");'+
   'button.addEventListener("click",function(){'+
   'const value=input.value;'+
+  'const expected='+JSON.stringify(expectedDigest)+';'+
   'const valid=/^[a-f0-9]{64}$/.test(value)||/^(?:[a-f0-9]{8} ){7}[a-f0-9]{8}$/.test(value);'+
-  'result.textContent=valid?'+
-  '"Format valid only. NOT verified against gift funding; signing remains disabled.":'+
-  '"Invalid fingerprint format. Enter all 64 lowercase hexadecimal characters.";' +
+  'const compact=value.replace(/ /g,"");'+
+  'result.textContent=!valid?"Invalid fingerprint format. Enter all 64 lowercase hexadecimal characters.":'+
+  '!expected?"Format valid only. NOT verified against gift funding; signing remains disabled.":'+
+  'compact===expected?"Fingerprint matches supplied binding bytes only. Source and funding NOT verified; signing disabled.":'+
+  '"Fingerprint MISMATCH: supplied binding differs from your retained fingerprint. Do not proceed.";' +
   '});})();</script>';
  html=html.replace('</body>',fingerprintScript+'</body>');
  return html;
