@@ -4,8 +4,7 @@ import {deriveJadePublicCltvHandoff} from './jade-xpub-cltv-handoff.mjs';
 import {retailDateToCltvTimestamp} from './retail-calendar-cltv.mjs';
 import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
 
-test('recipient page renders independent fingerprint guidance without authorizing signing',()=>{
- const accountXpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZqxDEvpqTnNmMXp2HjinP9Sqakg78';
+const accountXpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZqxDEvpqTnNmMXp2HjinP9Sqakg78';
 const h=deriveJadePublicCltvHandoff({accountXpub,masterFingerprintHex:'e29ac13c',childIndex:0,locktime:retailDateToCltvTimestamp('2031-01-15')});
 const published={accountXpub,masterFingerprintHex:'e29ac13c',firstDate:'2031-01-15',interval:'month',outputScriptsHex:[h.fundingScriptPubKeyHex]};
 const url='https://example.invalid/gift/'+h.fundingAddress+'?interval=month';
