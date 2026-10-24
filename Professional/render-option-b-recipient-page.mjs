@@ -45,7 +45,21 @@ export function renderOptionBRecipientPage(url,published,commitment) {
   'This prototype never queries that address or assumes possession of it authorizes spending.');
  // Replace the mock signing section with the actual fail-closed Professional
  // integration status. No PSBT or signing QR is issued by this renderer.
- const signingSection=renderProfessionalOfflineSigningStep(integration);
+ // Explain the independent fingerprint handoff without asking for a secret
+ // or pretending a static offline page has authenticated its sender.
+ const recipientFingerprintGuide='<section aria-label="Independent gift fingerprint check">'+
+  '<h2>Check your gift fingerprint</h2>'+
+  '<p>Ask the gift creator to send you the complete 64-character gift fingerprint '+
+  'through a channel you already trust, separately from this website and gift link.</p>'+
+  '<p>Keep that message. When the release review requests your fingerprint, '+
+  'enter the one from your independently retained message—not a fingerprint '+
+  'copied from this page.</p>'+
+  '<p><strong>Important:</strong> Matching fingerprints can detect changes to '+
+  'the funded gift details. A match alone does not prove who sent the message '+
+  'or authorize Bitcoin spending.</p>'+
+  '<p>This offline schedule page cannot check the fingerprint, confirm '+
+  'funding, approve a release, or generate a signing QR.</p></section>';
+ const signingSection=recipientFingerprintGuide+renderProfessionalOfflineSigningStep(integration);
  const signingStart=html.indexOf('<section><h2>Release payments — offline signer</h2>');
  const signingEnd=html.indexOf('</section>',signingStart);
  if(signingStart<0||signingEnd<0) throw Error('Recipient signing section missing');
