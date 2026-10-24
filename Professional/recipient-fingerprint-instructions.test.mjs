@@ -19,6 +19,9 @@ test('recipient page renders independent fingerprint guidance without authorizin
  assert.match(html,/does not prove who sent/);
  assert.match(html,/cannot check the fingerprint/);
  assert.match(html,/connect-src 'none'/);
- assert.doesNotMatch(html,/<input\b|<textarea\b/i);
+ assert.match(html,/id="recipientFingerprint"/);
+ assert.match(html,/Check format only/);
+ assert.match(html,/NOT verified against gift funding/);
+ assert.doesNotMatch(html,/<textarea\b|type="password"/i);
  assert.doesNotMatch(html,/ur:crypto-psbt\//);
 });
