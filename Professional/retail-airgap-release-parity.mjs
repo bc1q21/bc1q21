@@ -18,7 +18,8 @@ export function checkRetailAirgapReleaseParity({unsignedPsbtBase64,retailIntent}
  const fee=retailIntent.inputSats-output.value;
  assert.ok(Number.isSafeInteger(fee)&&fee>=0&&fee<=100000,'Retail release fee invalid');
  assert.equal(fee,retailIntent.feeSats,'Retail release fee changed');
- assert.equal(p.locktime,retailIntent.locktime,'Retail release locktime changed');
+ const unsignedTx=bitcoin.Transaction.fromBuffer(p.data.globalMap.unsignedTx.toBuffer());
+ assert.equal(unsignedTx.locktime,retailIntent.locktime,'Retail release locktime changed');
  assert.ok(input.sequence<0xffffffff,'CLTV input must be non-final');
  assert.equal(p.data.inputs[0]?.redeemScript?.toString('hex'),retailIntent.redeemScriptHex,
   'Retail CLTV script changed');
