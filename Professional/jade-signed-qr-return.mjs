@@ -6,6 +6,7 @@ import cbor from 'cbor';
 import bitcoin from 'bitcoinjs-lib';
 import {auditSameGiftUnsignedHandoff} from './audit-same-gift-unsigned-handoff.mjs';
 import {verifyReturnedSignedProfessionalPsbt} from './verify-signed-psbt-return.mjs';
+import {verifySyntheticSignedPsbt} from './verify-synthetic-signed-psbt.mjs';
 
 export function finalizeJadeSignedQrReturn({handoff,frames}) {
  auditSameGiftUnsignedHandoff(handoff);
@@ -20,6 +21,8 @@ export function finalizeJadeSignedQrReturn({handoff,frames}) {
  const raw=Buffer.from(cbor.decodeFirstSync(Buffer.from(decoder.resultUR().cbor)));
  const signed=bitcoin.Psbt.fromBuffer(raw,{network:bitcoin.networks.regtest});
  verifyReturnedSignedProfessionalPsbt(handoff.unsignedPsbtBase64,signed.toBase64(),handoff.psbtSha256);
+ // Verify Jade's ECDSA signature, not merely the presence of signature bytes.
+ verifySyntheticSignedPsbt(raw,handoff.unsignedPsbtBase64,handoff.signerPubkeyHex);
  const input=signed.data.inputs[0];
  assert.equal(input.partialSig?.length,1,'One Jade signature required');
  const redeem=Buffer.from(input.redeemScript);
@@ -35,5 +38,5 @@ export function finalizeJadeSignedQrReturn({handoff,frames}) {
  assert.equal(Buffer.from(tx.ins[0].hash).reverse().toString('hex'),handoff.fundingTxid);
  assert.equal(tx.ins[0].index,handoff.vout);
  return Object.freeze({network:'regtest',txid:tx.getId(),rawTransactionHex:tx.toHex(),
-  signedReturnTransportVerified:true,beneficiaryAuthorized:false,broadcast:false,canBroadcast:false});
+  signedReturnTransportVerified:true,signatureCryptographicallyVerified:true,beneficiaryAuthorized:false,broadcast:false,canBroadcast:false});
 }
