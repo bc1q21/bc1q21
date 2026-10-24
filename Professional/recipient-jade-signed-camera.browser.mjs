@@ -4,6 +4,7 @@
 import jsQR from 'jsqr';
 import {URDecoder} from '@ngraveio/bc-ur';
 import {Buffer} from 'buffer';
+import cbor from 'cbor';
 
 export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStatus}){
  if(!video||!canvas||typeof onSignedPsbt!=='function')throw Error('Camera receiver needs video, canvas and signed-PSBT handler');
@@ -31,7 +32,7 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
      status('Scanning signed Jade QR: '+seen.size+' frames');
      if(decoder.isComplete()){
       if(!decoder.isSuccess()||decoder.resultUR().type!=='crypto-psbt')throw Error('Invalid signed QR response');
-      const bytes=Buffer.from(decoder.resultUR().decodeCBOR());
+      const bytes=Buffer.from(cbor.decodeFirstSync(Buffer.from(decoder.resultUR().cbor)));
       if(bytes.length>100000||bytes.subarray(0,5).toString('hex')!=='70736274ff')throw Error('Invalid signed PSBT');
       stop();
       await onSignedPsbt(bytes);
