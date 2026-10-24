@@ -22,7 +22,9 @@ export function renderProfessionalOfflineSigningStep(integration, signingQrSessi
   assert.equal(signingQrSession.signed,false);
   assert.equal(signingQrSession.broadcast,false);
   assert.ok(Array.isArray(signingQrSession.frames)&&signingQrSession.frames.length>0&&signingQrSession.frames.length<=512);
-  for(const frame of signingQrSession.frames)assert.match(frame,/^ur:crypto-psbt\\//i);
+  for(const frame of signingQrSession.frames)assert.ok(typeof frame==='string'&&frame.toLowerCase().startsWith('ur:crypto-psbt/'),'Expected Jade crypto-psbt frame');
+  assert.ok(Array.isArray(signingQrSession.qrImages)&&signingQrSession.qrImages.length===signingQrSession.frames.length,'One QR image per frame required');
+  for(const img of signingQrSession.qrImages)assert.ok(typeof img==='string'&&img.startsWith('data:image/png;base64,')&&img.length<200000,'Expected embedded QR PNG');
  }
  const qrDisplay=signingQrSession===null?'':
   '<section aria-label="Jade unsigned transaction QR frames">'+
