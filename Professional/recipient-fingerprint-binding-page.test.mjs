@@ -43,7 +43,7 @@ test('comparison rejects a binding with changed script or release count',()=>{
 });
 
 function simulateFingerprintClick(html,value) {
- const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(m=>m[1]);
+ const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
  const inline=scripts.find(s=>s.includes('recipientFingerprint')&&s.includes('checkFingerprint'));
  assert.ok(inline,'Fingerprint interaction script must be present');
  const status={textContent:''};
