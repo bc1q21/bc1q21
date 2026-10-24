@@ -11,11 +11,12 @@ const firstDate='2031-01-15';
 const h=deriveJadePublicCltvHandoff({accountXpub,masterFingerprintHex,childIndex:0,locktime:retailDateToCltvTimestamp(firstDate)});
 const published={accountXpub,masterFingerprintHex,firstDate,interval:'month',outputScriptsHex:[h.fundingScriptPubKeyHex]};
 const url='https://example.invalid/gift/'+h.fundingAddress+'?interval=month';
+const locatorMapping={fundingAddress:h.fundingAddress,releaseScriptsHex:[h.fundingScriptPubKeyHex]};
 const binding={network:'regtest',fundingTxid:'ab'.repeat(32),releaseOutputs:[{index:0,vout:0,sats:12345,scriptPubKeyHex:h.fundingScriptPubKeyHex}]};
 
 test('comparison embeds canonical public binding digest without enabling signing',()=>{
  const digest=digestProfessionalGiftBinding(binding);
- const html=renderOptionBRecipientPage(url,published,undefined,binding);
+ const html=renderOptionBRecipientPage(url,published,locatorMapping,binding);
  assert.ok(html.includes('const expected="'+digest+'";'));
  assert.match(html,/Fingerprint matches supplied binding bytes only/);
  assert.match(html,/Fingerprint MISMATCH/);
@@ -29,6 +30,13 @@ test('missing binding never embeds a comparison digest',()=>{
  assert.match(html,/Format valid only/);
 });
 test('invalid or non-regtest bindings fail closed before rendering',()=>{
- assert.throws(()=>renderOptionBRecipientPage(url,published,undefined,{...binding,network:'mainnet'}),/Regtest binding required/);
- assert.throws(()=>renderOptionBRecipientPage(url,published,undefined,{...binding,releaseOutputs:[{...binding.releaseOutputs[0],sats:0}]}),/Valid satoshi amount required/);
+ assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,{...binding,network:'mainnet'}),/Regtest binding required/);
+ assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,{...binding,releaseOutputs:[{...binding.releaseOutputs[0],sats:0}]}),/Valid satoshi amount required/);
+});
+
+test('comparison rejects a binding with changed script or release count',()=>{
+ assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,
+  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],scriptPubKeyHex:'0014'+'00'.repeat(20)}]}),/Binding script differs/);
+ assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,
+  {...binding,releaseOutputs:[]}),/Binding release count differs/);
 });
