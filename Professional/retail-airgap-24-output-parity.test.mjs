@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {HDKey} from '@scure/bip32';
+import {createHmac} from 'node:crypto';
+import {secp256k1} from '@noble/curves/secp256k1';
+import bitcoin from 'bitcoinjs-lib';
 import {deriveJadePublicCltvHandoff} from './jade-xpub-cltv-handoff.mjs';
 import {encodeRetailCltvScript} from './retail-cltv-script-parity.mjs';
 import {createHash} from 'node:crypto';
 
 const xpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZqxDEvpqTnNmMXp2HjinP9Sqakg78';
-const account=HDKey.fromExtendedKey(xpub);
+const account=bitcoin.bip32.fromBase58(xpub);
 const hash160=b=>createHash('ripemd160').update(createHash('sha256').update(b).digest()).digest('hex');
 
 test('24 public Jade-derived CLTV outputs match retail scripts independently',()=>{
