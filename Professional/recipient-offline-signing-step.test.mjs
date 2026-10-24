@@ -39,3 +39,14 @@ test('reviewed Jade QR session renders animated frames and signed-return camera 
  assert.throws(()=>renderProfessionalOfflineSigningStep(base,{...session,network:'bitcoin'}));
  assert.throws(()=>renderProfessionalOfflineSigningStep(base,{...session,broadcast:true}));
 });
+
+
+test('recipient QR camera markup exposes exactly the required mount points',()=>{
+ const session={network:'regtest',verifiedRoundTrip:true,format:'ur:crypto-psbt',signed:false,broadcast:false,
+  frames:['ur:crypto-psbt/1-1/abcd'],qrImages:['data:image/png;base64,AAAA']};
+ const html=renderProfessionalOfflineSigningStep(base,session);
+ for(const id of ['jade-signed-video','jade-signed-canvas','jade-signed-start','jade-signed-stop','jade-signed-status']){
+  assert.equal(html.split('id="'+id+'"').length-1,1,'Expected one '+id+' mount point');
+ }
+ assert.match(html,/id="sign" disabled/);
+});
