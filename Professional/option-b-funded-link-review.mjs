@@ -36,9 +36,9 @@ export async function prepareOptionBFundedLinkReview({
   'Selected signer handoff differs from published release script');
  assert.equal(publicHandoff?.redeemScriptHex,selected.redeemScriptHex,
   'Selected signer handoff differs from published release redeem script');
- const beneficiary=await prepareLocallyVerifiedBeneficiaryReview({
+ // Strip xpub-derivation annotations: the downstream signing boundary accepts\n // only the six explicitly permitted public handoff fields.\n const restrictedPublicHandoff=Object.freeze({\n  version:publicHandoff.version,network:publicHandoff.network,\n  signerPubkeyHex:publicHandoff.signerPubkeyHex,locktime:publicHandoff.locktime,\n  redeemScriptHex:publicHandoff.redeemScriptHex,\n  fundingAddress:publicHandoff.fundingAddress\n });\n const beneficiary=await prepareLocallyVerifiedBeneficiaryReview({
   authorization,port,binding,expectedBindingDigest,releaseIndex,
-  publicHandoff,funding,approvedIntent
+  publicHandoff:restrictedPublicHandoff,funding,approvedIntent
  });
  return Object.freeze({
   network:'regtest',format:'bc1q21-professional-option-b-funded-link-review-v1',
