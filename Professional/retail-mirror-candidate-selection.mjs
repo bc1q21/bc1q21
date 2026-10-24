@@ -2,11 +2,22 @@
 // This verifies chain-observed scripts, not creator identity or Jade key ownership.
 // No fingerprint, mnemonic, signing, broadcasting or network calls here.
 import assert from 'node:assert/strict';
-import {inspectCandidates} from './gift-link-public-candidate.mjs';
 import {verifyPublicRetailSchedule} from './public-retail-schedule-verify.mjs';
 
 export function selectRetailMirrorGiftCandidate({locator,transactions,published,coreTransactions}) {
- const discovery=inspectCandidates(locator,transactions);
+ assert.ok(typeof locator?.fundingAddress==='string','Gift locator required');
+ assert.ok(Array.isArray(transactions)&&transactions.length<=10000,'Bounded address transaction list required');
+ const candidates=[];
+ for(const tx of transactions) {
+  if(!/^[a-f0-9]{64}$/.test(tx?.txid??'')||!Array.isArray(tx.vout))continue;
+  if(!tx.vout.some(o=>o?.scriptpubkey_type==='op_return'))continue;
+  const outputs=tx.vout.filter(o=>Number.isSafeInteger(o?.n)&&o.n>=0&&
+   Number.isSafeInteger(o?.value)&&o.value>0&&
+   /^(?:[a-f0-9]{2})+$/.test(o?.scriptpubkey??''))
+   .map(o=>({vout:o.n,sats:o.value,scriptPubKey:o.scriptpubkey}));
+  if(outputs.length)candidates.push({txid:tx.txid,outputs});
+ }
+ const discovery={candidates,candidateCount:candidates.length};
  const schedule=verifyPublicRetailSchedule(published);
  assert.ok(Array.isArray(coreTransactions),'Independently observed Core transactions required');
  const coreById=new Map();
