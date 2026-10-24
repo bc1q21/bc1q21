@@ -1,96 +1,18 @@
 import test from 'node:test';
-import vm from 'node:vm';
 import assert from 'node:assert/strict';
-import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mjs';
 import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
 import {deriveJadePublicCltvHandoff} from './jade-xpub-cltv-handoff.mjs';
 import {retailDateToCltvTimestamp} from './retail-calendar-cltv.mjs';
 
 const accountXpub='xpub6DEmMYe9YX53jYvrsLgDexWdvPX7t3MRtKtN2VyPBcBQdMLdatwyzkiBSHzaMh7X7jaThREnhz4YmkZqxDEvpqTnNmMXp2HjinP9Sqakg78';
-const masterFingerprintHex='e29ac13c';
-const firstDate='2031-01-15';
-const h=deriveJadePublicCltvHandoff({accountXpub,masterFingerprintHex,childIndex:0,locktime:retailDateToCltvTimestamp(firstDate)});
-const published={accountXpub,masterFingerprintHex,firstDate,interval:'month',outputScriptsHex:[h.fundingScriptPubKeyHex]};
+const h=deriveJadePublicCltvHandoff({accountXpub,masterFingerprintHex:'e29ac13c',childIndex:0,locktime:retailDateToCltvTimestamp('2031-01-15')});
+const published={accountXpub,masterFingerprintHex:'e29ac13c',firstDate:'2031-01-15',interval:'month',outputScriptsHex:[h.fundingScriptPubKeyHex]};
 const url='https://example.invalid/gift/'+h.fundingAddress+'?interval=month';
-const locatorMapping={fundingAddress:h.fundingAddress,releaseScriptsHex:[h.fundingScriptPubKeyHex]};
-const binding={network:'regtest',fundingTxid:'ab'.repeat(32),releaseOutputs:[{index:0,vout:0,sats:12345,scriptPubKeyHex:h.fundingScriptPubKeyHex}]};
-
-test('comparison embeds canonical public binding digest without enabling signing',()=>{
- const digest=digestProfessionalGiftBinding(binding);
- const html=renderOptionBRecipientPage(url,published,locatorMapping,binding);
- assert.ok(html.includes('const expected="'+digest+'";'));
- assert.match(html,/Fingerprint matches supplied binding bytes only/);
- assert.match(html,/Fingerprint MISMATCH/);
- assert.match(html,/Source and funding NOT verified/);
+test('recipient page keeps script-verified dates without asking for a separate fingerprint',()=>{
+ const html=renderOptionBRecipientPage(url,published);
+ assert.match(html,/2031-01-15/);
  assert.match(html,/id="sign" disabled/);
  assert.match(html,/connect-src 'none'/);
-});
-test('missing binding never embeds a comparison digest',()=>{
- const html=renderOptionBRecipientPage(url,published);
- assert.match(html,/const expected=null;/);
- assert.match(html,/Format valid only/);
-});
-test('invalid or non-regtest bindings fail closed before rendering',()=>{
- assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,{...binding,network:'mainnet'}),/Regtest binding required/);
- assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,{...binding,releaseOutputs:[{...binding.releaseOutputs[0],sats:0}]}),/Valid satoshi amount required/);
-});
-
-test('comparison rejects a binding with changed script or release count',()=>{
- assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,
-  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],scriptPubKeyHex:'0014'+'00'.repeat(20)}]}),/Binding script differs/);
- assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,
-  {...binding,releaseOutputs:[]}),/Binding release count differs/);
-});
-
-function simulateFingerprintClick(html,value) {
- const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
- const inline=scripts.find(s=>s.includes('recipientFingerprint')&&s.includes('checkFingerprint'));
- assert.ok(inline,'Fingerprint interaction script must be present');
- const status={textContent:''};
- const input={value};
- let onClick;
- const button={addEventListener:(name,handler)=>{
-  assert.equal(name,'click');onClick=handler;
- }};
- const document={getElementById:(id)=>({
-  recipientFingerprint:input,checkFingerprint:button,fingerprintResult:status
- })[id]};
- vm.runInNewContext(inline,{document},{timeout:1000});
- assert.equal(typeof onClick,'function');
- onClick();
- return status.textContent;
-}
-
-test('actual browser click compares matching and mismatched recipient entry',()=>{
- const digest=digestProfessionalGiftBinding(binding);
- const html=renderOptionBRecipientPage(url,published,locatorMapping,binding);
- assert.match(simulateFingerprintClick(html,digest),/matches supplied binding bytes only/);
- assert.match(simulateFingerprintClick(html,'00'.repeat(32)),/MISMATCH/);
- assert.match(simulateFingerprintClick(html,'invalid'),/Invalid fingerprint format/);
- assert.match(simulateFingerprintClick(html,digest.match(/.{8}/g).join(' ')),/matches supplied binding bytes only/);
-});
-test('actual browser click without binding cannot claim a match',()=>{
- const html=renderOptionBRecipientPage(url,published);
- assert.match(simulateFingerprintClick(html,digestProfessionalGiftBinding(binding)),/Format valid only/);
- assert.doesNotMatch(simulateFingerprintClick(html,digestProfessionalGiftBinding(binding)),/matches supplied binding bytes/);
-});
-
-test('recipient-held fingerprint detects altered funding transaction or amount even when scripts and dates still match',()=>{
- const held=digestProfessionalGiftBinding(binding);
- for(const changed of [
-  {...binding,fundingTxid:'cd'.repeat(32)},
-  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],sats:binding.releaseOutputs[0].sats+1}]},
-  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],vout:1}]}
- ]) {
-  const html=renderOptionBRecipientPage(url,published,locatorMapping,changed);
-  assert.match(simulateFingerprintClick(html,held),/MISMATCH/);
-  assert.doesNotMatch(simulateFingerprintClick(html,held),/matches supplied binding bytes only/);
- }
-});
-test('malformed or absent independent recipient entry never yields a match',()=>{
- const html=renderOptionBRecipientPage(url,published,locatorMapping,binding);
- const digest=digestProfessionalGiftBinding(binding);
- for(const entered of [digest.toUpperCase(),digest.slice(0,63),digest+' ',digest+'\\n','']) {
-  assert.match(simulateFingerprintClick(html,entered),/Invalid fingerprint format/);
- }
+ assert.doesNotMatch(html,/recipientFingerprint|checkFingerprint|64-character gift fingerprint|independently retained fingerprint|Check your gift fingerprint/i);
+ assert.doesNotMatch(html,/<textarea\\b|type="password"/i);
 });
