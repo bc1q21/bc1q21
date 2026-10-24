@@ -74,3 +74,23 @@ test('actual browser click without binding cannot claim a match',()=>{
  assert.match(simulateFingerprintClick(html,digestProfessionalGiftBinding(binding)),/Format valid only/);
  assert.doesNotMatch(simulateFingerprintClick(html,digestProfessionalGiftBinding(binding)),/matches supplied binding bytes/);
 });
+
+test('recipient-held fingerprint detects altered funding transaction or amount even when scripts and dates still match',()=>{
+ const held=digestProfessionalGiftBinding(binding);
+ for(const changed of [
+  {...binding,fundingTxid:'cd'.repeat(32)},
+  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],sats:binding.releaseOutputs[0].sats+1}]},
+  {...binding,releaseOutputs:[{...binding.releaseOutputs[0],vout:1}]}
+ ]) {
+  const html=renderOptionBRecipientPage(url,published,locatorMapping,changed);
+  assert.match(simulateFingerprintClick(html,held),/MISMATCH/);
+  assert.doesNotMatch(simulateFingerprintClick(html,held),/matches supplied binding bytes only/);
+ }
+});
+test('malformed or absent independent recipient entry never yields a match',()=>{
+ const html=renderOptionBRecipientPage(url,published,locatorMapping,binding);
+ const digest=digestProfessionalGiftBinding(binding);
+ for(const entered of [digest.toUpperCase(),digest.slice(0,63),digest+' ',digest+'\\n','']) {
+  assert.match(simulateFingerprintClick(html,entered),/Invalid fingerprint format/);
+ }
+});
