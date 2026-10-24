@@ -10,6 +10,7 @@ import {deriveJadePublicCltvHandoff} from './jade-xpub-cltv-handoff.mjs';
 import {retailDateToCltvTimestamp} from './retail-calendar-cltv.mjs';
 import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mjs';
 import {prepareRecipientHeldOptionBReview} from './recipient-held-option-b-review.mjs';
+import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -54,6 +55,19 @@ const binding={network:'regtest',fundingTxid:txid,releaseOutputs:handoffs.map((h
 })};
 assert.equal(new Set(binding.releaseOutputs.map(o=>o.vout)).size,2);
 const digest=digestProfessionalGiftBinding(binding);
+// Render the recipient's static page from the SAME funding binding and
+// independently derived public schedule used by the live Core review.
+const giftUrl='https://example.invalid/gift/'+'bcrt1q'+'q'.repeat(38)+'?interval=month';
+const published={accountXpub,masterFingerprintHex,firstDate:dates[0],interval:'month',
+ outputScriptsHex:handoffs.map(h=>h.fundingScriptPubKeyHex)};
+const locatorMapping={fundingAddress:'bcrt1q'+'q'.repeat(38),
+ releaseScriptsHex:handoffs.map(h=>h.fundingScriptPubKeyHex)};
+const rendered=renderOptionBRecipientPage(giftUrl,published,locatorMapping,binding);
+assert.ok(rendered.includes('const expected="'+digest+'";'),
+ 'Recipient page must compare the exact digest of Core-funded outputs');
+for(const date of dates)assert.ok(rendered.includes('<td>'+date+'</td>'));
+assert.match(rendered,/id="sign" disabled/);
+assert.match(rendered,/Source and funding NOT verified/);
 const destination=bitcoin.payments.p2wpkh({pubkey:Buffer.from(secp256k1.getPublicKey(
  Buffer.from([...Buffer.alloc(31),10]),true)),network:bitcoin.networks.regtest});
 const selected=binding.releaseOutputs[0];
