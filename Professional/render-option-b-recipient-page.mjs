@@ -91,8 +91,19 @@ export function renderOptionBRecipientPage(url,published,commitment,verifiedFund
  // signing operations. Do not persist the value or send it over a network.
  // Optional comparison is against caller-supplied regtest binding bytes only.
  // This page does not establish the source, chain state, or identity.
- const expectedDigest=verifiedFundingBinding===undefined?null:
-  digestProfessionalGiftBinding(verifiedFundingBinding);
+ let expectedDigest=null;
+ if(verifiedFundingBinding!==undefined) {
+  if(!mapped) throw Error('Verified binding requires an explicit gift locator mapping');
+  if(verifiedFundingBinding.releaseOutputs?.length!==mapped.releaseCount)
+   throw Error('Binding release count differs from verified public schedule');
+  for(const release of mapped.releases) {
+   const bound=verifiedFundingBinding.releaseOutputs[release.index];
+   if(bound?.index!==release.index||
+      bound?.scriptPubKeyHex!==release.fundingScriptPubKeyHex)
+    throw Error('Binding script differs from verified public schedule');
+  }
+  expectedDigest=digestProfessionalGiftBinding(verifiedFundingBinding);
+ }
  const fingerprintScript='<script>(function(){'+
   'const input=document.getElementById("recipientFingerprint");'+
   'const button=document.getElementById("checkFingerprint");'+
