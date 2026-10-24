@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function renderProfessionalOfflineSigningStep(integration) {
+export function renderProfessionalOfflineSigningStep(integration, signingQrSession=null) {
  assert.ok(integration&&integration.format==='bc1q21-professional-recipient-integration-v1',
   'Verified Professional integration model required');
  assert.equal(integration.network,'regtest','Regtest only');
@@ -13,6 +13,22 @@ export function renderProfessionalOfflineSigningStep(integration) {
  assert.equal(integration.canBroadcast,false,'Broadcast permission must not be inferred from a gift link');
  assert.ok(Array.isArray(integration.blockers),'Release blockers required');
  const reasons=integration.blockers.map(x=>'<li>'+esc(x)+'</li>').join('');
+ // A reviewed QR session may be displayed without granting page-level signing
+ // or broadcast authority. Never accept frames from gift-link query parameters.
+ if(signingQrSession!==null){
+  assert.equal(signingQrSession.network,'regtest');
+  assert.equal(signingQrSession.verifiedRoundTrip,true);
+  assert.equal(signingQrSession.format,'ur:crypto-psbt');
+  assert.equal(signingQrSession.signed,false);
+  assert.equal(signingQrSession.broadcast,false);
+  assert.ok(Array.isArray(signingQrSession.frames)&&signingQrSession.frames.length>0&&signingQrSession.frames.length<=512);
+  for(const frame of signingQrSession.frames)assert.match(frame,/^ur:crypto-psbt\\//i);
+ }
+ const qrDisplay=signingQrSession===null?'':
+  '<section aria-label="Jade unsigned transaction QR frames">'+
+  '<p>Show these unsigned transaction QR frames to Jade Plus. Scan the signed QR response back into Professional.</p>'+
+  '<output id="jade-unsigned-qr" data-frame-count="'+signingQrSession.frames.length+'" data-psbt-sha256="'+esc(signingQrSession.psbtSha256)+'"></output>'+
+  '<script type="application/json" id="jade-unsigned-qr-frames">'+JSON.stringify(signingQrSession.frames)+'<\\/script></section>';
  return '<section aria-labelledby="offline-signing-title">'+
  '<h2 id="offline-signing-title">Release Bitcoin using your offline wallet</h2>'+
  '<p>Review the gift and release details here. Your recovery words stay on your offline hardware wallet; never enter them into this website.</p>'+
@@ -20,9 +36,10 @@ export function renderProfessionalOfflineSigningStep(integration) {
  '<li>After independent verification and approval, display the unsigned transaction QR to Jade.</li>'+
  '<li>Review and approve on Jade, then scan its signed QR return.</li>'+
  '<li>Verify the signed transaction before any separately authorized broadcast.</li></ol>'+
- '<p role="status">Offline QR signing is not available for this gift yet.</p>'+
+ (signingQrSession===null?'<p role="status">Offline QR signing is not available for this gift yet.</p>':'<p role="status">Verified unsigned QR frames prepared for offline Jade signing. No Bitcoin broadcast.</p>')+
  '<button id="sign" disabled aria-disabled="true" type="button">Prepare offline signing QR</button>'+
- '<details><summary>Why is release unavailable?</summary><ul>'+reasons+'</ul></details>'+
+ qrDisplay+
+ '<details><summary>Why is release unavailable?</summary><ul>'+reasons+'</ul></details'+ '>'+
  '<p><small>Professional regtest prototype only. No transaction is signed or broadcast by this page.</small></p>'+
  '</section>';
 }
