@@ -9,7 +9,7 @@ import {secp256k1} from '@noble/curves/secp256k1';
 import {deriveJadePublicCltvHandoff} from './jade-xpub-cltv-handoff.mjs';
 import {retailDateToCltvTimestamp} from './retail-calendar-cltv.mjs';
 import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mjs';
-import {prepareOptionBFundedLinkReview} from './option-b-funded-link-review.mjs';
+import {prepareRecipientHeldOptionBReview} from './recipient-held-option-b-review.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -65,17 +65,21 @@ const approvedIntent={destinationScriptHex:funding.destinationScriptHex,
  expectedSats:selected.sats,locktime:handoffs[0].locktime,
  signerPubkeyHex:handoffs[0].signerPubkeyHex};
 const fundingAddress='bcrt1q'+'q'.repeat(38);
-const result=await prepareOptionBFundedLinkReview({
+const result=await prepareRecipientHeldOptionBReview({
  giftUrl:'https://example.invalid/gift/'+fundingAddress+'?interval=month',
  published:{accountXpub,masterFingerprintHex,firstDate:dates[0],interval:'month',
   outputScriptsHex:handoffs.map(h=>h.fundingScriptPubKeyHex)},
  locatorMapping:{fundingAddress,releaseScriptsHex:handoffs.map(h=>h.fundingScriptPubKeyHex)},
- binding,expectedBindingDigest:digest,authorization,port,releaseIndex:0,
+ binding,recipientFingerprint:digest,
+ recipientAttestation:{independentChannel:true,recipientEnteredFingerprint:true},
+ authorization,port,releaseIndex:0,
  publicHandoff:handoffs[0],funding,approvedIntent
 });
 assert.deepEqual(result.publishedReleases.map(r=>r.date),dates);
 assert.equal(result.verifiedReleaseCount,2);
 assert.equal(result.coreFundingVerifiedAtReviewCreation,true);
+assert.equal(result.recipientFingerprintCompared,true);
+assert.equal(result.independentChannelAcknowledged,true);
 assert.equal(result.creatorAuthenticated,false);
 assert.equal(result.recipientCommitmentProvenanceVerified,false);
 const review=result.beneficiary;
@@ -86,4 +90,4 @@ assert.equal(qr.frames.length,8);
 assert.ok(qr.frames.every(f=>f.startsWith('ur:crypto-psbt/')));
 assert.equal(qr.signed,false);assert.equal(qr.broadcast,false);
 await assert.rejects(review.exportQrFrames(),/already consumed/);
-console.log('PASS: genuine two-output funded Core regtest Option B link -> full-output checks -> review -> one-use unsigned QR. No spend broadcast. Creator-to-recipient independent authentication NOT tested.');
+console.log('PASS: genuine two-output funded Core regtest Option B link -> full-output checks -> review -> one-use unsigned QR. No spend broadcast. Recipient acknowledgement simulated; creator identity and delivery provenance NOT verified.');
