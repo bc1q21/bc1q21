@@ -28,3 +28,20 @@ test('offline audit rejects forged approval, PSBT change, mismatched funding and
   {...m,vout:5},{...m,nextBlockHeight:500},{...m,feeSats:1001}
  ]) assert.throws(()=>auditSameGiftUnsignedHandoff(changed));
 });
+
+test('air-gap audit rejects altered funding value, locking script and PSBT prevout bytes',()=>{
+ const changedAmount={...m,inputSats:12001,feeSats:1001};
+ assert.throws(()=>auditSameGiftUnsignedHandoff(changedAmount));
+ const alteredPrev=new bitcoin.Transaction();
+ alteredPrev.version=2;alteredPrev.addInput(Buffer.alloc(32,3),0);
+ alteredPrev.addOutput(Buffer.from('a914'+'11'.repeat(20)+'87','hex'),12000);
+ const changedPsbt=new bitcoin.Psbt({network:bitcoin.networks.regtest});
+ changedPsbt.setVersion(2);changedPsbt.setLocktime(500);
+ changedPsbt.addInput({hash:prev.getId(),index:0,sequence:0xfffffffe,
+  nonWitnessUtxo:alteredPrev.toBuffer(),redeemScript:redeem});
+ changedPsbt.addOutput({script:Buffer.from(m.destinationScriptHex,'hex'),value:11000});
+ const b64=changedPsbt.toBase64();
+ const tampered={...m,unsignedPsbtBase64:b64,
+  psbtSha256:createHash('sha256').update(Buffer.from(b64,'base64')).digest('hex')};
+ assert.throws(()=>auditSameGiftUnsignedHandoff(tampered));
+});
