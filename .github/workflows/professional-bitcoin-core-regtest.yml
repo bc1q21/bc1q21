@@ -8,6 +8,7 @@ on:
       - 'Professional/bitcoin-core-regtest-acceptance.mjs'
       - 'Professional/integrated-public-regtest-acceptance.mjs'
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
+      - 'Professional/option-b-two-funded-core-acceptance.mjs'
       - '.github/workflows/professional-bitcoin-core-regtest.yml'
 permissions:
   contents: read
@@ -46,3 +47,6 @@ jobs:
 
       - name: Execute genuine calendar-timestamp CLTV regtest acceptance
         run: node Professional/integrated-calendar-timestamp-core-acceptance.mjs
+
+      - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
+        run: node Professional/option-b-two-funded-core-acceptance.mjs
