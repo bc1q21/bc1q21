@@ -59,7 +59,21 @@ export function renderOptionBRecipientPage(url,published,commitment) {
   'or authorize Bitcoin spending.</p>'+
   '<p>This offline schedule page cannot check the fingerprint, confirm '+
   'funding, approve a release, or generate a signing QR.</p></section>';
- const signingSection=recipientFingerprintGuide+renderProfessionalOfflineSigningStep(integration);
+ // A static page has no trusted funding binding to compare against.
+ // The recipient may type a fingerprint for local format checks only.
+ // Never display a false "verified" state or unlock signing here.
+ const fingerprintEntry='<section aria-label="Recipient fingerprint entry">'+
+  '<h2>Enter your independently retained fingerprint</h2>'+
+  '<label for="recipientFingerprint">64-character gift fingerprint</label>'+
+  '<input id="recipientFingerprint" type="text" inputmode="text" '+
+  'autocomplete="off" autocapitalize="off" spellcheck="false" '+
+  'maxlength="71" size="48" aria-describedby="fingerprintResult">'+
+  '<div class="actions"><button id="checkFingerprint" type="button">Check format only</button></div>'+
+  '<p id="fingerprintResult" role="status">Not verified. This offline page has no authenticated funding binding for comparison.</p>'+
+  '<p class="muted">A correctly formatted fingerprint is not a match, proof of creator identity, or permission to sign.</p>'+
+  '</section>';
+ const signingSection=recipientFingerprintGuide+fingerprintEntry+
+  renderProfessionalOfflineSigningStep(integration);
  const signingStart=html.indexOf('<section><h2>Release payments — offline signer</h2>');
  const signingEnd=html.indexOf('</section>',signingStart);
  if(signingStart<0||signingEnd<0) throw Error('Recipient signing section missing');
@@ -72,5 +86,19 @@ export function renderOptionBRecipientPage(url,published,commitment) {
  // trusting a different address supplied later in a viewer's query string.
  html=html.replace("const value=params.get('a')||params.get('address')||'';",
   'const value='+JSON.stringify(view.fundingAddress)+';');
+ // Format-only input is intentionally disconnected from all funding and
+ // signing operations. Do not persist the value or send it over a network.
+ const fingerprintScript='<script>(function(){'+
+  'const input=document.getElementById("recipientFingerprint");'+
+  'const button=document.getElementById("checkFingerprint");'+
+  'const result=document.getElementById("fingerprintResult");'+
+  'button.addEventListener("click",function(){'+
+  'const value=input.value;'+
+  'const valid=/^[a-f0-9]{64}$/.test(value)||/^(?:[a-f0-9]{8} ){7}[a-f0-9]{8}$/.test(value);'+
+  'result.textContent=valid?'+
+  '"Format valid only. NOT verified against gift funding; signing remains disabled.":'+
+  '"Invalid fingerprint format. Enter all 64 lowercase hexadecimal characters.";' +
+  '});})();</script>';
+ html=html.replace('</body>',fingerprintScript+'</body>');
  return html;
 }
