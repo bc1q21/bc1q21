@@ -39,7 +39,7 @@ test('Option B gift link -> two bound outputs -> Core fixture -> review -> one-u
   let body='';req.on('data',part=>body+=part);
   req.on('end',()=>{
    const {method,params}=JSON.parse(body);
-   const vout=params[1]??0;
+   const vout=method==='gettxout'?params[1]:0;
    const results={
     getbestblockhash:tip,
     getblockchaininfo:{chain:'regtest',bestblockhash:tip,blocks:110},
@@ -47,8 +47,8 @@ test('Option B gift link -> two bound outputs -> Core fixture -> review -> one-u
      n:r.vout,value:r.sats/1e8,scriptPubKey:{hex:r.scriptPubKeyHex}
     }))},
     getblockheader:params[0]===tip?{hash:tip,height:110,mediantime:2100000000}:{hash:block,confirmations:5},
-    gettxout:{bestblock:tip,confirmations:5,value:0.001,
-     scriptPubKey:{hex:binding.releaseOutputs[vout].scriptPubKeyHex}}
+    gettxout:method==='gettxout'?{bestblock:tip,confirmations:5,value:0.001,
+     scriptPubKey:{hex:binding.releaseOutputs[vout].scriptPubKeyHex}}:null
    };
    assert.ok(Object.hasOwn(results,method),'Unexpected RPC '+method);
    res.writeHead(200,{'content-type':'application/json'});
