@@ -21,8 +21,16 @@ export function checkRetailAirgapReleaseParity({unsignedPsbtBase64,retailIntent}
  const unsignedTx=bitcoin.Transaction.fromBuffer(p.data.globalMap.unsignedTx.toBuffer());
  assert.equal(unsignedTx.locktime,retailIntent.locktime,'Retail release locktime changed');
  assert.ok(input.sequence<0xffffffff,'CLTV input must be non-final');
- assert.equal(p.data.inputs[0]?.redeemScript?.toString('hex'),retailIntent.redeemScriptHex,
-  'Retail CLTV script changed');
+ const prevBytes=p.data.inputs[0]?.nonWitnessUtxo;
+ assert.ok(prevBytes,'Complete legacy funding transaction required');
+ const previous=bitcoin.Transaction.fromBuffer(prevBytes);
+ assert.equal(previous.getId(),retailIntent.fundingTxid,'Funding transaction mismatch');
+ assert.ok(input.index<previous.outs.length,'Funding output missing');
+ assert.equal(previous.outs[input.index].value,retailIntent.inputSats,'Funding amount changed');
+ const redeem=p.data.inputs[0]?.redeemScript;
+ assert.equal(redeem?.toString('hex'),retailIntent.redeemScriptHex,'Retail CLTV script changed');
+ const script=bitcoin.payments.p2sh({redeem:{output:redeem},network:bitcoin.networks.regtest}).output;
+ assert.ok(previous.outs[input.index].script.equals(script),'Funding output CLTV script mismatch');
  assert.ok(!p.data.inputs[0]?.partialSig?.length&&!p.data.inputs[0]?.finalScriptSig,
   'Expected unsigned transaction only');
  return Object.freeze({network:'regtest',retailIntentPreserved:true,
