@@ -1,4 +1,5 @@
 import test from 'node:test';
+import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mjs';
 import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
@@ -39,4 +40,37 @@ test('comparison rejects a binding with changed script or release count',()=>{
   {...binding,releaseOutputs:[{...binding.releaseOutputs[0],scriptPubKeyHex:'0014'+'00'.repeat(20)}]}),/Binding script differs/);
  assert.throws(()=>renderOptionBRecipientPage(url,published,locatorMapping,
   {...binding,releaseOutputs:[]}),/Binding release count differs/);
+});
+
+function simulateFingerprintClick(html,value) {
+ const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(m=>m[1]);
+ const inline=scripts.find(s=>s.includes('recipientFingerprint')&&s.includes('checkFingerprint'));
+ assert.ok(inline,'Fingerprint interaction script must be present');
+ const status={textContent:''};
+ const input={value};
+ let onClick;
+ const button={addEventListener:(name,handler)=>{
+  assert.equal(name,'click');onClick=handler;
+ }};
+ const document={getElementById:(id)=>({
+  recipientFingerprint:input,checkFingerprint:button,fingerprintResult:status
+ })[id]};
+ vm.runInNewContext(inline,{document},{timeout:1000});
+ assert.equal(typeof onClick,'function');
+ onClick();
+ return status.textContent;
+}
+
+test('actual browser click compares matching and mismatched recipient entry',()=>{
+ const digest=digestProfessionalGiftBinding(binding);
+ const html=renderOptionBRecipientPage(url,published,locatorMapping,binding);
+ assert.match(simulateFingerprintClick(html,digest),/matches supplied binding bytes only/);
+ assert.match(simulateFingerprintClick(html,'00'.repeat(32)),/MISMATCH/);
+ assert.match(simulateFingerprintClick(html,'invalid'),/Invalid fingerprint format/);
+ assert.match(simulateFingerprintClick(html,digest.match(/.{8}/g).join(' ')),/matches supplied binding bytes only/);
+});
+test('actual browser click without binding cannot claim a match',()=>{
+ const html=renderOptionBRecipientPage(url,published);
+ assert.match(simulateFingerprintClick(html,digestProfessionalGiftBinding(binding)),/Format valid only/);
+ assert.doesNotMatch(simulateFingerprintClick(html,digestProfessionalGiftBinding(binding)),/matches supplied binding bytes/);
 });
