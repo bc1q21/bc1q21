@@ -5,6 +5,7 @@ import {verifySyntheticSignedPsbt} from './verify-synthetic-signed-psbt.mjs';
 import {verifyReturnedSignedProfessionalPsbt} from './verify-signed-psbt-return.mjs';
 import {createHash} from 'node:crypto';
 import {Buffer} from 'buffer';
+import {finalizeVerifiedProfessionalRelease} from './finalize-verified-release.mjs';
 
 export function attachProfessionalJadeSignedReturn({video,canvas,startButton,stopButton,statusElement,approvedUnsignedPsbtBase64,signerPubkeyHex,onVerifiedSignedPsbt}){
  if(typeof approvedUnsignedPsbtBase64!=='string'||typeof signerPubkeyHex!=='string')throw Error('Reviewed unsigned PSBT and signer required');
@@ -32,4 +33,18 @@ export function attachJadeSignedReturnToRecipientSection({root=document,approved
  const nodes=ids.map(get);
  if(nodes.some(node=>!node))throw Error('Professional recipient Jade camera controls missing');
  return attachProfessionalJadeSignedReturn({video:nodes[0],canvas:nodes[1],startButton:nodes[2],stopButton:nodes[3],statusElement:nodes[4],approvedUnsignedPsbtBase64,signerPubkeyHex,onVerifiedSignedPsbt});
+}
+
+// End-to-end recipient-side signed return -> independent verification ->
+// finalized regtest transaction. No network call and no broadcast permission.
+export function attachJadeFinalizedReleaseToRecipientSection({root=document,approvedUnsignedPsbtBase64,signerPubkeyHex,onFinalizedRelease}){
+ if(typeof onFinalizedRelease!=='function')throw Error('Finalized release handler required');
+ const sha256=createHash('sha256').update(Buffer.from(approvedUnsignedPsbtBase64,'base64')).digest('hex');
+ return attachJadeSignedReturnToRecipientSection({root,approvedUnsignedPsbtBase64,signerPubkeyHex,
+  onVerifiedSignedPsbt:async signed=>{
+   const result=finalizeVerifiedProfessionalRelease(approvedUnsignedPsbtBase64,Buffer.from(signed).toString('base64'),sha256);
+   if(result.network!=='regtest'||result.signatureCryptographicallyVerified!==true||result.finalized!==true||result.broadcast!==false)
+    throw Error('Professional finalized release failed safety checks');
+   await onFinalizedRelease(Object.freeze({...result,canBroadcast:false,beneficiaryAuthorized:false}));
+  }});
 }
