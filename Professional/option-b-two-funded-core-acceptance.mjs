@@ -62,12 +62,11 @@ const published={accountXpub,masterFingerprintHex,firstDate:dates[0],interval:'m
  outputScriptsHex:handoffs.map(h=>h.fundingScriptPubKeyHex)};
 const locatorMapping={fundingAddress:'bcrt1q'+'q'.repeat(38),
  releaseScriptsHex:handoffs.map(h=>h.fundingScriptPubKeyHex)};
-const rendered=renderOptionBRecipientPage(giftUrl,published,locatorMapping,binding);
-assert.ok(rendered.includes('const expected="'+digest+'";'),
- 'Recipient page must compare the exact digest of Core-funded outputs');
+const rendered=renderOptionBRecipientPage(giftUrl,published,locatorMapping);
+assert.doesNotMatch(rendered,/recipientFingerprint|checkFingerprint|64-character gift fingerprint/);
 for(const date of dates)assert.ok(rendered.includes('<td>'+date+'</td>'));
 assert.match(rendered,/id="sign" disabled/);
-assert.match(rendered,/Source and funding NOT verified/);
+assert.match(rendered,/No live funding or Bitcoin spending is established/);
 const destination=bitcoin.payments.p2wpkh({pubkey:Buffer.from(secp256k1.getPublicKey(
  Buffer.from([...Buffer.alloc(31),10]),true)),network:bitcoin.networks.regtest});
 const selected=binding.releaseOutputs[0];
