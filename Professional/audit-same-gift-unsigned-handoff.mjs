@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import bitcoin from 'bitcoinjs-lib';
+import {checkRetailAirgapReleaseParity} from './retail-airgap-release-parity.mjs';
 export function auditSameGiftUnsignedHandoff(m) {
  assert.ok(m&&m.format==='bc1q21-professional-same-gift-unsigned-handoff-v1'&&m.network==='regtest');
  assert.ok(m.publicOnly===true&&m.disposableFixture===true);
@@ -35,6 +36,14 @@ export function auditSameGiftUnsignedHandoff(m) {
  assert.ok(prev.outs[m.vout].script.equals(script),'Funding redeem script mismatch');
  assert.equal(m.inputSats-m.payoutSats,m.feeSats);
  assert.ok(m.feeSats>=0&&m.feeSats<=100000);
+ // The existing same-gift QR fixture must preserve retail's transaction intent.
+ // This is an internal air-gap check, not an additional beneficiary step.
+ checkRetailAirgapReleaseParity({unsignedPsbtBase64:m.unsignedPsbtBase64,retailIntent:{
+  network:'regtest',fundingTxid:m.fundingTxid,fundingVout:m.vout,
+  inputSats:m.inputSats,destinationScriptHex:m.destinationScriptHex,
+  payoutSats:m.payoutSats,feeSats:m.feeSats,locktime:m.locktime,
+  redeemScriptHex:m.redeemScriptHex
+ }});
  return Object.freeze({network:'regtest',fundingTxid:m.fundingTxid,outpoint:m.vout,
   exactUnsignedPsbtVerified:true,creatorAuthenticated:false,recipientAuthenticated:false,
   signedReturnVerified:false,canSign:false,canBroadcast:false});
