@@ -46,6 +46,13 @@ export function renderProfessionalOfflineSigningStep(integration, signingQrSessi
  (signingQrSession===null?'<p role="status">Offline QR signing is not available for this gift yet.</p>':'<p role="status">Verified unsigned QR frames prepared for offline Jade signing. No Bitcoin broadcast.</p>')+
  '<button id="sign" disabled aria-disabled="true" type="button">Prepare offline signing QR</button>'+
  qrDisplay+
+ (signingQrSession===null?'':
+  '<section aria-label="Scan Jade signed transaction"><h3>Scan signed QR from Jade Plus</h3>'+
+  '<video id="jade-signed-video" autoplay muted playsinline style="width:100%;max-width:420px;background:#111"></video>'+
+  '<canvas id="jade-signed-canvas" hidden></canvas>'+
+  '<div><button id="jade-signed-start" type="button">Scan signed Jade QR</button>'+
+  '<button id="jade-signed-stop" type="button" disabled>Stop camera</button></div>'+
+  '<p id="jade-signed-status" role="status">Awaiting signed QR. No Bitcoin broadcast.</p></section>')+
  '<details><summary>Why is release unavailable?</summary><ul>'+reasons+'</ul></details>'+
  '<p><small>Professional regtest prototype only. No transaction is signed or broadcast by this page.</small></p>'+
  '</section>';
