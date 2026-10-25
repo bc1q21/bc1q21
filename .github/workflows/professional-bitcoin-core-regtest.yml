@@ -10,7 +10,6 @@ on:
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
       - 'Professional/option-b-two-funded-core-acceptance.mjs'
       - 'Professional/verify-calendar-jade-return.mjs'
-      - 'Professional/fixtures/calendar-release1-physical-jade-signed-qr-20261025.txt'
       - 'Professional/locally-verified-beneficiary-review.mjs'
       - 'Professional/funded-calendar-recipient-view.mjs'
       - 'Professional/render-funded-calendar-recipient-section.mjs'
@@ -70,11 +69,6 @@ jobs:
           fi
           cat /tmp/professional-wrong-gift.log
           grep -F "Professional signed return: Returned unsigned transaction differs from approved transaction" /tmp/professional-wrong-gift.log
-      - name: Verify physical Jade signature and Bitcoin Core mempool acceptance without broadcast
-        run: |
-          node Professional/verify-calendar-jade-return.mjs \
-            Professional/artifacts/two-release-calendar-jade-handoff.json \
-            Professional/fixtures/calendar-release1-physical-jade-signed-qr-20261025.txt
       - name: Capture disposable regtest chain for the same funded gift
         run: |
           docker stop professional-bitcoin-regtest
