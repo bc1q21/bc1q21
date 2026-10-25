@@ -39,4 +39,14 @@ sandbox.bc1q21ProfessionalVerify = async () => { throw Error('Signature rejected
 await click();
 assert.equal(controls.status.dataset.state, 'fail', 'Verifier exception must fail closed');
 assert.equal(controls.verify.disabled, false, 'Button must recover after error');
-console.log('PASS: Professional diagnostic UI fail-closed behavior; no network or broadcast');
+let resolvePending;
+sandbox.bc1q21ProfessionalVerify = () => new Promise(resolve => { resolvePending = resolve; });
+controls.frames.value = 'ur:crypto-psbt/1-1/before';
+const pending = click();
+controls.frames.value = 'ur:crypto-psbt/1-1/after';
+controls.frames.listeners.input();
+resolvePending({ signatureCryptographicallyVerified: true, transactionMatches: true, broadcast: false });
+await pending;
+assert.equal(controls.status.dataset.state, 'idle', 'Stale verification must not override edited data');
+assert.equal(controls.verify.disabled, false, 'Button must recover after stale result');
+console.log('PASS: Professional diagnostic UI fail-closed and stale-result safeguards; no network or broadcast');
