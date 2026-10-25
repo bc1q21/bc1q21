@@ -80,6 +80,47 @@ try{
  assert.equal(finalizedInBrowser.rawTransactionHex,verified.rawTransactionHex);
  assert.equal(finalizedInBrowser.finalized,true);
  assert.equal(finalizedInBrowser.broadcast,false);
+ // Exercise the actual recipient integration, not merely a test-only callback.
+ await page.evaluate(({unsigned,pubkey})=>{
+  const video=document.getElementById('jade-signed-video');
+  const canvas=document.getElementById('jade-signed-canvas');
+  Object.defineProperty(video,'readyState',{get:()=>4});
+  Object.defineProperty(video,'videoWidth',{get:()=>650});
+  Object.defineProperty(video,'videoHeight',{get:()=>650});
+  video.play=async()=>{};
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage=()=>{};
+  ctx.getImageData=()=>window.__source.getContext('2d').getImageData(0,0,650,650);
+  window.__recipientResult=null;
+  window.__recipientReceiver=window.attachRecipientRelease({
+   root:document,approvedUnsignedPsbtBase64:unsigned,signerPubkeyHex:pubkey,
+   onFinalizedRelease:async result=>{window.__recipientResult=result;}
+  });
+ },{unsigned:handoff.unsignedPsbtBase64,pubkey:handoff.signerPubkeyHex});
+ await page.evaluate(async data=>{
+  const img=new Image();img.src=data;await img.decode();
+  const ctx=window.__source.getContext('2d');ctx.clearRect(0,0,650,650);ctx.drawImage(img,0,0,650,650);
+ },qrImages[0]);
+ await page.locator('#jade-signed-start').click();
+ for(let attempt=0;attempt<5;attempt++){
+  for(const src of qrImages){
+   await page.evaluate(async data=>{
+    const img=new Image();img.src=data;await img.decode();
+    const ctx=window.__source.getContext('2d');ctx.clearRect(0,0,650,650);ctx.drawImage(img,0,0,650,650);
+   },src);
+   await page.waitForTimeout(450);
+   if(await page.evaluate(()=>window.__recipientReceiver.completed))break;
+  }
+  if(await page.evaluate(()=>window.__recipientReceiver.completed))break;
+ }
+ await page.waitForFunction(()=>window.__recipientReceiver.completed,null,{timeout:6000});
+ const recipientResult=await page.evaluate(()=>window.__recipientResult);
+ assert.equal(recipientResult.txid,verified.txid,'Actual recipient handler txid must match independently verified gift');
+ assert.equal(recipientResult.rawTransactionHex,verified.rawTransactionHex);
+ assert.equal(recipientResult.canBroadcast,false);
+ assert.equal(recipientResult.beneficiaryAuthorized,false);
+ assert.equal(recipientResult.broadcast,false);
+ await page.locator('#jade-signed-stop').click();
  // The exact same QR data must NOT count as completed when the verifier rejects it.
  await page.evaluate(()=>{
   const video=document.querySelector('#v'),canvas=document.querySelector('#c');
