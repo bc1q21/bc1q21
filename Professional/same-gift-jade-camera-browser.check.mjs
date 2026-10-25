@@ -1,4 +1,4 @@
-// Browser camera-path regression with seven ORIGINAL Jade signed QR frames.
+// Browser camera-path regression with original Jade signed crypto-psbt QR capture.
 // Synthetic camera transport only; the QR payloads and funded gift are real regtest evidence.
 // No device, keys, remote requests or broadcast.
 import assert from 'node:assert/strict';
@@ -14,7 +14,7 @@ const [handoffPath,framesPath]=process.argv.slice(2);
 assert.ok(handoffPath&&framesPath,'Original unsigned handoff and signed frames required');
 const handoff=JSON.parse(readFileSync(handoffPath,'utf8'));
 const frames=readFileSync(framesPath,'utf8').split(/\r?\n/).map(s=>s.trim()).filter(s=>/^ur:crypto-psbt\//i.test(s));
-assert.equal(frames.length,7,'Original Jade capture must contain seven frames');
+assert.equal(frames.length,19,'Original Jade capture must contain nineteen fountain frames');
 const verified=finalizeJadeSignedQrReturn({handoff,frames});
 const expectedDecoder=new URDecoder();
 for(const frame of frames)expectedDecoder.receivePart(frame);
