@@ -13,7 +13,8 @@
     "@noble/curves": "^1.9.7",
     "buffer": "^6.0.3",
     "@noble/hashes": "^1.8.0",
-    "stream-browserify": "^3.0.0"
+    "stream-browserify": "^3.0.0",
+    "jsqr": "^1.4.0"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",
