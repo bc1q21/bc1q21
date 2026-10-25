@@ -28,6 +28,11 @@ for(const tamper of ['sats','scriptPubKeyHex','vout']){
  if(tamper==='scriptPubKeyHex')output.scriptPubKeyHex='a914'+'00'.repeat(20)+'87';
  assert.throws(()=>verifyProfessionalGiftBindingCommitment(altered,digest),'Tampered '+tamper+' must fail');
 }
+const wrongTx=structuredClone(binding);
+wrongTx.fundingTxid='0'.repeat(64);
+assert.throws(()=>verifyProfessionalGiftBindingCommitment(wrongTx,digest));
+const wrongDigest=(digest[0]==='0'?'1':'0')+digest.slice(1);
+assert.throws(()=>verifyProfessionalGiftBindingCommitment(binding,wrongDigest));
 assert.equal(proof.creatorAuthenticated,false);
 assert.equal(proof.independentCommitmentAuthenticated,false);
 assert.equal(proof.scheduleAuthenticated,false);
