@@ -18,7 +18,7 @@ const sandbox = {
 };
 runInNewContext(script, sandbox);
 const click = () => controls.verify.listeners.click();
-assert.match(controls.status.textContent, /Not verified/);
+assert.equal(controls.status.dataset.state, undefined, 'Initial status must remain unverified');
 controls.frames.value = 'ur:crypto-psbt/1-1/example';
 await click();
 assert.equal(controls.status.dataset.state, 'pass');
