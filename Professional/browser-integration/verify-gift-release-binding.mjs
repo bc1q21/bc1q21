@@ -8,7 +8,7 @@ export function verifyGiftReleaseBinding({gift,release,approvedUnsignedBase64,ex
  if(!gift||!release||typeof approvedUnsignedBase64!=='string')fail('Missing binding data');
  if(typeof gift.fundingAddress!=='string'||!/^([a-zA-Z0-9]{26,90})$/.test(gift.fundingAddress))
   fail('Invalid public gift locator');
- if(!hex64(release.fundingTxid)||!hex64(release.destinationScriptHex)||
+ if(!hex64(release.fundingTxid)||!(typeof release.destinationScriptHex==='string'&&/^(?:[0-9a-f]{2}){1,10000}$/.test(release.destinationScriptHex))||
     !hex64(expectedApprovedSha256))fail('Invalid expected transaction fingerprint');
  if(!Number.isSafeInteger(release.fundingVout)||release.fundingVout<0||
     !Number.isSafeInteger(release.lockHeight)||release.lockHeight<0||
