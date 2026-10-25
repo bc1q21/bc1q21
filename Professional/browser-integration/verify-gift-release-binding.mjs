@@ -1,0 +1,34 @@
+// Professional gift-specific release binding for the isolated regtest prototype.
+// A recipient link is a public locator, never proof of authority to spend.
+import bitcoin from 'bitcoinjs-lib';
+import {sha256} from '@noble/hashes/sha256';
+const fail=message=>{throw Error('Professional gift binding: '+message)};
+const hex64=value=>typeof value==='string'&&/^[0-9a-f]{64}$/.test(value);
+export function verifyGiftReleaseBinding({gift,release,approvedUnsignedBase64,expectedApprovedSha256}){
+ if(!gift||!release||typeof approvedUnsignedBase64!=='string')fail('Missing binding data');
+ if(typeof gift.fundingAddress!=='string'||!/^([a-zA-Z0-9]{26,90})$/.test(gift.fundingAddress))
+  fail('Invalid public gift locator');
+ if(!hex64(release.fundingTxid)||!hex64(release.destinationScriptHex)||
+    !hex64(expectedApprovedSha256))fail('Invalid expected transaction fingerprint');
+ if(!Number.isSafeInteger(release.fundingVout)||release.fundingVout<0||
+    !Number.isSafeInteger(release.lockHeight)||release.lockHeight<0||
+    !Number.isSafeInteger(release.amountSats)||release.amountSats<1)fail('Invalid release parameters');
+ const bytes=Buffer.from(approvedUnsignedBase64,'base64');
+ if(bytes.toString('base64')!==approvedUnsignedBase64||bytes.length>100000)fail('Invalid approved PSBT encoding');
+ if(Buffer.from(sha256(bytes)).toString('hex')!==expectedApprovedSha256)
+  fail('Approved PSBT digest mismatch');
+ let psbt;
+ try{psbt=bitcoin.Psbt.fromBuffer(bytes)}catch{fail('Invalid approved PSBT')}
+ if(psbt.txInputs.length!==1||psbt.txOutputs.length!==1)fail('Unexpected transaction shape');
+ const tx=bitcoin.Transaction.fromBuffer(psbt.data.globalMap.unsignedTx.toBuffer());
+ const input=tx.ins[0],output=tx.outs[0];
+ if(Buffer.from(input.hash).reverse().toString('hex')!==release.fundingTxid||
+    input.index!==release.fundingVout)fail('Selected gift release funding mismatch');
+ if(tx.locktime!==release.lockHeight||input.sequence===0xffffffff)
+  fail('Selected gift release maturity mismatch');
+ if(output.value!==release.amountSats||
+    output.script.toString('hex')!==release.destinationScriptHex)
+  fail('Selected gift release destination or amount mismatch');
+ return Object.freeze({giftLocator:gift.fundingAddress,selectedRelease:release.releaseNumber,
+  transactionBoundToSelectedRelease:true,broadcast:false});
+}
