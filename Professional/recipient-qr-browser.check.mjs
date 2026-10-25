@@ -20,6 +20,7 @@ try{
  assert.equal(await page.locator('#jade-qr-progress').textContent(),'QR frame 1 of 2');
  assert.equal(await page.locator('#jade-unsigned-qr').getAttribute('src'),session.qrImages[0]);
  await page.waitForFunction(()=>document.querySelector('#jade-qr-progress')?.textContent==='QR frame 2 of 2',null,{timeout:5000});
+ assert.equal(await page.locator('#jade-unsigned-qr').getAttribute('src'),session.qrImages[1]);
  await page.locator('#jade-qr-toggle').click();
  assert.equal(await page.locator('#jade-qr-toggle').textContent(),'Resume QR animation');
  const paused=await page.locator('#jade-qr-progress').textContent();
