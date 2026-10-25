@@ -14,6 +14,8 @@ import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
 import {verifyPublicRetailSchedule} from './public-retail-schedule-verify.mjs';
 import {buildFundedCalendarGiftView} from './funded-calendar-recipient-view.mjs';
 import {renderFundedCalendarRecipientSection} from './render-funded-calendar-recipient-section.mjs';
+import {prepareReviewedFundedRecipientQr} from './reviewed-funded-recipient-qr.mjs';
+import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-step.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -151,7 +153,19 @@ assert.equal(review.reviewCompleted(),true);
 const approvedReview=review.review();
 assert.equal(typeof approvedReview.psbtSha256,'string');
 assert.match(approvedReview.psbtSha256,/^[0-9a-f]{64}$/);
-const qr=await review.exportQrFrames({frameCount:8});
+const session=await prepareReviewedFundedRecipientQr({view:recipientView,beneficiary:review,frameCount:8});
+assert.equal(session.frames.length,8);
+assert.equal(session.qrImages.length,8);
+assert.ok(session.qrImages.every(x=>x.startsWith('data:image/png;base64,')));
+const lockedIntegration={format:'bc1q21-professional-recipient-integration-v1',
+ network:'regtest',canSign:false,canBroadcast:false,
+ blockers:['Creator identity and independent fingerprint delivery not established']};
+const approvedSection=renderProfessionalOfflineSigningStep(lockedIntegration,session);
+assert.match(approvedSection,/id="jade-unsigned-qr"/);
+assert.match(approvedSection,/id="jade-signed-start"/);
+assert.match(approvedSection,/id="sign" disabled/);
+assert.doesNotMatch(approvedSection,/seed phrase input|mnemonic input/i);
+const qr={frames:session.frames,signed:session.signed,broadcast:session.broadcast};
 assert.equal(qr.frames.length,8);
 assert.ok(qr.frames.every(f=>f.startsWith('ur:crypto-psbt/')));
 assert.equal(qr.signed,false);assert.equal(qr.broadcast,false);
