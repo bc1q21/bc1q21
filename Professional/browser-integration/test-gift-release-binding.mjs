@@ -10,10 +10,13 @@ assert.ok(approved,'Approved regtest PSBT fixture missing');
 const psbt=bitcoin.Psbt.fromBase64(approved);
 const tx=bitcoin.Transaction.fromBuffer(psbt.data.globalMap.unsignedTx.toBuffer());
 const digest=Buffer.from(sha256(Buffer.from(approved,'base64'))).toString('hex');
+const prev=bitcoin.Transaction.fromBuffer(psbt.data.inputs[0].nonWitnessUtxo);
 const gift={fundingAddress:'bc1q21publicgiftlocator12345678901234567890'};
 const release={releaseNumber:1,fundingTxid:Buffer.from(tx.ins[0].hash).reverse().toString('hex'),
  fundingVout:tx.ins[0].index,lockHeight:tx.locktime,
- amountSats:tx.outs[0].value,destinationScriptHex:tx.outs[0].script.toString('hex')};
+ amountSats:tx.outs[0].value,destinationScriptHex:tx.outs[0].script.toString('hex'),
+ fundingScriptHex:prev.outs[tx.ins[0].index].script.toString('hex'),
+ inputSats:prev.outs[tx.ins[0].index].value};
 const verify=(r=release,g=gift,d=digest)=>verifyGiftReleaseBinding({
  gift:g,release:r,approvedUnsignedBase64:approved,expectedApprovedSha256:d});
 assert.equal(verify().transactionMatchesSuppliedRelease,true);
@@ -22,7 +25,7 @@ assert.equal(verify().fundingUtxoVerified,false);
 assert.equal(verify().signingAuthorized,false);
 for(const [field,value] of [['fundingTxid','00'.repeat(32)],['fundingVout',release.fundingVout+1],
  ['lockHeight',release.lockHeight+1],['amountSats',release.amountSats+1],
- ['destinationScriptHex','6a']]){
+ ['destinationScriptHex','6a'],['fundingScriptHex','6a'],['inputSats',release.inputSats+1]]){
  assert.throws(()=>verify({...release,[field]:value}),/mismatch/,field+' must fail closed');
 }
 assert.throws(()=>verify(release,gift,'00'.repeat(32)),/digest mismatch/);
