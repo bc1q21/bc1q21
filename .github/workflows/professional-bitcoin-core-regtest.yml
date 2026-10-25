@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install test-only libraries
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @noble/curves@1.9.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @noble/curves@1.9.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2
       - name: Start disposable Bitcoin Core regtest (no mainnet network)
         run: |
           docker run -d --name professional-bitcoin-regtest --network host \
@@ -52,5 +52,7 @@ jobs:
       - name: Execute genuine calendar-timestamp CLTV regtest acceptance
         run: node Professional/integrated-calendar-timestamp-core-acceptance.mjs
 
+      - name: Install isolated Chromium
+        run: npx --prefix Professional playwright install chromium
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
         run: node Professional/option-b-two-funded-core-acceptance.mjs
