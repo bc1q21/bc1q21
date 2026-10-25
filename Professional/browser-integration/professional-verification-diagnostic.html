@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bc1q21 Professional — Jade Return Verification (Regtest)</title>
+<style>
+:root{font-family:system-ui,Segoe UI,sans-serif;color-scheme:dark;background:#101827;color:#f4f7fb}
+body{max-width:790px;margin:32px auto;padding:0 20px;line-height:1.5}
+h1{font-size:1.7rem} .muted{color:#bdc8d9}.panel{border:1px solid #47556c;border-radius:12px;padding:20px;margin:20px 0}
+textarea{width:100%;min-height:160px;box-sizing:border-box;background:#0b1220;color:#fff;padding:12px;border:1px solid #77849a;border-radius:8px}
+button,input{font:inherit}button{padding:10px 18px;background:#2d7fe0;color:white;border:0;border-radius:8px;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}#status{padding:14px;border-radius:8px;background:#303b4b;white-space:pre-wrap}
+#status[data-state="pass"]{background:#164a37}#status[data-state="fail"]{background:#61282d}
+small{color:#bfcbd9}</style></head>
+<body><h1>bc1q21 Professional — Jade verification</h1>
+<p class="muted">Isolated disposable regtest fixture. This diagnostic page does not sign, finalize, or broadcast transactions.</p>
+<div class="panel"><h2>Import Jade signed QR frames</h2>
+<p>Import the saved text file from our physical Jade test, or paste <code>UR:CRYPTO-PSBT/...</code> frames below. This diagnostic interface does not replace the previously tested camera page.</p>
+<input id="file" type="file" accept=".txt,text/plain" aria-label="Import QR frames">
+<p><label for="frames">Signed QR frames (one per line)</label></p>
+<textarea id="frames" spellcheck="false" placeholder="UR:CRYPTO-PSBT/1-8/..."></textarea>
+<p><button id="verify" type="button">Verify signed transaction</button></p>
+<div id="status" role="status" aria-live="polite" data-state="idle">Not verified. No transaction has been approved.</div>
+</div><p><small>PASS requires an independently validated Bitcoin signature and an exact match to the approved regtest gift. Importing or scanning frames alone never counts as verification. No private keys or seed words are requested.</small></p>
+<script src="./professional-verifier.bundle.js"></script>
+<script>
+'use strict';
+const status=document.getElementById('status');
+const button=document.getElementById('verify');
+const frames=document.getElementById('frames');
+function show(message,state){status.textContent=message;status.dataset.state=state;}
+document.getElementById('file').addEventListener('change',async event=>{
+ show('Not verified. Imported data must be checked.','idle');
+ const file=event.target.files?.[0];if(!file)return;
+ if(file.size>150000){show('Import rejected: file exceeds 150 KB.','fail');return;}
+ try{frames.value=await file.text();}catch{show('Import failed.','fail');}
+});
+frames.addEventListener('input',()=>show('Not verified. Data changed since last check.','idle'));
+button.addEventListener('click',async()=>{
+ button.disabled=true;
+ show('Verifying Jade signed transaction against approved regtest gift…','idle');
+ try{
+  if(typeof globalThis.bc1q21ProfessionalVerify!=='function')throw Error('Browser verifier bundle is not loaded. Build must pass first.');
+  const lines=frames.value.split(/\r?\n/).map(x=>x.trim()).filter(x=>x && !x.startsWith('#'));
+  const result=await globalThis.bc1q21ProfessionalVerify(lines);
+  if(result?.signatureCryptographicallyVerified!==true || result?.transactionMatches!==true || result?.broadcast!==false)
+   throw Error('Verifier did not confirm all mandatory checks.');
+  show('VERIFIED: Jade signature is cryptographically valid and the transaction matches the approved disposable regtest gift.\nNo transaction was broadcast.','pass');
+ }catch(error){show('NOT VERIFIED: '+String(error?.message||error),'fail');}
+ finally{button.disabled=false;}
+});
+</script></body></html>
