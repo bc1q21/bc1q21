@@ -53,3 +53,23 @@ export function verifyGiftReleaseBinding({gift,release,approvedUnsignedBase64,ex
   transactionMatchesSuppliedRelease:true,
   giftProvenanceVerified:false,fundingUtxoVerified:false,signingAuthorized:false,broadcast:false});
 }
+
+// Caller-supplied UTXO snapshots are useful for consistency checks but cannot
+// authenticate a Bitcoin Core node or prove current chain state on their own.
+export function checkGiftReleaseAgainstUtxoSnapshot({binding,release,snapshot}){
+ if(binding?.transactionMatchesSuppliedRelease!==true||!release||!snapshot)
+  fail('Selected release must match approved PSBT before checking UTXO');
+ if(snapshot.txid!==release.fundingTxid||snapshot.vout!==release.fundingVout)
+  fail('UTXO outpoint mismatch');
+ if(snapshot.confirmed!==true||snapshot.spent!==false)
+  fail('Funding UTXO is unconfirmed, spent or unknown');
+ if(!Number.isSafeInteger(release.inputSats)||release.inputSats<1||
+    snapshot.valueSats!==release.inputSats)
+  fail('UTXO funding value mismatch');
+ if(typeof release.fundingScriptHex!=='string'||
+    snapshot.scriptPubKeyHex!==release.fundingScriptHex)
+  fail('UTXO locking script mismatch');
+ return Object.freeze({utxoSnapshotMatchesSelectedRelease:true,
+  rpcProvenanceVerified:false,chainVerified:false,cltvMaturityVerified:false,
+  signingAuthorized:false,broadcast:false});
+}
