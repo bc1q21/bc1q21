@@ -187,6 +187,13 @@ assert.match(approvedSection,/id="jade-unsigned-qr"/);
 assert.match(approvedSection,/id="jade-signed-start"/);
 assert.match(approvedSection,/id="sign" disabled/);
 assert.doesNotMatch(approvedSection,/seed phrase input|mnemonic input/i);
+// Retain the exact QR handoff already approved and rendered by the browser.
+// A separate offline signing session can display these same unsigned frames.
+writeFileSync('Professional/artifacts/two-release-calendar-unsigned-qr-frames.txt',
+ session.frames.join('\\n')+'\\n');
+writeFileSync('Professional/artifacts/two-release-calendar-recipient-preview.html',
+ '<!doctype html><html><head><meta charset="utf-8"><title>Disposable Professional regtest gift</title></head><body>'+
+ fundedHtml+approvedSection+'</body></html>');
 const browser=await chromium.launch({headless:true});
 try {
  const page=await browser.newPage();
