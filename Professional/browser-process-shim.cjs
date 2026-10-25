@@ -7,4 +7,5 @@ const process = {
   versions: {},
   nextTick(callback, ...args) { queueMicrotask(() => callback(...args)); },
 };
+if (typeof globalThis !== 'undefined' && !globalThis.process) globalThis.process = process;
 module.exports = { process };
