@@ -1,0 +1,20 @@
+{
+  "name": "bc1q21-professional-browser-verifier",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild browser-verifier-entry.mjs --bundle --platform=browser --format=iife --target=es2022 --outfile=professional-verifier.bundle.js"
+  },
+  "dependencies": {
+    "@ngraveio/bc-ur": "^1.1.13",
+    "cbor": "^10.0.0",
+    "bitcoinjs-lib": "^6.1.7",
+    "@noble/curves": "^1.9.7",
+    "buffer": "^6.0.3",
+    "@noble/hashes": "^1.8.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
