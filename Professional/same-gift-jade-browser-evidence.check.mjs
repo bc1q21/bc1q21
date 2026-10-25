@@ -37,7 +37,8 @@ const integration={format:'bc1q21-professional-recipient-integration-v1',network
 const browser=await chromium.launch({headless:true});
 try{
  const page=await browser.newPage();
- const errors=[];
+ const errors=[],requests=[];
+ page.on('request',request=>requests.push(request.url()));
  page.on('pageerror',error=>errors.push(error.message));
  await page.setContent('<!doctype html><html><body>'+renderProfessionalOfflineSigningStep(integration,session)+'</body></html>');
  assert.equal(await page.locator('#sign').isDisabled(),true);
@@ -47,6 +48,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('#jade-qr-progress')?.textContent==='QR frame 2 of 32',null,{timeout:5000});
  assert.equal(await page.locator('#jade-unsigned-qr').getAttribute('src'),session.qrImages[1]);
  assert.deepEqual(errors,[]);
+ assert.deepEqual(requests,[],'Offline recipient QR display must not make network requests');
  console.log('PASS_SAME_GIFT_BROWSER_UNSIGNED_QR_AND_CAPTURED_JADE_SIGNATURE',JSON.stringify({
   txid:finalized.txid,frames:session.frames.length,signedFrames:signedFrames.length,
   signatureVerified:true,broadcast:false,beneficiaryAuthorized:false
