@@ -19,6 +19,7 @@ try{
  assert.equal(await page.locator('#jade-signed-start').count(),1);
  assert.equal(await page.locator('#jade-qr-progress').textContent(),'QR frame 1 of 2');
  assert.equal(await page.locator('#jade-unsigned-qr').getAttribute('src'),session.qrImages[0]);
+ assert.equal(await page.locator('#jade-unsigned-qr').evaluate(img=>img.complete&&img.naturalWidth>0),true,'Approved QR image must decode in Chromium');
  await page.waitForFunction(()=>document.querySelector('#jade-qr-progress')?.textContent==='QR frame 2 of 2',null,{timeout:5000});
  assert.equal(await page.locator('#jade-unsigned-qr').getAttribute('src'),session.qrImages[1]);
  await page.locator('#jade-qr-toggle').click();
