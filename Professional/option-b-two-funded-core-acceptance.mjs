@@ -21,6 +21,7 @@ import {readFileSync} from 'node:fs';
 import {URDecoder} from '@ngraveio/bc-ur';
 import cbor from 'cbor';
 import {verifyReturnedSignedProfessionalPsbt} from './verify-signed-psbt-return.mjs';
+import {prepareApprovedProfessionalRelease} from './approved-release-gate.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -204,6 +205,6 @@ for(const frame of recorded)returnedDecoder.receivePart(frame);
 assert.ok(returnedDecoder.isComplete()&&returnedDecoder.isSuccess());
 const unrelatedSigned=Buffer.from(cbor.decodeFirstSync(Buffer.from(returnedDecoder.resultUR().cbor))).toString('base64');
 assert.throws(()=>verifyReturnedSignedProfessionalPsbt(
- review.review().unsignedPsbtBase64,unrelatedSigned,approvedReview.psbtSha256));
+ prepareApprovedProfessionalRelease(handoffs[0],funding,approvedIntent).unsignedPsbtBase64,unrelatedSigned,approvedReview.psbtSha256));
 await assert.rejects(review.exportQrFrames(),/already consumed/);
 console.log('PASS: genuine two-output funded Core regtest Option B link -> full-output checks -> review -> one-use unsigned QR. No spend broadcast. Recipient acknowledgement simulated; creator identity and delivery provenance NOT verified.');
