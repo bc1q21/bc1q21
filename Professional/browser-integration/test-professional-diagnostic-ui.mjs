@@ -9,14 +9,17 @@ function element() {
   return { value: '', disabled: false, dataset: {}, textContent: '', files: [],
     listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } };
 }
-const controls = Object.fromEntries(['status', 'verify', 'frames', 'file', 'jade-start', 'jade-stop', 'jade-video', 'jade-canvas'].map(k => [k, element()]));
+const controls = Object.fromEntries(['status', 'verify', 'frames', 'file', 'jade-start', 'jade-stop', 'jade-video', 'jade-canvas', 'gift-locator'].map(k => [k, element()]));
 const sandbox = {
   document: { getElementById: k => controls[k] },
+  location: { search: '?a=bc1q21testpubliclocator123456789012345' },
+  URLSearchParams,
   bc1q21ProfessionalVerify: async () => ({
     signatureCryptographicallyVerified: true, transactionMatches: true, broadcast: false
   })
 };
 runInNewContext(script, sandbox);
+assert.match(controls['gift-locator'].textContent,/unverified/,'Gift locator must never imply transaction binding');
 const click = () => controls.verify.listeners.click();
 assert.equal(controls.status.dataset.state, undefined, 'Initial status must remain unverified');
 controls.frames.value = 'ur:crypto-psbt/1-1/example';
