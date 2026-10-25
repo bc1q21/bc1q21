@@ -56,9 +56,18 @@ jobs:
         run: npx --prefix Professional playwright install chromium
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
         run: node Professional/option-b-two-funded-core-acceptance.mjs
+      - name: Capture disposable regtest chain for the same funded gift
+        run: |
+          docker stop professional-bitcoin-regtest
+          mkdir -p Professional/artifacts/calendar-regtest-chain
+          docker cp professional-bitcoin-regtest:/home/bitcoin/.bitcoin/regtest/. Professional/artifacts/calendar-regtest-chain/
+          test -d Professional/artifacts/calendar-regtest-chain/blocks
+          test -d Professional/artifacts/calendar-regtest-chain/chainstate
       - name: Save public calendar handoff
         uses: actions/upload-artifact@v4
         with:
           name: professional-calendar-regtest-public-handoff
-          path: Professional/artifacts/two-release-calendar-jade-handoff.json
+          path: |
+            Professional/artifacts/two-release-calendar-jade-handoff.json
+            Professional/artifacts/calendar-regtest-chain/
           retention-days: 7
