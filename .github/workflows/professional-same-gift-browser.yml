@@ -4,6 +4,7 @@ on:
     branches: [professional/isolated-release-prototype]
     paths:
       - 'Professional/same-gift-jade-browser-evidence.check.mjs'
+      - 'Professional/same-gift-jade-camera-browser.check.mjs'
       - '.github/workflows/professional-same-gift-browser.yml'
   workflow_dispatch:
 permissions:
@@ -21,7 +22,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install test-only dependencies
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2 esbuild@0.25.12 jsqr@1.4.0
       - name: Recover previously verified same-gift unsigned public evidence
         env:
           GH_TOKEN: ${{ github.token }}
@@ -32,3 +33,5 @@ jobs:
         run: npx --prefix Professional playwright install chromium
       - name: Browser-test exact same-gift unsigned QR and captured Jade signature
         run: node Professional/same-gift-jade-browser-evidence.check.mjs "$RUNNER_TEMP/previous/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
+      - name: Decode seven real Jade QR frames in browser camera receiver
+        run: node Professional/same-gift-jade-camera-browser.check.mjs "$RUNNER_TEMP/previous/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
