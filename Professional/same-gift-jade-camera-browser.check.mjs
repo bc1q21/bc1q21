@@ -33,7 +33,7 @@ try{
  const errors=[],requests=[];
  page.on('pageerror',e=>errors.push(e.message));
  page.on('request',r=>requests.push(r.url()));
- await page.setContent('<!doctype html><html><body><video id="v"></video><canvas id="c"></canvas><p id="status"></p></body></html>');
+ await page.setContent('<!doctype html><html><body><video id="v"></video><canvas id="c"></canvas><p id="status"></p><video id="jade-signed-video"></video><canvas id="jade-signed-canvas"></canvas><button id="jade-signed-start">Scan</button><button id="jade-signed-stop">Stop</button><p id="jade-signed-status"></p></body></html>');
  await page.addScriptTag({content:bundle.outputFiles[0].text});
  await page.evaluate(()=>{
   const video=document.querySelector('#v'),canvas=document.querySelector('#c');
