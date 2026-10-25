@@ -35,6 +35,9 @@ try{
  page.on('request',r=>requests.push(r.url()));
  await page.setContent('<!doctype html><html><body><video id="v"></video><canvas id="c"></canvas><p id="status"></p><video id="jade-signed-video"></video><canvas id="jade-signed-canvas"></canvas><button id="jade-signed-start">Scan</button><button id="jade-signed-stop">Stop</button><p id="jade-signed-status"></p></body></html>');
  await page.addScriptTag({content:bundle.outputFiles[0].text});
+ await page.waitForTimeout(50);
+ const injectedErrors=await page.evaluate(()=>({receiver:typeof window.makeJadeReceiver,attach:typeof window.attachRecipientRelease,verify:typeof window.verifyJadeReturn}));
+ if(injectedErrors.receiver!=='function')throw Error('Camera bundle failed to initialize; browser page errors: '+JSON.stringify(errors)+'; handlers: '+JSON.stringify(injectedErrors));
  const browserErrors=await page.evaluate(()=>({receiver:typeof window.makeJadeReceiver,attach:typeof window.attachRecipientRelease,verify:typeof window.verifyJadeReturn}));
  assert.deepEqual(browserErrors,{receiver:'function',attach:'function',verify:'function'},'Browser entry must initialize its exposed handlers');
  await page.evaluate(()=>{
