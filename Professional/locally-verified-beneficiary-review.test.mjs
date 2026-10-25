@@ -178,6 +178,8 @@ test('trusted QR export is single-use and only follows successful finalized revi
   await assert.rejects(flow.exportQrFrames(),/Successful beneficiary review required/);
   flow.approve({acknowledged:true,confirmedDigest:flow.review().psbtSha256});
   await flow.finalizeReview();
+  const recovered=await flow.exportQrFrames({frameCount:8});
+  assert.equal(recovered.frames.length,8);
   await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
  });
  await withCore({},async port=>{
@@ -271,7 +273,7 @@ test('failed beneficiary review cannot export QR even when supplied readiness fl
   await assert.rejects(flow.exportQrFrames({
    approvalRecorded:true,reviewFinalized:true,canExportSigningQr:true
   }),/Successful beneficiary review required/);
-  await assert.rejects(flow.exportQrFrames(),/QR export already consumed/);
+  await assert.rejects(flow.exportQrFrames(),/Successful beneficiary review required/);
  });
 });
 
