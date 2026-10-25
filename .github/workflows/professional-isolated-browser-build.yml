@@ -31,6 +31,9 @@ jobs:
       - name: Test Professional verification interface failure safeguards
         working-directory: Professional/browser-integration
         run: node test-professional-diagnostic-ui.mjs
+      - name: Verify selected gift release transaction binding
+        working-directory: Professional/browser-integration
+        run: node test-gift-release-binding.mjs
       - name: Install Chromium for real browser regression
         working-directory: Professional/browser-integration
         run: npx playwright install chromium
