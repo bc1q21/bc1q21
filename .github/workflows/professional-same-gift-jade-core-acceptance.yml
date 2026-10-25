@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install pinned public-only dependencies
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2
       - name: Download exact previously verified funded regtest snapshot
         env:
           GH_TOKEN: ${{ github.token }}
