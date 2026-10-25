@@ -28,6 +28,7 @@ try{
   const qrImages=await Promise.all(images.map(src=>new Promise((resolve,reject)=>{
    const image=new Image();image.onload=()=>resolve(image);image.onerror=reject;image.src=src;
   })));
+  window.__sourceCanvas=canvas;
   const stream=canvas.captureStream(15);
   Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{
    getUserMedia:async()=>stream
@@ -57,7 +58,7 @@ try{
  assert.equal(await page.locator('#jade-stop').isDisabled(),true,
   'Late camera permission must not restart scanning');
  await page.evaluate(()=>{
-  navigator.mediaDevices.getUserMedia=async()=>document.querySelector('canvas').captureStream(15);
+  navigator.mediaDevices.getUserMedia=async()=>window.__sourceCanvas.captureStream(15);
  });
  await page.locator('#jade-start').click();
  await page.waitForFunction(()=>document.querySelector('#status').dataset.state==='pass',{timeout:30000});
