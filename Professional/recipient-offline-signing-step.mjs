@@ -35,7 +35,7 @@ export function renderProfessionalOfflineSigningStep(integration, signingQrSessi
   '<script>(function(){const images='+JSON.stringify(signingQrSession.qrImages)+';let index=0;let timer;'+
   'function show(){document.getElementById("jade-unsigned-qr").src=images[index];document.getElementById("jade-qr-progress").textContent="QR frame "+(index+1)+" of "+images.length;}'+
   'function start(){timer=setInterval(function(){index=(index+1)%images.length;show();},1500);}'+
-  'window.bc1q21JadeQrToggle=function(){const button=document.getElementById("jade-qr-toggle");if(timer){clearInterval(timer);timer=null;button.textContent="Resume QR animation";}else{start();button.textContent="Pause QR animation";}};start();})();<\\/script></section>';
+  'window.bc1q21JadeQrToggle=function(){const button=document.getElementById("jade-qr-toggle");if(timer){clearInterval(timer);timer=null;button.textContent="Resume QR animation";}else{start();button.textContent="Pause QR animation";}};start();})();<\/script></section>';
  return '<section aria-labelledby="offline-signing-title">'+
  '<h2 id="offline-signing-title">Release Bitcoin using your offline wallet</h2>'+
  '<p>Review the gift and release details here. Your recovery words stay on your offline hardware wallet; never enter them into this website.</p>'+
