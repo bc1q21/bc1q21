@@ -75,6 +75,11 @@ try{
  const raw=Buffer.from(await page.evaluate(()=>window.__received));
  assert.deepEqual(raw,expectedSigned,'Camera must reconstruct the exact signed PSBT verified independently');
  assert.equal(raw.subarray(0,5).toString('hex'),'70736274ff');
+ const finalizedInBrowser=await page.evaluate(()=>window.__finalized);
+ assert.equal(finalizedInBrowser.txid,verified.txid);
+ assert.equal(finalizedInBrowser.rawTransactionHex,verified.rawTransactionHex);
+ assert.equal(finalizedInBrowser.finalized,true);
+ assert.equal(finalizedInBrowser.broadcast,false);
  // The exact same QR data must NOT count as completed when the verifier rejects it.
  await page.evaluate(()=>{
   const video=document.querySelector('#v'),canvas=document.querySelector('#c');
