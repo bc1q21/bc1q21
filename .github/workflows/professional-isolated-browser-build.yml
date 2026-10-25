@@ -1,0 +1,35 @@
+name: Professional isolated Jade browser build
+on:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - 'Professional/browser-integration/**'
+      - '.github/workflows/professional-isolated-browser-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  professional-browser:
+    if: github.ref == 'refs/heads/professional/isolated-release-prototype'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build isolated Professional verifier
+        working-directory: Professional/browser-integration
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+      - name: Verify recorded Jade signature without broadcast
+        working-directory: Professional/browser-integration
+        run: node test-professional-verifier.mjs ../fixtures/calendar-release1-physical-jade-signed-qr-20261025.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: professional-regtest-browser-verifier
+          path: Professional/browser-integration/professional-verifier.bundle.js
+          if-no-files-found: error
