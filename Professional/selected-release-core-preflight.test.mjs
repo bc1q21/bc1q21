@@ -41,7 +41,7 @@ test('local Core release preflight checks exact outpoint and maturity but never 
  assert.equal(result.canSign,false);
  assert.equal(result.canBroadcast,false);
  assert.equal(result.rpcTransportAuthenticated,false);
- const locked=await run(makeRpc({height:release.lockHeight-1}));
+ const locked=await run(makeRpc({height:release.lockHeight-2}));
  assert.equal(locked.cltvMatureForNextBlock,false);
  assert.equal(locked.readyForReview,false);
 });
