@@ -33,5 +33,5 @@ jobs:
         run: npx --prefix Professional playwright install chromium
       - name: Browser-test exact same-gift unsigned QR and captured Jade signature
         run: node Professional/same-gift-jade-browser-evidence.check.mjs "Professional/fixtures/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
-      - name: Decode seven real Jade QR frames in browser camera receiver
+      - name: Decode captured Jade signed QR records in recipient browser camera
         run: node Professional/same-gift-jade-camera-browser.check.mjs "Professional/fixtures/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
