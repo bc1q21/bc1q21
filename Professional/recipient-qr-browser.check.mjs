@@ -29,12 +29,14 @@ try{
  await page.waitForFunction(previous=>document.querySelector('#jade-qr-progress')?.textContent!==previous,paused,{timeout:5000});
  // A gift link without independently reviewed release evidence must not expose QR or camera.
  const denied=renderProfessionalOfflineSigningStep(integration);
- await page.setContent('<!doctype html><html><body>'+denied+'</body></html>');
- assert.equal(await page.locator('#sign').isDisabled(),true);
- assert.equal(await page.locator('#jade-unsigned-qr').count(),0);
- assert.equal(await page.locator('#jade-signed-start').count(),0);
- assert.match(await page.locator('body').textContent(),/Offline QR signing is not available/);
- assert.match(await page.locator('body').textContent(),/Recipient authorization not established/);
+ const deniedPage=await browser.newPage();
+ await deniedPage.setContent('<!doctype html><html><body>'+denied+'</body></html>');
+ assert.equal(await deniedPage.locator('#sign').isDisabled(),true);
+ assert.equal(await deniedPage.locator('#jade-unsigned-qr').count(),0);
+ assert.equal(await deniedPage.locator('#jade-signed-start').count(),0);
+ assert.match(await deniedPage.locator('body').textContent(),/Offline QR signing is not available/);
+ assert.match(await deniedPage.locator('body').textContent(),/Recipient authorization not established/);
+ await deniedPage.close();
  assert.deepEqual(errors,[],'No JavaScript errors');
  assert.deepEqual(requests,[],'No network requests');
  console.log('PASS: Chromium QR animation, pause/resume, fail-closed signing and no network');
