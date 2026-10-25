@@ -67,7 +67,7 @@ test('reviewed unsigned QR frames generate real embedded PNGs for recipient disp
  const session=await renderApprovedRecipientQrImages(reviewed);
  assert.equal(session.qrImages.length,2);
  for(const png of session.qrImages){
-  assert.match(png,/^data:image\\/png;base64,/);
+  assert.ok(png.startsWith('data:image/png;base64,'));
   assert.equal(Buffer.from(png.split(',')[1],'base64').subarray(0,8).toString('hex'),'89504e470d0a1a0a');
  }
  const html=renderProfessionalOfflineSigningStep(base,session);
