@@ -40,6 +40,25 @@ try{
   }
   draw();window.__qrTimer=setInterval(draw,350);
  },images);
+ // Delay camera permission, cancel, then deliver the permission response.
+ // The stale stream must be stopped and must not restart scanning.
+ await page.evaluate(()=>{
+  const real=navigator.mediaDevices.getUserMedia;
+  window.__permissionResolve=null;
+  navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>{window.__permissionResolve=()=>resolve(real());});
+ });
+ await page.locator('#jade-start').click();
+ await page.waitForFunction(()=>typeof window.__permissionResolve==='function');
+ await page.locator('#jade-stop').click();
+ await page.evaluate(()=>window.__permissionResolve());
+ await page.waitForTimeout(200);
+ assert.equal(await page.locator('#status').getAttribute('data-state'),'idle',
+  'Late camera permission must not restore approval');
+ assert.equal(await page.locator('#jade-stop').isDisabled(),true,
+  'Late camera permission must not restart scanning');
+ await page.evaluate(()=>{
+  navigator.mediaDevices.getUserMedia=async()=>document.querySelector('canvas').captureStream(15);
+ });
  await page.locator('#jade-start').click();
  await page.waitForFunction(()=>document.querySelector('#status').dataset.state==='pass',{timeout:30000});
  assert.match(await page.locator('#status').innerText(),/VERIFIED: Jade camera signature/);
