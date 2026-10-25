@@ -17,7 +17,7 @@ import {renderFundedCalendarRecipientSection} from './render-funded-calendar-rec
 import {prepareReviewedFundedRecipientQr} from './reviewed-funded-recipient-qr.mjs';
 import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-step.mjs';
 import {chromium} from 'playwright';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import {URDecoder} from '@ngraveio/bc-ur';
 import cbor from 'cbor';
 import {verifyReturnedSignedProfessionalPsbt} from './verify-signed-psbt-return.mjs';
@@ -159,6 +159,21 @@ assert.equal(review.reviewCompleted(),true);
 const approvedReview=review.review();
 assert.equal(typeof approvedReview.psbtSha256,'string');
 assert.match(approvedReview.psbtSha256,/^[0-9a-f]{64}$/);
+// Preserve only public, disposable regtest material for the later physical
+// offline Jade handoff. No recovery phrase, private key or broadcast capability.
+const approvedUnsigned=prepareApprovedProfessionalRelease(handoffs[0],funding,approvedIntent);
+assert.equal(approvedUnsigned.signed,false);
+assert.equal(approvedUnsigned.broadcast,false);
+mkdirSync('Professional/artifacts',{recursive:true});
+writeFileSync('Professional/artifacts/two-release-calendar-jade-handoff.json',JSON.stringify({
+ format:'bc1q21-professional-two-release-calendar-offline-handoff-v1',
+ network:'regtest',disposableFixture:true,publicOnly:true,
+ fundingTxid:txid,releaseIndex:0,releaseDates:dates,
+ locktime:handoffs[0].locktime,signerPubkeyHex:handoffs[0].signerPubkeyHex,
+ unsignedPsbtBase64:approvedUnsigned.unsignedPsbtBase64,
+ approvedPsbtSha256:approvedReview.psbtSha256,
+ signed:false,broadcast:false,signingAuthorized:false
+},null,2)+'\n');
 const session=await prepareReviewedFundedRecipientQr({view:recipientView,beneficiary:review,frameCount:8});
 assert.equal(session.frames.length,8);
 assert.equal(session.qrImages.length,8);
