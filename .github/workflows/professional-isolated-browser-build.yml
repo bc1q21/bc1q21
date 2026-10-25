@@ -31,7 +31,13 @@ jobs:
       - name: Test Professional verification interface failure safeguards
         working-directory: Professional/browser-integration
         run: node test-professional-diagnostic-ui.mjs
-      - name: Install Chromium for real browser regression\n        working-directory: Professional/browser-integration\n        run: npx playwright install chromium\n      - name: Exercise Jade verification in real Chromium\n        working-directory: Professional/browser-integration\n        run: node test-professional-real-browser.mjs\n      - uses: actions/upload-artifact@v4
+      - name: Install Chromium for real browser regression
+        working-directory: Professional/browser-integration
+        run: npx playwright install chromium
+      - name: Exercise Jade verification in real Chromium
+        working-directory: Professional/browser-integration
+        run: node test-professional-real-browser.mjs
+      - uses: actions/upload-artifact@v4
         with:
           name: professional-regtest-browser-verifier
           path: |
