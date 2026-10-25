@@ -5,6 +5,7 @@ on:
     paths:
       - 'Professional/same-gift-jade-browser-evidence.check.mjs'
       - 'Professional/same-gift-jade-camera-browser.check.mjs'
+      - 'Professional/browser-process-shim.cjs'
       - 'Professional/fixtures/same-gift-unsigned-handoff.json'
       - '.github/workflows/professional-same-gift-browser.yml'
   workflow_dispatch:
