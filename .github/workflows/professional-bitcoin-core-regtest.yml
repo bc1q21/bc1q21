@@ -68,7 +68,7 @@ jobs:
             exit 1
           fi
           cat /tmp/professional-wrong-gift.log
-          grep -E "signature|PSBT|mismatch|digest|AssertionError" /tmp/professional-wrong-gift.log
+          grep -F "Professional signed return: Returned unsigned transaction differs from approved transaction" /tmp/professional-wrong-gift.log
       - name: Capture disposable regtest chain for the same funded gift
         run: |
           docker stop professional-bitcoin-regtest
