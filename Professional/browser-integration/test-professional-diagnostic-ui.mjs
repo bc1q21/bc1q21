@@ -49,4 +49,30 @@ resolvePending({ signatureCryptographicallyVerified: true, transactionMatches: t
 await pending;
 assert.equal(controls.status.dataset.state, 'idle', 'Stale verification must not override edited data');
 assert.equal(controls.verify.disabled, false, 'Button must recover after stale result');
-console.log('PASS: Professional diagnostic UI fail-closed and stale-result safeguards; no network or broadcast');
+
+let onCameraVerified;
+let onCameraStatus;
+let fakeCamera;
+sandbox.bc1q21ProfessionalAttachCamera = ({onStatus,onVerified}) => {
+ onCameraVerified=onVerified;onCameraStatus=onStatus;
+ fakeCamera={started:false,stopped:false,async start(){this.started=true;},stop(){this.stopped=true;}};
+ return fakeCamera;
+};
+await controls['jade-start'].listeners.click();
+assert.equal(fakeCamera.started,true,'Camera must start on request');
+assert.equal(controls['jade-stop'].disabled,false,'Stop control must be enabled during scanning');
+onCameraVerified({signatureCryptographicallyVerified:true,transactionMatches:true,broadcast:false});
+assert.equal(controls.status.dataset.state,'pass','Verified camera signature must show success');
+assert.equal(controls['jade-stop'].disabled,true,'Camera stop must disable after successful scan');
+await controls['jade-start'].listeners.click();
+onCameraStatus('Scanning signed Jade QR');
+assert.equal(controls.status.dataset.state,'idle','New camera scan must clear old verified state');
+controls['jade-stop'].listeners.click();
+assert.equal(fakeCamera.stopped,true,'Stop must stop camera');
+assert.equal(controls.status.dataset.state,'idle','Stopping camera must revoke success');
+const staleVerified=onCameraVerified;
+await controls['jade-start'].listeners.click();
+staleVerified({signatureCryptographicallyVerified:true,transactionMatches:true,broadcast:false});
+assert.notEqual(controls.status.dataset.state,'pass','Previous camera session must never restore verification');
+controls['jade-stop'].listeners.click();
+console.log('PASS: Professional diagnostic UI camera lifecycle, fail-closed and stale-result safeguards; no network or broadcast');
