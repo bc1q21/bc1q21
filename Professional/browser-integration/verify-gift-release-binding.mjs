@@ -1,5 +1,8 @@
 // Professional gift-specific release binding for the isolated regtest prototype.
 // A recipient link is a public locator, never proof of authority to spend.
+// This checks only consistency with caller-supplied release details. It does NOT
+// authenticate those details, prove that the locator belongs to the funding
+// transaction, verify chain state, or authorize signing.
 import bitcoin from 'bitcoinjs-lib';
 import {sha256} from '@noble/hashes/sha256';
 const fail=message=>{throw Error('Professional gift binding: '+message)};
@@ -30,5 +33,6 @@ export function verifyGiftReleaseBinding({gift,release,approvedUnsignedBase64,ex
     output.script.toString('hex')!==release.destinationScriptHex)
   fail('Selected gift release destination or amount mismatch');
  return Object.freeze({giftLocator:gift.fundingAddress,selectedRelease:release.releaseNumber,
-  transactionBoundToSelectedRelease:true,broadcast:false});
+  transactionMatchesSuppliedRelease:true,
+  giftProvenanceVerified:false,fundingUtxoVerified:false,signingAuthorized:false,broadcast:false});
 }
