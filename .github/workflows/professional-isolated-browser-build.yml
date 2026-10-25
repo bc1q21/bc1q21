@@ -37,6 +37,9 @@ jobs:
       - name: Exercise Jade verification in real Chromium
         working-directory: Professional/browser-integration
         run: node test-professional-real-browser.mjs
+      - name: Exercise animated Jade QR through virtual camera in Chromium
+        working-directory: Professional/browser-integration
+        run: node test-professional-camera-chromium.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: professional-regtest-browser-verifier
