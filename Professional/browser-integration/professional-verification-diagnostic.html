@@ -46,14 +46,15 @@ frames.addEventListener('input',invalidate);
 startCamera.addEventListener('click',async()=>{
  const epoch=++cameraEpoch;
  invalidate();
+ const scanRevision=revision;
  startCamera.disabled=true;
  try{
   if(typeof globalThis.bc1q21ProfessionalAttachCamera!=='function')throw Error('Camera verifier bundle not loaded');
   camera=globalThis.bc1q21ProfessionalAttachCamera({
    video:document.getElementById('jade-video'),canvas:document.getElementById('jade-canvas'),
-   onStatus:message=>{if(epoch===cameraEpoch)show(message,'idle');},
+   onStatus:message=>{if(epoch===cameraEpoch && scanRevision===revision)show(message,'idle');},
    onVerified:verified=>{
-    if(epoch!==cameraEpoch)return;
+    if(epoch!==cameraEpoch || scanRevision!==revision)return;
     if(verified.signatureCryptographicallyVerified!==true||verified.transactionMatches!==true||verified.broadcast!==false)
       throw Error('Signed QR not independently verified');
     show('VERIFIED: Jade camera signature and approved regtest transaction match. No Bitcoin broadcast.','pass');
@@ -64,7 +65,7 @@ startCamera.addEventListener('click',async()=>{
   if(epoch!==cameraEpoch){camera.stop();return;}
   stopCamera.disabled=false;
  }catch(error){
-  if(epoch===cameraEpoch){show('Camera unavailable or rejected: '+String(error.message||error),'fail');startCamera.disabled=false;stopCamera.disabled=true;}
+  if(epoch===cameraEpoch && scanRevision===revision){show('Camera unavailable or rejected: '+String(error.message||error),'fail');startCamera.disabled=false;stopCamera.disabled=true;}
  }
 });
 stopCamera.addEventListener('click',()=>{
