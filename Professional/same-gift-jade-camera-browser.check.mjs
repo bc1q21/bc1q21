@@ -54,13 +54,17 @@ try{
   window.__source.getContext('2d').drawImage(img,0,0,650,650);
  },qrImages[0]);
  await page.evaluate(()=>window.__receiver.start());
- for(const src of qrImages){
-  await page.evaluate(async data=>{
-   const img=new Image();img.src=data;await img.decode();
-   window.__source.getContext('2d').clearRect(0,0,650,650);
-   window.__source.getContext('2d').drawImage(img,0,0,650,650);
-  },src);
-  await page.waitForTimeout(350);
+ // Replay the original frames until the fountain decoder reports completion.
+ // Camera polling is asynchronous; a single pass can miss a displayed frame.
+ for(let attempt=0;attempt<5;attempt++){
+  for(const src of qrImages){
+   await page.evaluate(async data=>{
+    const img=new Image();img.src=data;await img.decode();
+    const ctx=window.__source.getContext('2d');ctx.clearRect(0,0,650,650);ctx.drawImage(img,0,0,650,650);
+   },src);
+   await page.waitForTimeout(450);
+   if(await page.evaluate(()=>window.__receiver.completed))break;
+  }
   if(await page.evaluate(()=>window.__receiver.completed))break;
  }
  await page.waitForFunction(()=>window.__receiver.completed,null,{timeout:6000});
