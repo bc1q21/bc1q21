@@ -4,6 +4,7 @@ on:
     branches: [professional/isolated-release-prototype]
     paths:
       - 'Professional/same-gift-jade-browser-evidence.check.mjs'
+      - 'Professional/reviewed-recipient-qr-browser.check.mjs'
       - 'Professional/same-gift-jade-camera-browser.check.mjs'
       - 'Professional/browser-process-shim.cjs'
       - 'Professional/browser-buffer-shim.cjs'
@@ -43,6 +44,8 @@ jobs:
         run: node --test Professional/recipient-browser-bundle.check.mjs
       - name: Install isolated Chromium
         run: npx --prefix Professional playwright install chromium
+      - name: Browser-test recipient QR image, animation and pause-resume controls
+        run: node Professional/reviewed-recipient-qr-browser.check.mjs
       - name: Browser-test exact same-gift unsigned QR and captured Jade signature
         run: node Professional/same-gift-jade-browser-evidence.check.mjs "Professional/fixtures/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
       - name: Decode captured Jade signed QR records in recipient browser camera
