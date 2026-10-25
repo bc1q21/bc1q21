@@ -9,7 +9,7 @@ function element() {
   return { value: '', disabled: false, dataset: {}, textContent: '', files: [],
     listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } };
 }
-const controls = Object.fromEntries(['status', 'verify', 'frames', 'file'].map(k => [k, element()]));
+const controls = Object.fromEntries(['status', 'verify', 'frames', 'file', 'jade-start', 'jade-stop', 'jade-video', 'jade-canvas'].map(k => [k, element()]));
 const sandbox = {
   document: { getElementById: k => controls[k] },
   bc1q21ProfessionalVerify: async () => ({
