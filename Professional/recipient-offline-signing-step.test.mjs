@@ -50,3 +50,12 @@ test('recipient QR camera markup exposes exactly the required mount points',()=>
  }
  assert.match(html,/id="sign" disabled/);
 });
+
+test('animated QR renderer emits a valid script closing tag',()=>{
+ const session={network:'regtest',verifiedRoundTrip:true,format:'ur:crypto-psbt',signed:false,broadcast:false,
+  frames:['ur:crypto-psbt/1-1/abcd'],qrImages:['data:image/png;base64,AAAA']};
+ const html=renderProfessionalOfflineSigningStep(base,session);
+ const closeTag='<'+'/script>';
+ assert.ok(html.includes(closeTag),'Missing HTML script closing tag');
+ assert.equal(html.split(closeTag).length-1,1,'Expected one closing script tag');
+});
