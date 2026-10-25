@@ -31,5 +31,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: professional-regtest-browser-verifier
-          path: Professional/browser-integration/professional-verifier.bundle.js
+          path: |
+            Professional/browser-integration/professional-verifier.bundle.js
+            Professional/browser-integration/professional-verification-diagnostic.html
           if-no-files-found: error
