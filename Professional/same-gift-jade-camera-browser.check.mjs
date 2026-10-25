@@ -83,12 +83,15 @@ try{
   const ctx=window.__source.getContext('2d');ctx.clearRect(0,0,650,650);ctx.drawImage(img,0,0,650,650);
  },qrImages[0]);
  await page.evaluate(()=>window.__receiver.start());
- for(const src of qrImages){
-  await page.evaluate(async data=>{
-   const img=new Image();img.src=data;await img.decode();
-   const ctx=window.__source.getContext('2d');ctx.clearRect(0,0,650,650);ctx.drawImage(img,0,0,650,650);
-  },src);
-  await page.waitForTimeout(350);
+ for(let attempt=0;attempt<5;attempt++){
+  for(const src of qrImages){
+   await page.evaluate(async data=>{
+    const img=new Image();img.src=data;await img.decode();
+    const ctx=window.__source.getContext('2d');ctx.clearRect(0,0,650,650);ctx.drawImage(img,0,0,650,650);
+   },src);
+   await page.waitForTimeout(450);
+   if((await page.locator('#status').textContent()).includes('Intentional verification rejection'))break;
+  }
   if((await page.locator('#status').textContent()).includes('Intentional verification rejection'))break;
  }
  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Intentional verification rejection'),null,{timeout:6000});
