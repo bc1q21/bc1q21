@@ -10,7 +10,13 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try {
  const page=await browser.newPage();
  const external=[];
- page.on('request',r=>{if(!r.url().startsWith('file:'))external.push(r.url());});
+ // Abort all non-local requests rather than merely observing them.
+ await page.route('**/*',route=>{
+  const url=route.request().url();
+  if(url.startsWith('file:'))return route.continue();
+  external.push(url);
+  return route.abort();
+ });
  await page.goto(pathToFileURL(resolve('professional-verification-diagnostic.html')).href);
  await page.waitForFunction(()=>typeof globalThis.bc1q21ProfessionalVerify==='function'&&typeof globalThis.bc1q21ProfessionalAttachCamera==='function');
  assert.equal(await page.locator('#status').getAttribute('data-state'),'idle');
@@ -22,10 +28,18 @@ try {
  assert.equal(await page.locator('#status').getAttribute('data-state'),'idle');
  await page.locator('#verify').click();
  await page.waitForFunction(()=>document.querySelector('#status').dataset.state==='fail');
+ // A missing verifier bundle must never produce a success state.
+ await page.evaluate(()=>{globalThis.bc1q21ProfessionalVerify=undefined;});
+ await page.locator('#frames').fill(fixture);
+ await page.locator('#verify').click();
+ await page.waitForFunction(()=>document.querySelector('#status').dataset.state==='fail');
+ assert.match(await page.locator('#status').innerText(),/not loaded/i);
  await page.locator('#jade-start').click();
  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Camera unavailable')||document.querySelector('#jade-stop').disabled===false);
  if(!(await page.locator('#jade-stop').isDisabled()))await page.locator('#jade-stop').click();
  assert.notEqual(await page.locator('#status').getAttribute('data-state'),'pass');
+ await page.locator('#frames').fill('UR:CRYPTO-PSBT/1-1/tampered');
+ assert.equal(await page.locator('#status').getAttribute('data-state'),'idle');
  assert.deepEqual(external,[],'Diagnostic must not make network requests');
  console.log('PASS: Chromium verified physical Jade fixture; invalid frames and camera state fail closed; no network/broadcast');
 } finally {await browser.close();}
