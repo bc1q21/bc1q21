@@ -1,3 +1,4 @@
+import { createJadeSignedCameraReceiver } from '../recipient-jade-signed-camera.browser.mjs';
 // bc1q21 Professional isolated regtest browser integration; fixture-only, no broadcast.
 import { Buffer } from 'buffer';
 import { URDecoder } from '@ngraveio/bc-ur';
@@ -21,4 +22,18 @@ globalThis.bc1q21ProfessionalVerify=async function(frames){
  const verified=verifyProfessionalReturnedSignature(approved,bytes.toString('base64'),digest);
  if(verified.signerPubkeyHex!=='03480325a05065b2f1fd2b3e10c882fbedded9cbfaf2fd0a457f2f2cd6c8299740')throw Error('Wrong signer');
  return verified;
+};
+
+/** Diagnostic-only physical camera integration. No transaction broadcast. */
+globalThis.bc1q21ProfessionalAttachCamera=function({video,canvas,onStatus,onVerified}){
+ if(typeof onVerified!=='function')throw Error('Verified callback required');
+ const receiver=createJadeSignedCameraReceiver({video,canvas,onStatus,
+  onSignedPsbt:async bytes=>{
+   const verified=verifyProfessionalReturnedSignature(approved,Buffer.from(bytes).toString('base64'),digest);
+   if(verified.signerPubkeyHex!=='03480325a05065b2f1fd2b3e10c882fbedded9cbfaf2fd0a457f2f2cd6c8299740'||
+      verified.signatureCryptographicallyVerified!==true||verified.transactionMatches!==true||
+      verified.broadcast!==false)throw Error('Jade signed return did not pass required checks');
+   await onVerified(verified);
+  }});
+ return receiver;
 };
