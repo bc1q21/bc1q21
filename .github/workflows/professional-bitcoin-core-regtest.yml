@@ -56,3 +56,9 @@ jobs:
         run: npx --prefix Professional playwright install chromium
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
         run: node Professional/option-b-two-funded-core-acceptance.mjs
+      - name: Save public calendar handoff
+        uses: actions/upload-artifact@v4
+        with:
+          name: professional-calendar-regtest-public-handoff
+          path: Professional/artifacts/two-release-calendar-jade-handoff.json
+          retention-days: 7
