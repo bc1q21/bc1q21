@@ -17,8 +17,8 @@ export function attachProfessionalJadeSignedReturn({video,canvas,startButton,sto
    const signed=Buffer.from(raw);
    verifyReturnedSignedProfessionalPsbt(approvedUnsignedPsbtBase64,signed.toString('base64'),approvedSha);
    verifySyntheticSignedPsbt(signed,approvedUnsignedPsbtBase64,signerPubkeyHex);
-   status('Jade signature verified. No Bitcoin broadcast.');
    await onVerifiedSignedPsbt(signed);
+   status('Jade signature verified and return processed. No Bitcoin broadcast.');
   }});
  startButton.onclick=async()=>{try{await receiver.start();stopButton.disabled=false;}catch(error){status('Camera unavailable: '+error.message);}};
  stopButton.onclick=()=>{receiver.stop();stopButton.disabled=true;status('Camera stopped');};
