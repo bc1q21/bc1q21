@@ -9,6 +9,9 @@ on:
       - 'Professional/integrated-public-regtest-acceptance.mjs'
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
       - 'Professional/option-b-two-funded-core-acceptance.mjs'
+      - 'Professional/locally-verified-beneficiary-review.mjs'
+      - 'Professional/funded-calendar-recipient-view.mjs'
+      - 'Professional/render-funded-calendar-recipient-section.mjs'
       - '.github/workflows/professional-bitcoin-core-regtest.yml'
 permissions:
   contents: read
