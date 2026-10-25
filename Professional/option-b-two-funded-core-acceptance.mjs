@@ -161,7 +161,8 @@ assert.equal(typeof approvedReview.psbtSha256,'string');
 assert.match(approvedReview.psbtSha256,/^[0-9a-f]{64}$/);
 // Preserve only public, disposable regtest material for the later physical
 // offline Jade handoff. No recovery phrase, private key or broadcast capability.
-const approvedUnsigned=prepareApprovedProfessionalRelease(handoffs[0],funding,approvedIntent);
+const publicHandoff=Object.fromEntries(['version','network','signerPubkeyHex','locktime','redeemScriptHex','fundingAddress'].map(k=>[k,handoffs[0][k]]));
+const approvedUnsigned=prepareApprovedProfessionalRelease(publicHandoff,funding,approvedIntent);
 assert.equal(approvedUnsigned.signed,false);
 assert.equal(approvedUnsigned.broadcast,false);
 mkdirSync('Professional/artifacts',{recursive:true});
@@ -220,6 +221,6 @@ for(const frame of recorded)returnedDecoder.receivePart(frame);
 assert.ok(returnedDecoder.isComplete()&&returnedDecoder.isSuccess());
 const unrelatedSigned=Buffer.from(cbor.decodeFirstSync(Buffer.from(returnedDecoder.resultUR().cbor))).toString('base64');
 assert.throws(()=>verifyReturnedSignedProfessionalPsbt(
- prepareApprovedProfessionalRelease(handoffs[0],funding,approvedIntent).unsignedPsbtBase64,unrelatedSigned,approvedReview.psbtSha256));
+ approvedUnsigned.unsignedPsbtBase64,unrelatedSigned,approvedReview.psbtSha256));
 await assert.rejects(review.exportQrFrames(),/already consumed/);
 console.log('PASS: genuine two-output funded Core regtest Option B link -> full-output checks -> review -> one-use unsigned QR. No spend broadcast. Recipient acknowledgement simulated; creator identity and delivery provenance NOT verified.');
