@@ -12,7 +12,7 @@ button:disabled{opacity:.5;cursor:not-allowed}#status{padding:14px;border-radius
 small{color:#bfcbd9}</style></head>
 <body><h1>bc1q21 Professional — Jade verification</h1>
 <p class="muted">Isolated disposable regtest fixture. This diagnostic page does not sign, finalize, or broadcast transactions.</p>
-<div class="panel"><h2>Scan signed Jade QR with camera</h2><p>Use a camera in a secure browser context. Scanned data must pass the same signature and transaction checks as imported frames.</p><video id="jade-video" playsinline muted style="max-width:100%;width:420px" aria-label="Jade signed QR camera"></video><canvas id="jade-canvas" hidden></canvas><p><button id="jade-start" type="button">Start camera</button> <button id="jade-stop" type="button" disabled>Stop camera</button></p></div><div class="panel"><h2>Import Jade signed QR frames</h2>
+<div class="panel"><h2>Gift-specific recipient context (display only)</h2><p id="gift-locator">No gift link supplied.</p><p class="muted">A recipient link identifies a public gift locator; it does not authorize spending. This diagnostic verifies only its pinned disposable regtest transaction. It does not verify that the locator corresponds to that transaction.</p></div><div class="panel"><h2>Scan signed Jade QR with camera</h2><p>Use a camera in a secure browser context. Scanned data must pass the same signature and transaction checks as imported frames.</p><video id="jade-video" playsinline muted style="max-width:100%;width:420px" aria-label="Jade signed QR camera"></video><canvas id="jade-canvas" hidden></canvas><p><button id="jade-start" type="button">Start camera</button> <button id="jade-stop" type="button" disabled>Stop camera</button></p></div><div class="panel"><h2>Import Jade signed QR frames</h2>
 <p>Import the saved text file from our physical Jade test, or paste <code>UR:CRYPTO-PSBT/...</code> frames below. This diagnostic interface does not replace the previously tested camera page.</p>
 <input id="file" type="file" accept=".txt,text/plain" aria-label="Import QR frames">
 <p><label for="frames">Signed QR frames (one per line)</label></p>
@@ -23,6 +23,10 @@ small{color:#bfcbd9}</style></head>
 <script src="./professional-verifier.bundle.js"></script>
 <script>
 'use strict';
+const giftLocator=document.getElementById('gift-locator');
+const giftParams=new URLSearchParams(location.search);
+const giftAddress=giftParams.get('a')||giftParams.get('address')||'';
+giftLocator.textContent=/^[a-zA-Z0-9]{26,90}$/.test(giftAddress)?'Gift link locator: '+giftAddress+' (unverified)':'No valid public gift locator supplied.';
 const status=document.getElementById('status');
 const button=document.getElementById('verify');
 const frames=document.getElementById('frames');
