@@ -25,6 +25,8 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2 esbuild@0.25.12 jsqr@1.4.0 @noble/curves@1.9.7 buffer@6.0.3
       - name: Audit permanently preserved original funded regtest handoff
         run: node Professional/audit-same-gift-unsigned-handoff.mjs Professional/fixtures/same-gift-unsigned-handoff.json
+      - name: Verify recipient release integration bundles for Chromium
+        run: node --test Professional/recipient-browser-bundle.check.mjs
       - name: Install isolated Chromium
         run: npx --prefix Professional playwright install chromium
       - name: Browser-test exact same-gift unsigned QR and captured Jade signature
