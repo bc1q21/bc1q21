@@ -12,7 +12,7 @@ button:disabled{opacity:.5;cursor:not-allowed}#status{padding:14px;border-radius
 small{color:#bfcbd9}</style></head>
 <body><h1>bc1q21 Professional — Jade verification</h1>
 <p class="muted">Isolated disposable regtest fixture. This diagnostic page does not sign, finalize, or broadcast transactions.</p>
-<div class="panel"><h2>Import Jade signed QR frames</h2>
+<div class="panel"><h2>Scan signed Jade QR with camera</h2><p>Use a camera in a secure browser context. Scanned data must pass the same signature and transaction checks as imported frames.</p><video id="jade-video" playsinline muted style="max-width:100%;width:420px" aria-label="Jade signed QR camera"></video><canvas id="jade-canvas" hidden></canvas><p><button id="jade-start" type="button">Start camera</button> <button id="jade-stop" type="button" disabled>Stop camera</button></p></div><div class="panel"><h2>Import Jade signed QR frames</h2>
 <p>Import the saved text file from our physical Jade test, or paste <code>UR:CRYPTO-PSBT/...</code> frames below. This diagnostic interface does not replace the previously tested camera page.</p>
 <input id="file" type="file" accept=".txt,text/plain" aria-label="Import QR frames">
 <p><label for="frames">Signed QR frames (one per line)</label></p>
@@ -27,6 +27,10 @@ const status=document.getElementById('status');
 const button=document.getElementById('verify');
 const frames=document.getElementById('frames');
 let revision=0;
+let camera=null;
+let cameraEpoch=0;
+const startCamera=document.getElementById('jade-start');
+const stopCamera=document.getElementById('jade-stop');
 function invalidate(){revision++;show('Not verified. Data changed since last check.','idle');}
 function show(message,state){status.textContent=message;status.dataset.state=state;}
 document.getElementById('file').addEventListener('change',async event=>{
@@ -39,6 +43,34 @@ document.getElementById('file').addEventListener('change',async event=>{
   invalidate();}catch{show('Import failed.','fail');}
 });
 frames.addEventListener('input',invalidate);
+startCamera.addEventListener('click',async()=>{
+ const epoch=++cameraEpoch;
+ invalidate();
+ startCamera.disabled=true;
+ try{
+  if(typeof globalThis.bc1q21ProfessionalAttachCamera!=='function')throw Error('Camera verifier bundle not loaded');
+  camera=globalThis.bc1q21ProfessionalAttachCamera({
+   video:document.getElementById('jade-video'),canvas:document.getElementById('jade-canvas'),
+   onStatus:message=>{if(epoch===cameraEpoch)show(message,'idle');},
+   onVerified:verified=>{
+    if(epoch!==cameraEpoch)return;
+    if(verified.signatureCryptographicallyVerified!==true||verified.transactionMatches!==true||verified.broadcast!==false)
+      throw Error('Signed QR not independently verified');
+    show('VERIFIED: Jade camera signature and approved regtest transaction match. No Bitcoin broadcast.','pass');
+    startCamera.disabled=false;stopCamera.disabled=true;
+   }
+  });
+  await camera.start();
+  if(epoch!==cameraEpoch){camera.stop();return;}
+  stopCamera.disabled=false;
+ }catch(error){
+  if(epoch===cameraEpoch){show('Camera unavailable or rejected: '+String(error.message||error),'fail');startCamera.disabled=false;stopCamera.disabled=true;}
+ }
+});
+stopCamera.addEventListener('click',()=>{
+ cameraEpoch++;camera?.stop();camera=null;
+ startCamera.disabled=false;stopCamera.disabled=true;invalidate();
+});
 button.addEventListener('click',async()=>{
  button.disabled=true;
  const startedAt=revision;
