@@ -48,9 +48,10 @@ startCamera.addEventListener('click',async()=>{
  invalidate();
  const scanRevision=revision;
  startCamera.disabled=true;
+ stopCamera.disabled=false; // Cancellation must work while permission is pending.
  try{
   if(typeof globalThis.bc1q21ProfessionalAttachCamera!=='function')throw Error('Camera verifier bundle not loaded');
-  camera=globalThis.bc1q21ProfessionalAttachCamera({
+  const receiver=globalThis.bc1q21ProfessionalAttachCamera({
    video:document.getElementById('jade-video'),canvas:document.getElementById('jade-canvas'),
    onStatus:message=>{if(epoch===cameraEpoch && scanRevision===revision)show(message,'idle');},
    onVerified:verified=>{
@@ -61,8 +62,9 @@ startCamera.addEventListener('click',async()=>{
     startCamera.disabled=false;stopCamera.disabled=true;
    }
   });
-  await camera.start();
-  if(epoch!==cameraEpoch){camera.stop();return;}
+  camera=receiver;
+  await receiver.start();
+  if(epoch!==cameraEpoch){receiver.stop();return;}
   stopCamera.disabled=false;
  }catch(error){
   if(epoch===cameraEpoch && scanRevision===revision){show('Camera unavailable or rejected: '+String(error.message||error),'fail');startCamera.disabled=false;stopCamera.disabled=true;}
