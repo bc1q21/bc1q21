@@ -28,6 +28,9 @@ jobs:
       - name: Verify recorded Jade signature without broadcast
         working-directory: Professional/browser-integration
         run: node test-professional-verifier.mjs ../fixtures/calendar-release1-physical-jade-signed-qr-20261025.txt
+      - name: Test Professional verification interface failure safeguards
+        working-directory: Professional/browser-integration
+        run: node test-professional-diagnostic-ui.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: professional-regtest-browser-verifier
