@@ -23,12 +23,13 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
  if(!video||!canvas||typeof onSignedPsbt!=='function')throw Error('Camera receiver needs video, canvas and signed-PSBT handler');
  const status=message=>{if(typeof onStatus==='function')onStatus(message)};
  let stream=null,active=false,decoder=new URDecoder(),seen=new Set(),generation=0;
+ let completed=false;
  const stop=()=>{
   active=false;generation++;
   if(stream){for(const track of stream.getTracks())track.stop();stream=null;}
   video.srcObject=null;
  };
- const reset=()=>{stop();decoder=new URDecoder();seen=new Set();status('Ready to scan Jade signed QR');};
+ const reset=()=>{stop();decoder=new URDecoder();seen=new Set();completed=false;status('Ready to scan Jade signed QR');};
  const tick=async token=>{
   if(!active||token!==generation)return;
   try{
@@ -47,7 +48,7 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
       if(!decoder.isSuccess()||decoder.resultUR().type!=='crypto-psbt')throw Error('Invalid signed QR response');
       const bytes=decodeCborBytes(decoder.resultUR().cbor);
       if(bytes.length>100000||bytes.subarray(0,5).toString('hex')!=='70736274ff')throw Error('Invalid signed PSBT');
-      stop();
+      stop();completed=true;
       await onSignedPsbt(bytes);
       return;
      }
@@ -65,5 +66,5 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
    status('Point camera at Jade Plus signed QR');const token=generation;void tick(token);
   }catch(error){stop();throw error;}
  };
- return Object.freeze({start,stop,reset});
+ return Object.freeze({start,stop,reset,get completed(){return completed;}});
 }
