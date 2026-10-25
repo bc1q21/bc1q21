@@ -48,8 +48,9 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
       if(!decoder.isSuccess()||decoder.resultUR().type!=='crypto-psbt')throw Error('Invalid signed QR response');
       const bytes=decodeCborBytes(decoder.resultUR().cbor);
       if(bytes.length>100000||bytes.subarray(0,5).toString('hex')!=='70736274ff')throw Error('Invalid signed PSBT');
-      stop();completed=true;
+      stop();
       await onSignedPsbt(bytes);
+      completed=true;
       return;
      }
     }
