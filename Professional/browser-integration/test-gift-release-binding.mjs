@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import bitcoin from 'bitcoinjs-lib';
 import {sha256} from '@noble/hashes/sha256';
-import {verifyGiftReleaseBinding} from './verify-gift-release-binding.mjs';
+import {verifyGiftReleaseBinding,checkGiftReleaseAgainstUtxoSnapshot} from './verify-gift-release-binding.mjs';
 import {readFileSync} from 'node:fs';
 const entry=readFileSync('browser-verifier-entry.mjs','utf8');
 const approved=entry.match(/const approved='([^']+)'/)?.[1];
@@ -30,4 +30,17 @@ for(const [field,value] of [['fundingTxid','00'.repeat(32)],['fundingVout',relea
 }
 assert.throws(()=>verify(release,gift,'00'.repeat(32)),/digest mismatch/);
 assert.throws(()=>verify(release,{fundingAddress:'invalid'}),/Invalid public gift locator/);
+const snapshot={txid:release.fundingTxid,vout:release.fundingVout,
+ confirmed:true,spent:false,valueSats:release.inputSats,
+ scriptPubKeyHex:release.fundingScriptHex};
+const snapshotGate=(utxo=snapshot,binding=verify())=>checkGiftReleaseAgainstUtxoSnapshot({binding,release,snapshot:utxo});
+assert.equal(snapshotGate().utxoSnapshotMatchesSelectedRelease,true);
+assert.equal(snapshotGate().chainVerified,false);
+assert.equal(snapshotGate().signingAuthorized,false);
+for(const [field,value] of [['txid','00'.repeat(32)],['vout',release.fundingVout+1],
+ ['confirmed',false],['spent',true],['valueSats',release.inputSats+1],
+ ['scriptPubKeyHex','6a']]){
+ assert.throws(()=>snapshotGate({...snapshot,[field]:value}),/mismatch|unconfirmed|spent|unknown/,field+' must fail closed');
+}
+assert.throws(()=>snapshotGate(snapshot,{transactionMatchesSuppliedRelease:false}),/must match approved PSBT/);
 console.log('PASS: gift release binding checks funding outpoint, CLTV height, amount, destination and digest');
