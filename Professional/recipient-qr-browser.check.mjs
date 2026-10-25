@@ -2,11 +2,11 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-step.mjs';
+import {renderApprovedRecipientQrImages} from './recipient-approved-qr-images.mjs';
 
 const integration={format:'bc1q21-professional-recipient-integration-v1',network:'regtest',canSign:false,canBroadcast:false,blockers:['Recipient authorization not established']};
-const session={network:'regtest',verifiedRoundTrip:true,format:'ur:crypto-psbt',signed:false,broadcast:false,
- frames:['ur:crypto-psbt/1-2/abcd','ur:crypto-psbt/2-2/efgh'],
- qrImages:['data:image/png;base64,AAAA','data:image/png;base64,BBBB']};
+const session=await renderApprovedRecipientQrImages({network:'regtest',verifiedRoundTrip:true,format:'ur:crypto-psbt',signed:false,broadcast:false,
+ frames:['ur:crypto-psbt/1-2/abcd','ur:crypto-psbt/2-2/efgh']});
 const fragment=renderProfessionalOfflineSigningStep(integration,session);
 const browser=await chromium.launch({headless:true});
 try{
