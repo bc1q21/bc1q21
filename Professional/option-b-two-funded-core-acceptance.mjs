@@ -13,6 +13,7 @@ import {prepareRecipientHeldOptionBReview} from './recipient-held-option-b-revie
 import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
 import {verifyPublicRetailSchedule} from './public-retail-schedule-verify.mjs';
 import {buildFundedCalendarGiftView} from './funded-calendar-recipient-view.mjs';
+import {renderFundedCalendarRecipientSection} from './render-funded-calendar-recipient-section.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -119,6 +120,13 @@ assert.equal(recipientView.coreFundingVerifiedAtReviewCreation,true);
 assert.equal(recipientView.creatorAuthenticated,false);
 assert.equal(recipientView.canExportSigningQr,false);
 assert.equal(recipientView.canBroadcast,false);
+const fundedHtml=renderFundedCalendarRecipientSection(recipientView);
+assert.match(fundedHtml,/100,000 sats/);
+assert.match(fundedHtml,/200,000 sats/);
+for(const date of dates)assert.ok(fundedHtml.includes(date));
+assert.match(fundedHtml,/Confirmed unspent at review; refresh required/);
+assert.match(fundedHtml,/Offline signing unavailable/);
+assert.doesNotMatch(fundedHtml,/privateKey|mnemonic|unsignedPsbtBase64/);
 assert.throws(()=>buildFundedCalendarGiftView({giftUrl,published,locatorMapping,binding,
  coreFundingVerifiedAtReviewCreation:false}),/Trusted Core verification required/);
 const alteredBinding=structuredClone(binding);
