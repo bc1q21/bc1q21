@@ -1,0 +1,54 @@
+name: Professional physical Jade exact calendar gift acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - 'Professional/verify-calendar-jade-return.mjs'
+      - 'Professional/fixtures/calendar-release1-physical-jade-signed-qr-20261025.txt'
+      - '.github/workflows/professional-calendar-jade-final-acceptance.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-funded-gift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated verification dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @noble/curves@1.9.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2
+      - name: Retrieve exact original funded calendar handoff and chain
+        uses: actions/download-artifact@v4
+        with:
+          name: professional-calendar-regtest-public-handoff
+          run-id: 40216032293
+          github-token: ${{ github.token }}
+          path: Professional/artifacts
+      - name: Confirm original gift identity and chain snapshot
+        run: |
+          node -e "const h=require('./Professional/artifacts/two-release-calendar-jade-handoff.json');if(h.fundingTxid!=='9c7d4a5ef6fb08e739518a4006cb8186414d95fa385dd7a2ada0552dd8b79695')process.exit(1);console.log('Original funded gift:',h.fundingTxid)"
+          test -d Professional/artifacts/calendar-regtest-chain/blocks
+          test -d Professional/artifacts/calendar-regtest-chain/chainstate
+          chmod -R a+rwX Professional/artifacts/calendar-regtest-chain
+      - name: Start Bitcoin Core using original disposable regtest blockchain
+        run: |
+          docker run -d --name professional-original-calendar-regtest --network host \
+            -v "$PWD/Professional/artifacts/calendar-regtest-chain:/home/bitcoin/.bitcoin/regtest" \
+            ruimarinho/bitcoin-core:28 \
+            -regtest -server -txindex=1 -rpcuser=professional -rpcpassword=synthetic-only \
+            -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
+      - name: Verify original Jade signature and Bitcoin Core acceptance without broadcast
+        run: |
+          node Professional/verify-calendar-jade-return.mjs \
+            Professional/artifacts/two-release-calendar-jade-handoff.json \
+            Professional/fixtures/calendar-release1-physical-jade-signed-qr-20261025.txt
+      - name: Shut down disposable regtest
+        if: always()
+        run: docker rm -f professional-original-calendar-regtest || true
