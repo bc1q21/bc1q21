@@ -5,11 +5,11 @@ on:
     paths:
       - 'Professional/same-gift-jade-browser-evidence.check.mjs'
       - 'Professional/same-gift-jade-camera-browser.check.mjs'
+      - 'Professional/fixtures/same-gift-unsigned-handoff.json'
       - '.github/workflows/professional-same-gift-browser.yml'
   workflow_dispatch:
 permissions:
   contents: read
-  actions: read
 jobs:
   same-gift-browser:
     runs-on: ubuntu-latest
@@ -23,21 +23,11 @@ jobs:
           node-version: '22'
       - name: Install test-only dependencies
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2 esbuild@0.25.12 jsqr@1.4.0 @noble/curves@1.9.7 buffer@6.0.3
-      - name: Recover previously verified same-gift unsigned public evidence
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/previous"
-          gh run download 39472333991 --repo "$GITHUB_REPOSITORY" --name professional-one-funded-24-release-regtest-proof --dir "$RUNNER_TEMP/previous"
-      - name: Preserve public same-gift test evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: professional-same-gift-public-evidence-refresh
-          path: ${{ runner.temp }}/previous/same-gift-unsigned-handoff.json
-          retention-days: 90
+      - name: Audit permanently preserved original funded regtest handoff
+        run: node Professional/audit-same-gift-unsigned-handoff.mjs Professional/fixtures/same-gift-unsigned-handoff.json
       - name: Install isolated Chromium
         run: npx --prefix Professional playwright install chromium
       - name: Browser-test exact same-gift unsigned QR and captured Jade signature
-        run: node Professional/same-gift-jade-browser-evidence.check.mjs "$RUNNER_TEMP/previous/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
+        run: node Professional/same-gift-jade-browser-evidence.check.mjs "Professional/fixtures/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
       - name: Decode seven real Jade QR frames in browser camera receiver
-        run: node Professional/same-gift-jade-camera-browser.check.mjs "$RUNNER_TEMP/previous/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
+        run: node Professional/same-gift-jade-camera-browser.check.mjs "Professional/fixtures/same-gift-unsigned-handoff.json" "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt"
