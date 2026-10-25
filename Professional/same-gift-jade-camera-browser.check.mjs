@@ -6,6 +6,8 @@ import {readFileSync} from 'node:fs';
 import {build} from 'esbuild';
 import {chromium} from 'playwright';
 import QRCode from 'qrcode';
+import {URDecoder} from '@ngraveio/bc-ur';
+import cbor from 'cbor';
 import {finalizeJadeSignedQrReturn} from './jade-signed-qr-return.mjs';
 const [handoffPath,framesPath]=process.argv.slice(2);
 assert.ok(handoffPath&&framesPath,'Original unsigned handoff and signed frames required');
@@ -13,6 +15,10 @@ const handoff=JSON.parse(readFileSync(handoffPath,'utf8'));
 const frames=readFileSync(framesPath,'utf8').split(/\r?\n/).map(s=>s.trim()).filter(s=>/^ur:crypto-psbt\//i.test(s));
 assert.equal(frames.length,7,'Original Jade capture must contain seven frames');
 const verified=finalizeJadeSignedQrReturn({handoff,frames});
+const expectedDecoder=new URDecoder();
+for(const frame of frames)expectedDecoder.receivePart(frame);
+assert.ok(expectedDecoder.isComplete()&&expectedDecoder.isSuccess());
+const expectedSigned=Buffer.from(cbor.decodeFirstSync(Buffer.from(expectedDecoder.resultUR().cbor)));
 assert.equal(verified.signatureCryptographicallyVerified,true);
 const qrImages=await Promise.all(frames.map(s=>QRCode.toDataURL(s,{errorCorrectionLevel:'L',margin:3,width:650})));
 const bundle=await build({stdin:{contents:"import {createJadeSignedCameraReceiver} from './Professional/recipient-jade-signed-camera.browser.mjs'; window.makeJadeReceiver=createJadeSignedCameraReceiver;",resolveDir:process.cwd(),sourcefile:'Professional/camera-entry.mjs'},bundle:true,write:false,platform:'browser',format:'iife',target:'es2022',logLevel:'silent',
@@ -54,7 +60,7 @@ try{
  }
  await page.waitForFunction(()=>window.__receiver.completed,null,{timeout:6000});
  const raw=Buffer.from(await page.evaluate(()=>window.__received));
- assert.ok(raw.length>0);
+ assert.deepEqual(raw,expectedSigned,'Camera must reconstruct the exact signed PSBT verified independently');
  assert.equal(raw.subarray(0,5).toString('hex'),'70736274ff');
  assert.deepEqual(errors,[]);
  assert.deepEqual(requests,[]);
