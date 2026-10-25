@@ -49,7 +49,7 @@ try{
   ctx.getImageData=()=>source.getContext('2d').getImageData(0,0,650,650);
   window.__received=null;
   window.__receiver=window.makeJadeReceiver({video,canvas,onStatus:s=>document.querySelector('#status').textContent=s,
-   onSignedPsbt:async bytes=>{window.verifyJadeReturn(bytes,window.__unsigned,window.__sha,window.__pubkey);window.__received=Array.from(bytes);}});
+   onSignedPsbt:async bytes=>{window.__finalized=window.verifyJadeReturn(bytes,window.__unsigned,window.__sha,window.__pubkey);window.__received=Array.from(bytes);}});
  });
  // Hold the first QR image stable until the receiver actually observes it.
  await page.evaluate(async data=>{
