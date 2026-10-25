@@ -18,7 +18,7 @@ try{
  assert.equal(await page.locator('#sign').isDisabled(),true);
  assert.equal(await page.locator('#jade-signed-start').count(),1);
  assert.equal(await page.locator('#jade-qr-progress').textContent(),'QR frame 1 of 2');
- await page.waitForFunction(()=>document.querySelector('#jade-qr-progress')?.textContent==='QR frame 2 of 2',{timeout:5000});
+ await page.waitForFunction(()=>document.querySelector('#jade-qr-progress')?.textContent==='QR frame 2 of 2',null,{timeout:5000});
  await page.locator('#jade-qr-toggle').click();
  assert.equal(await page.locator('#jade-qr-toggle').textContent(),'Resume QR animation');
  const paused=await page.locator('#jade-qr-progress').textContent();
@@ -26,6 +26,7 @@ try{
  assert.equal(await page.locator('#jade-qr-progress').textContent(),paused);
  await page.locator('#jade-qr-toggle').click();
  assert.equal(await page.locator('#jade-qr-toggle').textContent(),'Pause QR animation');
+ await page.waitForFunction(previous=>document.querySelector('#jade-qr-progress')?.textContent!==previous,paused,{timeout:5000});
  assert.deepEqual(errors,[],'No JavaScript errors');
  assert.deepEqual(requests,[],'No network requests');
  console.log('PASS: Chromium QR animation, pause/resume, fail-closed signing and no network');
