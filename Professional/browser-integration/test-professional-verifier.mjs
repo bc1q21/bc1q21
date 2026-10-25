@@ -5,7 +5,7 @@ const path=process.argv[2];
 assert.ok(path,'Recorded Jade QR fixture path required');
 const frames=readFileSync(path,'utf8').split(/\r?\n/).map(x=>x.trim()).filter(x=>/^ur:crypto-psbt\//i.test(x));
 assert.ok(frames.length>=8);
-const sandbox={Buffer:undefined,Uint8Array,TextEncoder,TextDecoder,console,setTimeout,clearTimeout,crypto:globalThis.crypto};
+const sandbox={Buffer:undefined,Uint8Array,TextEncoder,TextDecoder,console,setTimeout,clearTimeout,crypto:globalThis.crypto,navigator:{language:'en-US',userAgent:'bc1q21-regtest-vm'}};
 runInNewContext(readFileSync('professional-verifier.bundle.js','utf8'),sandbox,{timeout:15000});
 const verify=sandbox.bc1q21ProfessionalVerify;
 assert.equal(typeof verify,'function');
