@@ -48,6 +48,11 @@ try{
   window.__receiver=window.makeJadeReceiver({video,canvas,onStatus:s=>document.querySelector('#status').textContent=s,
    onSignedPsbt:async bytes=>{window.__received=Array.from(bytes);}});
  });
+ // Hold the first QR image stable until the receiver actually observes it.
+ await page.evaluate(async data=>{
+  const img=new Image();img.src=data;await img.decode();
+  window.__source.getContext('2d').drawImage(img,0,0,650,650);
+ },qrImages[0]);
  await page.evaluate(()=>window.__receiver.start());
  for(const src of qrImages){
   await page.evaluate(async data=>{
