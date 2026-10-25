@@ -62,6 +62,24 @@ try{
  const raw=Buffer.from(await page.evaluate(()=>window.__received));
  assert.deepEqual(raw,expectedSigned,'Camera must reconstruct the exact signed PSBT verified independently');
  assert.equal(raw.subarray(0,5).toString('hex'),'70736274ff');
+ // The exact same QR data must NOT count as completed when the verifier rejects it.
+ await page.evaluate(()=>{
+  const video=document.querySelector('#v'),canvas=document.querySelector('#c');
+  window.__receiver=window.makeJadeReceiver({video,canvas,
+   onStatus:s=>document.querySelector('#status').textContent=s,
+   onSignedPsbt:async()=>{throw Error('Intentional verification rejection');}});
+ });
+ await page.evaluate(()=>window.__receiver.start());
+ for(const src of qrImages){
+  await page.evaluate(async data=>{
+   const img=new Image();img.src=data;await img.decode();
+   const ctx=window.__source.getContext('2d');ctx.clearRect(0,0,650,650);ctx.drawImage(img,0,0,650,650);
+  },src);
+  await page.waitForTimeout(350);
+  if((await page.locator('#status').textContent()).includes('Intentional verification rejection'))break;
+ }
+ await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Intentional verification rejection'),null,{timeout:6000});
+ assert.equal(await page.evaluate(()=>window.__receiver.completed),false,'Rejected signature cannot complete receiver');
  assert.deepEqual(errors,[]);
  assert.deepEqual(requests,[]);
  console.log('PASS_ACTUAL_JADE_SIGNED_QR_BROWSER_CAMERA_DECODE',JSON.stringify({signedFrames:frames.length,decodedBytes:raw.length,txid:verified.txid,broadcast:false}));
