@@ -3,6 +3,7 @@
 // No device, keys, remote requests or broadcast.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {build} from 'esbuild';
 import {chromium} from 'playwright';
 import QRCode from 'qrcode';
@@ -19,9 +20,10 @@ const expectedDecoder=new URDecoder();
 for(const frame of frames)expectedDecoder.receivePart(frame);
 assert.ok(expectedDecoder.isComplete()&&expectedDecoder.isSuccess());
 const expectedSigned=Buffer.from(cbor.decodeFirstSync(Buffer.from(expectedDecoder.resultUR().cbor)));
+const unsignedSha=createHash('sha256').update(Buffer.from(handoff.unsignedPsbtBase64,'base64')).digest('hex');
 assert.equal(verified.signatureCryptographicallyVerified,true);
 const qrImages=await Promise.all(frames.map(s=>QRCode.toDataURL(s,{errorCorrectionLevel:'L',margin:3,width:650})));
-const bundle=await build({stdin:{contents:"import {createJadeSignedCameraReceiver} from './Professional/recipient-jade-signed-camera.browser.mjs'; window.makeJadeReceiver=createJadeSignedCameraReceiver;",resolveDir:process.cwd(),sourcefile:'Professional/camera-entry.mjs'},bundle:true,write:false,platform:'browser',format:'iife',target:'es2022',logLevel:'silent',
+const bundle=await build({stdin:{contents:"import {createJadeSignedCameraReceiver} from './Professional/recipient-jade-signed-camera.browser.mjs'; import {verifyReturnedSignedProfessionalPsbt} from './Professional/verify-signed-psbt-return.mjs'; import {verifySyntheticSignedPsbt} from './Professional/verify-synthetic-signed-psbt.mjs'; import {Buffer} from 'buffer'; window.makeJadeReceiver=createJadeSignedCameraReceiver; window.verifyJadeReturn=(bytes,unsigned,sha,pubkey)=>{const b=Buffer.from(bytes);verifyReturnedSignedProfessionalPsbt(unsigned,b.toString('base64'),sha);verifySyntheticSignedPsbt(b,unsigned,pubkey);return true;};",resolveDir:process.cwd(),sourcefile:'Professional/camera-entry.mjs'},bundle:true,write:false,platform:'browser',format:'iife',target:'es2022',logLevel:'silent',
  define:{'process.env.NODE_ENV':'"production"','process.browser':'true'},
  inject:['Professional/browser-process-shim.cjs','Professional/browser-buffer-shim.cjs']});
 const browser=await chromium.launch({headless:true});
@@ -46,13 +48,14 @@ try{
   ctx.getImageData=()=>source.getContext('2d').getImageData(0,0,650,650);
   window.__received=null;
   window.__receiver=window.makeJadeReceiver({video,canvas,onStatus:s=>document.querySelector('#status').textContent=s,
-   onSignedPsbt:async bytes=>{window.__received=Array.from(bytes);}});
+   onSignedPsbt:async bytes=>{window.verifyJadeReturn(bytes,window.__unsigned,window.__sha,window.__pubkey);window.__received=Array.from(bytes);}});
  });
  // Hold the first QR image stable until the receiver actually observes it.
  await page.evaluate(async data=>{
   const img=new Image();img.src=data;await img.decode();
   window.__source.getContext('2d').drawImage(img,0,0,650,650);
  },qrImages[0]);
+ await page.evaluate(({unsigned,sha,pubkey})=>{window.__unsigned=unsigned;window.__sha=sha;window.__pubkey=pubkey;},{unsigned:handoff.unsignedPsbtBase64,sha:unsignedSha,pubkey:handoff.signerPubkeyHex});
  await page.evaluate(()=>window.__receiver.start());
  // Replay the original frames until the fountain decoder reports completion.
  // Camera polling is asynchronous; a single pass can miss a displayed frame.
