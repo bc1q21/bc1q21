@@ -16,7 +16,10 @@ const release={releaseNumber:1,fundingTxid:Buffer.from(tx.ins[0].hash).reverse()
  amountSats:tx.outs[0].value,destinationScriptHex:tx.outs[0].script.toString('hex')};
 const verify=(r=release,g=gift,d=digest)=>verifyGiftReleaseBinding({
  gift:g,release:r,approvedUnsignedBase64:approved,expectedApprovedSha256:d});
-assert.equal(verify().transactionBoundToSelectedRelease,true);
+assert.equal(verify().transactionMatchesSuppliedRelease,true);
+assert.equal(verify().giftProvenanceVerified,false);
+assert.equal(verify().fundingUtxoVerified,false);
+assert.equal(verify().signingAuthorized,false);
 for(const [field,value] of [['fundingTxid','00'.repeat(32)],['fundingVout',release.fundingVout+1],
  ['lockHeight',release.lockHeight+1],['amountSats',release.amountSats+1],
  ['destinationScriptHex','6a']]){
