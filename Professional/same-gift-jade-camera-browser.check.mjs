@@ -48,7 +48,7 @@ try{
   Object.defineProperty(video,'videoWidth',{get:()=>650});
   Object.defineProperty(video,'videoHeight',{get:()=>650});
   video.play=async()=>{};
-  Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})}});
+  Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>new MediaStream()}});
   const ctx=canvas.getContext('2d');
   ctx.drawImage=()=>{};
   ctx.getImageData=()=>source.getContext('2d').getImageData(0,0,650,650);
