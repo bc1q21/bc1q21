@@ -19,7 +19,7 @@ const expectedApprovedSha256=Buffer.from(sha256(Buffer.from(approvedUnsignedBase
 const tip='a'.repeat(64);
 const utxo={bestblock:tip,confirmations:3,value:release.inputSats/1e8,
  scriptPubKey:{hex:release.fundingScriptHex}};
-function makeRpc({height=release.lockHeight,spent=false,wrongScript=false,moving=false,chain='regtest'}={}){
+function makeRpc({height=release.lockHeight,mtp=release.lockHeight>=500000000?release.lockHeight+1:1800000000,spent=false,wrongScript=false,moving=false,chain='regtest'}={}){
  let tipReads=0;
  return async (method,params)=>{
   if(method==='getbestblockhash')return moving&&++tipReads===2?'b'.repeat(64):tip;
@@ -28,7 +28,7 @@ function makeRpc({height=release.lockHeight,spent=false,wrongScript=false,moving
    assert.deepEqual(params,[release.fundingTxid,release.fundingVout,false]);
    return spent?null:wrongScript?{...utxo,scriptPubKey:{hex:'6a'}}:utxo;
   }
-  if(method==='getblockheader')return {hash:tip,height,mediantime:1800000000};
+  if(method==='getblockheader')return {hash:tip,height,mediantime:mtp};
   throw Error('Unexpected RPC method '+method);
  };
 }
@@ -41,7 +41,8 @@ test('local Core release preflight checks exact outpoint and maturity but never 
  assert.equal(result.canSign,false);
  assert.equal(result.canBroadcast,false);
  assert.equal(result.rpcTransportAuthenticated,false);
- const locked=await run(makeRpc({height:release.lockHeight-2}));
+ const locked=await run(makeRpc(release.lockHeight>=500000000?
+  {mtp:release.lockHeight}:{height:release.lockHeight-2}));
  assert.equal(locked.cltvMatureForNextBlock,false);
  assert.equal(locked.readyForReview,false);
 });
