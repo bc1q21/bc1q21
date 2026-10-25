@@ -1,0 +1,158 @@
+{
+  "format": "bc1q21-professional-historical-funded-gift-public-evidence-v1",
+  "network": "regtest",
+  "giftLinkFundingAddress": "bcrt1qqvjk8ktwvxd34w4yduj424f5vw7m5f84d2lerk",
+  "fundingTxid": "ab42c4c3c8bd1c0654e56c8795a48c9da0a313e3dc99769d67a2a90298cfa644",
+  "releaseOutputs": [
+    {
+      "index": 0,
+      "vout": 2,
+      "sats": 12000,
+      "scriptPubKeyHex": "a9146af2bfa5d1b6f34f1068b732a2437228505c619387"
+    },
+    {
+      "index": 1,
+      "vout": 3,
+      "sats": 13000,
+      "scriptPubKeyHex": "a9141e12b82571a4600efdecc9f5ff7c22d174a8d67a87"
+    },
+    {
+      "index": 2,
+      "vout": 4,
+      "sats": 14000,
+      "scriptPubKeyHex": "a914a7e3ff8c49b6b8b1782e339172808fc94ebbadec87"
+    },
+    {
+      "index": 3,
+      "vout": 5,
+      "sats": 15000,
+      "scriptPubKeyHex": "a9144d05a95001fc45f74f47d10f414913623996a14a87"
+    },
+    {
+      "index": 4,
+      "vout": 6,
+      "sats": 16000,
+      "scriptPubKeyHex": "a9141804f8503528b16c3d57a5df5f9df8ccceb4de9487"
+    },
+    {
+      "index": 5,
+      "vout": 7,
+      "sats": 17000,
+      "scriptPubKeyHex": "a91467b7f3ba8e4419be42cc22fe17bc6217c17f138187"
+    },
+    {
+      "index": 6,
+      "vout": 8,
+      "sats": 18000,
+      "scriptPubKeyHex": "a914ea6475b2a79d641ce98ec946060995673aff22b287"
+    },
+    {
+      "index": 7,
+      "vout": 9,
+      "sats": 19000,
+      "scriptPubKeyHex": "a9148131135b7d0ad1ca51e02f40965620ac468a583987"
+    },
+    {
+      "index": 8,
+      "vout": 10,
+      "sats": 20000,
+      "scriptPubKeyHex": "a914414687012d8a74d2f3f3371573067ebadc4079f487"
+    },
+    {
+      "index": 9,
+      "vout": 11,
+      "sats": 21000,
+      "scriptPubKeyHex": "a914c1239685ec7164d3c10fb42a76ebb2acffbf34d187"
+    },
+    {
+      "index": 10,
+      "vout": 12,
+      "sats": 22000,
+      "scriptPubKeyHex": "a914a9048fa8d7c05f311b9d152e5450eed2bdead3a187"
+    },
+    {
+      "index": 11,
+      "vout": 13,
+      "sats": 23000,
+      "scriptPubKeyHex": "a91413e98b76c8e3cd6b5154770082f307d53741275b87"
+    },
+    {
+      "index": 12,
+      "vout": 14,
+      "sats": 24000,
+      "scriptPubKeyHex": "a9146221338d126807e2201f0e24783e49c12c6e467287"
+    },
+    {
+      "index": 13,
+      "vout": 15,
+      "sats": 25000,
+      "scriptPubKeyHex": "a914b21770d21edcd1b6b3795e12d9847da29096cd4a87"
+    },
+    {
+      "index": 14,
+      "vout": 16,
+      "sats": 26000,
+      "scriptPubKeyHex": "a91485617bd410104ee900d08b40f425610dced7c9e787"
+    },
+    {
+      "index": 15,
+      "vout": 17,
+      "sats": 27000,
+      "scriptPubKeyHex": "a9140681305be8be4370958274b5571018b98ab47ba387"
+    },
+    {
+      "index": 16,
+      "vout": 18,
+      "sats": 28000,
+      "scriptPubKeyHex": "a914acc31ec684bda3f85781d079359aded04a8886f087"
+    },
+    {
+      "index": 17,
+      "vout": 19,
+      "sats": 29000,
+      "scriptPubKeyHex": "a9145e64bea2f8e3e475779e5d59e5fa65d2b8e274fd87"
+    },
+    {
+      "index": 18,
+      "vout": 20,
+      "sats": 30000,
+      "scriptPubKeyHex": "a914d261331cc5fde75515376b29e6635c2544c9374387"
+    },
+    {
+      "index": 19,
+      "vout": 21,
+      "sats": 31000,
+      "scriptPubKeyHex": "a914dbe8175ad7f2b389c0206939690a0b612d71b90587"
+    },
+    {
+      "index": 20,
+      "vout": 22,
+      "sats": 32000,
+      "scriptPubKeyHex": "a91462ff928356b9cb72cb0398780f5936b5dccf1aa087"
+    },
+    {
+      "index": 21,
+      "vout": 23,
+      "sats": 33000,
+      "scriptPubKeyHex": "a9140cb0adb2d97aa91e812912da442d83b46de9268a87"
+    },
+    {
+      "index": 22,
+      "vout": 24,
+      "sats": 34000,
+      "scriptPubKeyHex": "a9142e5a96062b68df58bf778e9c6b67e1d77ec6e4e087"
+    },
+    {
+      "index": 23,
+      "vout": 25,
+      "sats": 35000,
+      "scriptPubKeyHex": "a91409f67b09e5ec4e0417ca147121026e135beabcfe87"
+    }
+  ],
+  "evidenceOrigin": "recovered original single-funded-gift-proof.json; disposable regtest; historical snapshot",
+  "creatorAuthenticated": false,
+  "independentCommitmentAuthenticated": false,
+  "scheduleAuthenticated": false,
+  "beneficiaryAuthorized": false,
+  "broadcastAuthorized": false
+}
