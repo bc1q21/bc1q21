@@ -12,6 +12,7 @@ import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mj
 import {prepareRecipientHeldOptionBReview} from './recipient-held-option-b-review.mjs';
 import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
 import {verifyPublicRetailSchedule} from './public-retail-schedule-verify.mjs';
+import {buildFundedCalendarGiftView} from './funded-calendar-recipient-view.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -109,6 +110,24 @@ const result=await prepareRecipientHeldOptionBReview({
 assert.deepEqual(result.publishedReleases.map(r=>r.date),dates);
 assert.equal(result.verifiedReleaseCount,2);
 assert.equal(result.coreFundingVerifiedAtReviewCreation,true);
+const recipientView=buildFundedCalendarGiftView({giftUrl,published,locatorMapping,binding,
+ coreFundingVerifiedAtReviewCreation:result.coreFundingVerifiedAtReviewCreation});
+assert.deepEqual(recipientView.releases.map(r=>r.date),dates);
+assert.deepEqual(recipientView.releases.map(r=>r.sats),[100000,200000]);
+assert.equal(recipientView.totalScheduledSats,300000);
+assert.equal(recipientView.coreFundingVerifiedAtReviewCreation,true);
+assert.equal(recipientView.creatorAuthenticated,false);
+assert.equal(recipientView.canExportSigningQr,false);
+assert.equal(recipientView.canBroadcast,false);
+assert.throws(()=>buildFundedCalendarGiftView({giftUrl,published,locatorMapping,binding,
+ coreFundingVerifiedAtReviewCreation:false}),/Trusted Core verification required/);
+const alteredBinding=structuredClone(binding);
+alteredBinding.releaseOutputs[1].scriptPubKeyHex='a914'+'00'.repeat(20)+'87';
+assert.throws(()=>buildFundedCalendarGiftView({giftUrl,published,locatorMapping,
+ binding:alteredBinding,coreFundingVerifiedAtReviewCreation:true}));
+console.log('PASS_FUNDED_CALENDAR_RECIPIENT_READONLY_VIEW',JSON.stringify({
+ releases:recipientView.releaseCount,totalScheduledSats:recipientView.totalScheduledSats,
+ creatorAuthenticated:false,broadcast:false}));
 assert.equal(result.recipientFingerprintCompared,true);
 assert.equal(result.independentChannelAcknowledged,true);
 assert.equal(result.creatorAuthenticated,false);
