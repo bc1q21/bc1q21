@@ -9,6 +9,7 @@ on:
       - 'Professional/integrated-public-regtest-acceptance.mjs'
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
       - 'Professional/option-b-two-funded-core-acceptance.mjs'
+      - 'Professional/verify-calendar-jade-return.mjs'
       - 'Professional/locally-verified-beneficiary-review.mjs'
       - 'Professional/funded-calendar-recipient-view.mjs'
       - 'Professional/render-funded-calendar-recipient-section.mjs'
@@ -52,6 +53,8 @@ jobs:
       - name: Execute genuine calendar-timestamp CLTV regtest acceptance
         run: node Professional/integrated-calendar-timestamp-core-acceptance.mjs
 
+      - name: Check offline Jade signed-return verifier syntax
+        run: node --check Professional/verify-calendar-jade-return.mjs
       - name: Install isolated Chromium
         run: npx --prefix Professional playwright install chromium
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
