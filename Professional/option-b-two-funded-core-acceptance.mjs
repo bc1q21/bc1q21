@@ -17,6 +17,10 @@ import {renderFundedCalendarRecipientSection} from './render-funded-calendar-rec
 import {prepareReviewedFundedRecipientQr} from './reviewed-funded-recipient-qr.mjs';
 import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-step.mjs';
 import {chromium} from 'playwright';
+import {readFileSync} from 'node:fs';
+import {URDecoder} from '@ngraveio/bc-ur';
+import cbor from 'cbor';
+import {verifyReturnedSignedProfessionalPsbt} from './verify-signed-psbt-return.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -191,5 +195,15 @@ const qr={frames:session.frames,signed:session.signed,broadcast:session.broadcas
 assert.equal(qr.frames.length,8);
 assert.ok(qr.frames.every(f=>f.startsWith('ur:crypto-psbt/')));
 assert.equal(qr.signed,false);assert.equal(qr.broadcast,false);
+// A valid Jade signature from a DIFFERENT funded gift must never pass
+// as a signed return for this recipient's exact approved calendar release.
+const recorded=readFileSync('Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt','utf8')
+ .split(/\\r?\\n/).map(x=>x.trim()).filter(x=>/^ur:crypto-psbt\\//i.test(x));
+const returnedDecoder=new URDecoder();
+for(const frame of recorded)returnedDecoder.receivePart(frame);
+assert.ok(returnedDecoder.isComplete()&&returnedDecoder.isSuccess());
+const unrelatedSigned=Buffer.from(cbor.decodeFirstSync(Buffer.from(returnedDecoder.resultUR().cbor))).toString('base64');
+assert.throws(()=>verifyReturnedSignedProfessionalPsbt(
+ review.review().unsignedPsbtBase64,unrelatedSigned,approvedReview.psbtSha256));
 await assert.rejects(review.exportQrFrames(),/already consumed/);
 console.log('PASS: genuine two-output funded Core regtest Option B link -> full-output checks -> review -> one-use unsigned QR. No spend broadcast. Recipient acknowledgement simulated; creator identity and delivery provenance NOT verified.');
