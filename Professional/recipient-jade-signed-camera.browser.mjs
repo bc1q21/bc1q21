@@ -61,11 +61,21 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
  const start=async()=>{
   reset();
   if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera requires secure browser context');
+  const token=generation;
+  let acquired=null;
   try{
-   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
-   video.srcObject=stream;await video.play();active=true;
-   status('Point camera at Jade Plus signed QR');const token=generation;void tick(token);
-  }catch(error){stop();throw error;}
+   acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+   if(token!==generation){for(const track of acquired.getTracks())track.stop();return;}
+   stream=acquired;video.srcObject=stream;
+   await video.play();
+   if(token!==generation){for(const track of acquired.getTracks())track.stop();return;}
+   active=true;
+   status('Point camera at Jade Plus signed QR');void tick(token);
+  }catch(error){
+   if(acquired)for(const track of acquired.getTracks())track.stop();
+   if(token!==generation)return;
+   stop();throw error;
+  }
  };
  return Object.freeze({start,stop,reset,get completed(){return completed;}});
 }
