@@ -62,9 +62,7 @@ jobs:
       - name: Reject genuine Jade signature from another gift at calendar return CLI
         run: |
           if node Professional/verify-calendar-jade-return.mjs \
-            Professional/artifacts/two-release-calendar-jade-handoff.json
-            Professional/artifacts/two-release-calendar-unsigned-qr-frames.txt
-            Professional/artifacts/two-release-calendar-recipient-preview.html \
+            Professional/artifacts/two-release-calendar-jade-handoff.json \
             "Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt" > /tmp/professional-wrong-gift.log 2>&1; then
             echo "Wrong-gift Jade signature was incorrectly accepted"
             exit 1
@@ -84,5 +82,7 @@ jobs:
           name: professional-calendar-regtest-public-handoff
           path: |
             Professional/artifacts/two-release-calendar-jade-handoff.json
+            Professional/artifacts/two-release-calendar-unsigned-qr-frames.txt
+            Professional/artifacts/two-release-calendar-recipient-preview.html
             Professional/artifacts/calendar-regtest-chain/
           retention-days: 7
