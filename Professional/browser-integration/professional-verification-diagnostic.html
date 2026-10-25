@@ -26,25 +26,35 @@ small{color:#bfcbd9}</style></head>
 const status=document.getElementById('status');
 const button=document.getElementById('verify');
 const frames=document.getElementById('frames');
+let revision=0;
+function invalidate(){revision++;show('Not verified. Data changed since last check.','idle');}
 function show(message,state){status.textContent=message;status.dataset.state=state;}
 document.getElementById('file').addEventListener('change',async event=>{
- show('Not verified. Imported data must be checked.','idle');
+ invalidate();
  const file=event.target.files?.[0];if(!file)return;
  if(file.size>150000){show('Import rejected: file exceeds 150 KB.','fail');return;}
- try{frames.value=await file.text();}catch{show('Import failed.','fail');}
+ try{const imported=await file.text();
+  if(event.target.files?.[0]!==file)return;
+  frames.value=imported;
+  invalidate();}catch{show('Import failed.','fail');}
 });
-frames.addEventListener('input',()=>show('Not verified. Data changed since last check.','idle'));
+frames.addEventListener('input',invalidate);
 button.addEventListener('click',async()=>{
  button.disabled=true;
+ const startedAt=revision;
+ const submitted=frames.value;
  show('Verifying Jade signed transaction against approved regtest gift…','idle');
  try{
   if(typeof globalThis.bc1q21ProfessionalVerify!=='function')throw Error('Browser verifier bundle is not loaded. Build must pass first.');
-  const lines=frames.value.split(/\r?\n/).map(x=>x.trim()).filter(x=>x && !x.startsWith('#'));
+  const lines=submitted.split(/\r?\n/).map(x=>x.trim()).filter(x=>x && !x.startsWith('#'));
   const result=await globalThis.bc1q21ProfessionalVerify(lines);
+  if(startedAt!==revision || submitted!==frames.value)throw Error('QR data changed during verification; run verification again.');
   if(result?.signatureCryptographicallyVerified!==true || result?.transactionMatches!==true || result?.broadcast!==false)
    throw Error('Verifier did not confirm all mandatory checks.');
   show('VERIFIED: Jade signature is cryptographically valid and the transaction matches the approved disposable regtest gift.\nNo transaction was broadcast.','pass');
- }catch(error){show('NOT VERIFIED: '+String(error?.message||error),'fail');}
+ }catch(error){
+  if(startedAt===revision)show('NOT VERIFIED: '+String(error?.message||error),'fail');
+ }
  finally{button.disabled=false;}
 });
 </script></body></html>
