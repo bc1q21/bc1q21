@@ -120,6 +120,9 @@ try{
  assert.equal(recipientResult.canBroadcast,false);
  assert.equal(recipientResult.beneficiaryAuthorized,false);
  assert.equal(recipientResult.broadcast,false);
+ assert.equal(recipientResult.signatureCryptographicallyVerified,true);
+ assert.equal(recipientResult.finalized,true);
+ assert.match(await page.locator('#jade-signed-status').textContent(),/Jade signature verified and return processed/);
  await page.locator('#jade-signed-stop').click();
  // The exact same QR data must NOT count as completed when the verifier rejects it.
  await page.evaluate(()=>{
@@ -148,5 +151,5 @@ try{
  assert.equal(await page.evaluate(()=>window.__receiver.completed),false,'Rejected signature cannot complete receiver');
  assert.deepEqual(errors,[]);
  assert.deepEqual(requests,[]);
- console.log('PASS_ACTUAL_JADE_SIGNED_QR_BROWSER_CAMERA_DECODE',JSON.stringify({signedFrames:frames.length,decodedBytes:raw.length,txid:verified.txid,broadcast:false}));
+ console.log('PASS_ACTUAL_JADE_SIGNED_QR_BROWSER_RECIPIENT_FINALIZATION',JSON.stringify({signedFrames:frames.length,decodedBytes:raw.length,txid:verified.txid,broadcast:false}));
 }finally{await browser.close();}
