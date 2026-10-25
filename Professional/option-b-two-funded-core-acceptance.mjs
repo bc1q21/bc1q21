@@ -141,8 +141,16 @@ assert.equal(result.independentChannelAcknowledged,true);
 assert.equal(result.creatorAuthenticated,false);
 assert.equal(result.recipientCommitmentProvenanceVerified,false);
 const review=result.beneficiary;
+// A funded recipient page cannot bypass the exact-PSBT beneficiary checkpoint.
+assert.equal(review.reviewCompleted(),false);
+await assert.rejects(review.exportQrFrames({frameCount:8}),
+ /Successful beneficiary review required/);
 review.approve({acknowledged:true,confirmedDigest:review.review().psbtSha256});
 await review.finalizeReview();
+assert.equal(review.reviewCompleted(),true);
+const approvedReview=review.review();
+assert.equal(typeof approvedReview.psbtSha256,'string');
+assert.match(approvedReview.psbtSha256,/^[0-9a-f]{64}$/);
 const qr=await review.exportQrFrames({frameCount:8});
 assert.equal(qr.frames.length,8);
 assert.ok(qr.frames.every(f=>f.startsWith('ur:crypto-psbt/')));
