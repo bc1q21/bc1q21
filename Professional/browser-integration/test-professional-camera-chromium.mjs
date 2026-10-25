@@ -13,6 +13,8 @@ const images=await Promise.all(frames.map(frame=>QRCode.toDataURL(frame,{margin:
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try{
  const page=await browser.newPage();
+ const cameraErrors=[];
+ page.on('pageerror',error=>cameraErrors.push(error.message));
  const external=[];
  await page.route('**/*',route=>{
   if(route.request().url().startsWith('file:'))return route.continue();
@@ -43,6 +45,16 @@ try{
  assert.match(await page.locator('#status').innerText(),/VERIFIED: Jade camera signature/);
  assert.equal(await page.locator('#jade-stop').isDisabled(),true);
  assert.deepEqual(external,[],'Camera verification must make no network requests');
+ assert.deepEqual(cameraErrors,[],'Camera verifier must not throw uncaught browser errors');
+ // A second scan must revoke the previous success immediately.
+ await page.locator('#jade-start').click();
+ assert.equal(await page.locator('#status').getAttribute('data-state'),'idle',
+  'Starting another scan must revoke prior verification');
+ await page.locator('#jade-stop').click();
+ assert.equal(await page.locator('#status').getAttribute('data-state'),'idle',
+  'Stopping a scan must never preserve verified state');
+ // Stale signed results from the previous session must not restore green status.
+ assert.notEqual(await page.locator('#status').getAttribute('data-state'),'pass');
  await page.evaluate(()=>{clearInterval(window.__qrTimer);});
  console.log('PASS: real Chromium camera path decoded animated physical Jade QR, verified signature and transaction, no network/broadcast');
 }finally{await browser.close();}
