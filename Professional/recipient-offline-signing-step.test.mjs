@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-step.mjs';
+import {renderApprovedRecipientQrImages} from './recipient-approved-qr-images.mjs';
 
 const base={format:'bc1q21-professional-recipient-integration-v1',network:'regtest',canSign:false,canBroadcast:false,blockers:['Trusted chain source missing']};
 test('recipient signing step is clearly disabled while authorization is missing',()=>{
@@ -58,4 +59,20 @@ test('animated QR renderer emits a valid script closing tag',()=>{
  const closeTag='<'+'/script>';
  assert.ok(html.includes(closeTag),'Missing HTML script closing tag');
  assert.equal(html.split(closeTag).length-1,1,'Expected one closing script tag');
+});
+
+test('reviewed unsigned QR frames generate real embedded PNGs for recipient display',async()=>{
+ const reviewed={network:'regtest',verifiedRoundTrip:true,format:'ur:crypto-psbt',signed:false,broadcast:false,
+  frames:['ur:crypto-psbt/1-2/abcd','ur:crypto-psbt/2-2/efgh']};
+ const session=await renderApprovedRecipientQrImages(reviewed);
+ assert.equal(session.qrImages.length,2);
+ for(const png of session.qrImages){
+  assert.match(png,/^data:image\\/png;base64,/);
+  assert.equal(Buffer.from(png.split(',')[1],'base64').subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+ }
+ const html=renderProfessionalOfflineSigningStep(base,session);
+ assert.match(html,/id="jade-unsigned-qr"/);
+ assert.match(html,/id="jade-signed-start"/);
+ await assert.rejects(()=>renderApprovedRecipientQrImages({...reviewed,verifiedRoundTrip:false}));
+ await assert.rejects(()=>renderApprovedRecipientQrImages({...reviewed,broadcast:true}));
 });
