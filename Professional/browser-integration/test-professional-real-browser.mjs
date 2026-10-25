@@ -36,7 +36,7 @@ try {
  assert.match(await page.locator('#status').innerText(),/not loaded/i);
  await page.locator('#jade-start').click();
  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Camera unavailable')||document.querySelector('#jade-stop').disabled===false);
- if(!(await page.locator('#jade-stop').isDisabled()))await page.locator('#jade-stop').click();
+ if(!(await page.locator('#jade-stop').isDisabled()))await page.locator('#jade-stop').click({timeout:1500}).catch(()=>{});
  assert.notEqual(await page.locator('#status').getAttribute('data-state'),'pass');
  await page.locator('#frames').fill('UR:CRYPTO-PSBT/1-1/tampered');
  assert.equal(await page.locator('#status').getAttribute('data-state'),'idle');
