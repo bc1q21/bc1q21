@@ -16,6 +16,7 @@ import {buildFundedCalendarGiftView} from './funded-calendar-recipient-view.mjs'
 import {renderFundedCalendarRecipientSection} from './render-funded-calendar-recipient-section.mjs';
 import {prepareReviewedFundedRecipientQr} from './reviewed-funded-recipient-qr.mjs';
 import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-step.mjs';
+import {chromium} from 'playwright';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -165,6 +166,27 @@ assert.match(approvedSection,/id="jade-unsigned-qr"/);
 assert.match(approvedSection,/id="jade-signed-start"/);
 assert.match(approvedSection,/id="sign" disabled/);
 assert.doesNotMatch(approvedSection,/seed phrase input|mnemonic input/i);
+const browser=await chromium.launch({headless:true});
+try {
+ const page=await browser.newPage();
+ const requests=[],errors=[];
+ page.on('request',request=>requests.push(request.url()));
+ page.on('pageerror',error=>errors.push(error.message));
+ await page.setContent('<!doctype html><html><body>'+fundedHtml+approvedSection+'</body></html>');
+ for(const date of dates)assert.ok((await page.locator('body').innerText()).includes(date));
+ assert.equal(await page.locator('#sign').isDisabled(),true);
+ assert.equal(await page.locator('#jade-signed-start').count(),1);
+ assert.equal(await page.locator('#jade-unsigned-qr').evaluate(img=>img.complete&&img.naturalWidth>0),true);
+ await page.locator('#jade-qr-toggle').click();
+ assert.equal(await page.locator('#jade-qr-toggle').textContent(),'Resume QR animation');
+ await page.locator('#jade-qr-toggle').click();
+ await page.waitForFunction(()=>document.querySelector('#jade-qr-progress')?.textContent==='QR frame 2 of 8',null,{timeout:5000});
+ assert.equal(await page.locator('#jade-unsigned-qr').getAttribute('src'),session.qrImages[1]);
+ assert.equal(await page.locator('input[type=password]').count(),0);
+ assert.deepEqual(requests,[]);
+ assert.deepEqual(errors,[]);
+ console.log('PASS_FUNDED_GIFT_APPROVAL_AND_RECIPIENT_BROWSER_QR');
+} finally {await browser.close();}
 const qr={frames:session.frames,signed:session.signed,broadcast:session.broadcast};
 assert.equal(qr.frames.length,8);
 assert.ok(qr.frames.every(f=>f.startsWith('ur:crypto-psbt/')));
