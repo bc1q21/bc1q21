@@ -10,6 +10,8 @@ on:
       - 'Professional/original-funded-24-public-binding.check.mjs'
       - 'Professional/historical-funded-gift-view.mjs'
       - 'Professional/historical-funded-gift-view.check.mjs'
+      - 'Professional/funded-gift-calendar-attachment.mjs'
+      - 'Professional/funded-gift-calendar-attachment.check.mjs'
       - 'Professional/fixtures/original-funded-24-public-evidence.json'
       - 'Professional/fixtures/same-gift-unsigned-handoff.json'
       - '.github/workflows/professional-same-gift-browser.yml'
@@ -29,6 +31,8 @@ jobs:
           node-version: '22'
       - name: Install test-only dependencies
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2 esbuild@0.25.12 jsqr@1.4.0 @noble/curves@1.9.7 buffer@6.0.3
+      - name: Reject unsupported calendar claims on historical height-CLTV gift
+        run: node Professional/funded-gift-calendar-attachment.check.mjs
       - name: Validate read-only original funded gift-link preview
         run: node Professional/historical-funded-gift-view.check.mjs
       - name: Bind historical public gift locator to all 24 original funded outputs
