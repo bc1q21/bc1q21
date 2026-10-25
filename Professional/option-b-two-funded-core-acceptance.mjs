@@ -11,6 +11,7 @@ import {retailDateToCltvTimestamp} from './retail-calendar-cltv.mjs';
 import {digestProfessionalGiftBinding} from './public-gift-binding-commitment.mjs';
 import {prepareRecipientHeldOptionBReview} from './recipient-held-option-b-review.mjs';
 import {renderOptionBRecipientPage} from './render-option-b-recipient-page.mjs';
+import {verifyPublicRetailSchedule} from './public-retail-schedule-verify.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const authorization='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -60,6 +61,23 @@ const digest=digestProfessionalGiftBinding(binding);
 const giftUrl='https://example.invalid/gift/'+'bcrt1q'+'q'.repeat(38)+'?interval=month';
 const published={accountXpub,masterFingerprintHex,firstDate:dates[0],interval:'month',
  outputScriptsHex:handoffs.map(h=>h.fundingScriptPubKeyHex)};
+// Verify every calendar date against public signer derivation AND every
+// corresponding output of the one transaction observed from Bitcoin Core.
+const calendar=verifyPublicRetailSchedule(published);
+assert.equal(calendar.releaseCount,binding.releaseOutputs.length);
+for(const release of calendar.releases){
+ const funded=binding.releaseOutputs[release.index];
+ assert.equal(release.fundingScriptPubKeyHex,funded.scriptPubKeyHex,
+  'Published calendar date must derive the exact funded release script');
+ assert.equal(Buffer.from(tx.outs[funded.vout].script).toString('hex'),
+  release.fundingScriptPubKeyHex,'Actual funded transaction output differs from calendar');
+ assert.equal(tx.outs[funded.vout].value,funded.sats);
+ assert.equal(release.date,dates[release.index]);
+}
+const invalidSchedule={...published,outputScriptsHex:[...published.outputScriptsHex]};
+invalidSchedule.outputScriptsHex[1]='a914'+'00'.repeat(20)+'87';
+assert.throws(()=>verifyPublicRetailSchedule(invalidSchedule),
+ 'Changing a scheduled release script must invalidate calendar evidence');
 const locatorMapping={fundingAddress:'bcrt1q'+'q'.repeat(38),
  releaseScriptsHex:handoffs.map(h=>h.fundingScriptPubKeyHex)};
 const rendered=renderOptionBRecipientPage(giftUrl,published,locatorMapping);
