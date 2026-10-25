@@ -32,6 +32,23 @@ export function verifyGiftReleaseBinding({gift,release,approvedUnsignedBase64,ex
  if(output.value!==release.amountSats||
     output.script.toString('hex')!==release.destinationScriptHex)
   fail('Selected gift release destination or amount mismatch');
+ const funding=psbt.data.inputs[0]?.nonWitnessUtxo;
+ if(!funding)fail('Approved PSBT funding transaction evidence missing');
+ let prev;
+ try{prev=bitcoin.Transaction.fromBuffer(funding)}catch{fail('Invalid PSBT funding transaction evidence')}
+ if(prev.getId()!==release.fundingTxid||!prev.outs[release.fundingVout])
+  fail('Approved PSBT funding transaction differs from selected release');
+ if(release.fundingScriptHex!==undefined){
+  if(typeof release.fundingScriptHex!=='string'||!/^(?:[0-9a-f]{2})+$/.test(release.fundingScriptHex))
+   fail('Invalid selected gift funding script');
+  if(prev.outs[release.fundingVout].script.toString('hex')!==release.fundingScriptHex)
+   fail('Selected gift locking script mismatch');
+ }
+ if(release.inputSats!==undefined){
+  if(!Number.isSafeInteger(release.inputSats)||release.inputSats<1||
+     prev.outs[release.fundingVout].value!==release.inputSats)
+   fail('Selected gift funding amount mismatch');
+ }
  return Object.freeze({giftLocator:gift.fundingAddress,selectedRelease:release.releaseNumber,
   transactionMatchesSuppliedRelease:true,
   giftProvenanceVerified:false,fundingUtxoVerified:false,signingAuthorized:false,broadcast:false});
