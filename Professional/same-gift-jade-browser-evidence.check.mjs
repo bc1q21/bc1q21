@@ -5,7 +5,9 @@ import {readFileSync} from 'node:fs';
 import {chromium} from 'playwright';
 import {auditSameGiftUnsignedHandoff} from './audit-same-gift-unsigned-handoff.mjs';
 import {finalizeJadeSignedQrReturn} from './jade-signed-qr-return.mjs';
-import {makeApprovedCryptoPsbtQrFrames} from './approved-qr-handoff.mjs';
+import {makeCryptoPsbtFrames} from './crypto-psbt-frames.mjs';
+import {URDecoder} from '@ngraveio/bc-ur';
+import cbor from 'cbor';
 import {renderApprovedRecipientQrImages} from './recipient-approved-qr-images.mjs';
 import {renderProfessionalOfflineSigningStep} from './recipient-offline-signing-step.mjs';
 
@@ -19,9 +21,16 @@ const finalized=finalizeJadeSignedQrReturn({handoff,frames:signedFrames});
 assert.equal(finalized.signatureCryptographicallyVerified,true);
 assert.equal(finalized.broadcast,false);
 assert.equal(finalized.beneficiaryAuthorized,false);
-const reviewed={network:'regtest',approvalVerified:true,signed:false,broadcast:false,
- nextEncoder:'ur:crypto-psbt',unsignedPsbtBase64:handoff.unsignedPsbtBase64,psbtSha256:handoff.psbtSha256};
-const encoded=makeApprovedCryptoPsbtQrFrames(reviewed,{fragmentLength:120,frameCount:32});
+// Public evidence is explicitly NOT beneficiary-approved. Verify transport
+// round-trip independently; do not fabricate an authorization token.
+const original=Buffer.from(handoff.unsignedPsbtBase64,'base64');
+const frames=makeCryptoPsbtFrames(original,{fragmentLength:120,frameCount:32});
+const decoder=new URDecoder();
+for(const frame of frames)decoder.receivePart(frame);
+assert.ok(decoder.isComplete()&&decoder.isSuccess(),'Unsigned QR must reconstruct');
+assert.deepEqual(Buffer.from(cbor.decodeFirstSync(Buffer.from(decoder.resultUR().cbor))),original);
+const encoded={network:'regtest',verifiedRoundTrip:true,format:'ur:crypto-psbt',
+ signed:false,broadcast:false,frames};
 const session=await renderApprovedRecipientQrImages(encoded);
 const integration={format:'bc1q21-professional-recipient-integration-v1',network:'regtest',
  canSign:false,canBroadcast:false,blockers:['Beneficiary authorization not established']};
