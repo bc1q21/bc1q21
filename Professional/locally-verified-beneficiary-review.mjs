@@ -53,8 +53,8 @@ export async function prepareLocallyVerifiedBeneficiaryReview({
   reviewCompleted:()=>finalizationSucceeded,
   exportQrFrames:async(options)=>{
    assert.equal(exportConsumed,false,'QR export already consumed');
-   exportConsumed=true;
    assert.equal(finalizationSucceeded,true,'Successful beneficiary review required');
+   exportConsumed=true;
    const freshness=await inspectFreshApprovedGiftOutpoint({
     rpc,giftEvidence,releaseIndex,approvalReceipt:{
      network:'regtest',approvalRecorded:true,releaseIndex,
