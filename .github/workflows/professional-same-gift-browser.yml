@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install test-only dependencies
-        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2 esbuild@0.25.12 jsqr@1.4.0
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 cbor@9.0.2 qrcode@1.5.4 playwright@1.58.2 esbuild@0.25.12 jsqr@1.4.0 @noble/curves@1.9.7 buffer@6.0.3
       - name: Recover previously verified same-gift unsigned public evidence
         env:
           GH_TOKEN: ${{ github.token }}
