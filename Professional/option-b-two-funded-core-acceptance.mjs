@@ -199,7 +199,7 @@ assert.equal(qr.signed,false);assert.equal(qr.broadcast,false);
 // A valid Jade signature from a DIFFERENT funded gift must never pass
 // as a signed return for this recipient's exact approved calendar release.
 const recorded=readFileSync('Professional/bc1q21_Jade_Signed_PSBT_QR_frames (7).txt','utf8')
- .split(/\\r?\\n/).map(x=>x.trim()).filter(x=>/^ur:crypto-psbt\\//i.test(x));
+ .split(/\r?\n/).map(x=>x.trim()).filter(x=>/^ur:crypto-psbt\//i.test(x));
 const returnedDecoder=new URDecoder();
 for(const frame of recorded)returnedDecoder.receivePart(frame);
 assert.ok(returnedDecoder.isComplete()&&returnedDecoder.isSuccess());
