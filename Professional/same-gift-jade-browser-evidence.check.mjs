@@ -42,6 +42,7 @@ try{
  page.on('pageerror',error=>errors.push(error.message));
  await page.setContent('<!doctype html><html><body>'+renderProfessionalOfflineSigningStep(integration,session)+'</body></html>');
  assert.equal(await page.locator('#sign').isDisabled(),true);
+ assert.equal(await page.locator('input[type=password]').count(),0,'No recovery phrase input');
  assert.equal(await page.locator('#jade-signed-start').count(),1);
  assert.equal(await page.locator('#jade-unsigned-qr').getAttribute('src'),session.qrImages[0]);
  assert.equal(await page.locator('#jade-unsigned-qr').evaluate(img=>img.complete&&img.naturalWidth>0),true);
