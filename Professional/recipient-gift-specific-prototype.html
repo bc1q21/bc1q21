@@ -137,7 +137,7 @@ document.getElementById('coreUtxoFile').addEventListener('change',async event=>{
   const locator=new URLSearchParams(location.search).get('a')||new URLSearchParams(location.search).get('address')||'';
   const release=globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift,recipientLocator:locator,releaseNumber:n});
   const response=JSON.parse(await file.text());
-  if(importToken!==coreImportGeneration)return;
+  if(importToken!==coreImportGeneration||gift!==globalThis.bc1q21ProfessionalPublicGiftRecord||n!==Number(document.getElementById('selectedRelease').value))return;
   const parsed=globalThis.bc1q21ProfessionalParseCoreGettxout(release.fundingTxid,release.fundingVout,response);
   if(response?.bestblock!==undefined&&(!/^[0-9a-f]{64}$/i.test(response.bestblock)))throw Error('Invalid Core bestblock identifier');
   if(parsed.valueSats!==release.inputSats||parsed.scriptPubKeyHex!==release.fundingScriptHex)throw Error('Core response amount or script does not match selected release');
