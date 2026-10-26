@@ -13,6 +13,9 @@ try{
  });
  await page.goto(pathToFileURL(resolve('../recipient-gift-specific-prototype.html')).href);
  assert.equal(await page.locator('#sign').isDisabled(),true);
+ await page.locator('#selectedRelease').selectOption('2');
+ assert.match(await page.locator('#selectedReleaseStatus').innerText(),/Release 2 selected/);
+ assert.equal(await page.locator('#sign').isDisabled(),true);
  assert.equal(await page.locator('#stopCamera').isDisabled(),true);
  assert.equal(await page.locator('#startCamera').isEnabled(),true);
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalAttachCamera),'function','Recipient requires built Jade browser verifier');
