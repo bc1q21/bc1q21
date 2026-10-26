@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>bc1q21 Professional — gift-specific recipient prototype (offline)</title>
 <style>
 :root{color-scheme:light;font:16px system-ui,Arial,sans-serif;background:#f4f7fb;color:#16263a}
@@ -44,7 +44,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <div class="step"><div class="number">4</div><div>Broadcast only after verifying authorization, maturity, signature and transaction details.</div></div>
 <div class="actions"><button id="sign" disabled aria-describedby="message">Sign matured release with offline wallet</button><button class="secondary" id="explain">Why is signing disabled?</button></div>
 <p id="message" role="status">Gift-specific release remains disabled while the Jade camera is integrated.</p><p class="warn">Jade signed-QR camera test: <a href="./browser-integration/professional-verification-diagnostic.html">Open the existing offline signing camera diagnostic</a>. This verifies a fixed regtest fixture, not the gift shown above.</p>
-<div class="warn"><h3>Gift-specific Jade camera — isolated integration</h3><p>Load the approved unsigned PSBT evidence for the selected gift release (local JSON: approvedUnsignedBase64, expectedApprovedSha256, releaseNumber). This does not authenticate the gift or authorize spending.</p><input id="giftPsbtFile" type="file" accept=".json,application/json"><div class="actions"><button type="button" id="giftCameraStart" disabled>Scan signed Jade QR for selected release</button><button type="button" id="giftCameraStop" disabled>Stop gift camera</button></div><p id="giftCameraStatus" role="status">No gift-specific PSBT loaded. No signing or broadcast.</p></div>
+<div class="warn"><h3>Gift-specific Jade camera — isolated integration</h3><p>Load the approved unsigned PSBT evidence for the selected gift release (local JSON: approvedUnsignedBase64, expectedApprovedSha256, releaseNumber). This does not authenticate the gift or authorize spending.</p><input id="giftPsbtFile" type="file" accept=".json,application/json"><div class="actions"><button type="button" id="showUnsignedQr" disabled>Show selected unsigned QR (diagnostic)</button><button type="button" id="hideUnsignedQr" disabled>Hide QR</button></div><p id="unsignedQrStatus" role="status">No unsigned QR displayed. Do not sign unauthenticated gift data.</p><img id="unsignedQrImage" alt="Animated unsigned Jade PSBT QR" width="300" height="300" style="display:none;max-width:100%;"><div class="actions"><button type="button" id="giftCameraStart" disabled>Scan signed Jade QR for selected release</button><button type="button" id="giftCameraStop" disabled>Stop gift camera</button></div><p id="giftCameraStatus" role="status">No gift-specific PSBT loaded. No signing or broadcast.</p></div>
 <div class="warn"><h3>Signed QR camera — regtest diagnostic only</h3><p>Scan the disposable Jade test signature. This does not sign or release the gift shown above.</p><video id="jadeVideo" playsinline muted style="width:100%;max-width:460px;background:#18283b;min-height:160px"></video><canvas id="jadeCanvas" hidden></canvas><div class="actions"><button type="button" id="startCamera">Start test camera</button><button type="button" id="stopCamera" disabled>Stop camera</button></div><p id="cameraStatus" role="status">Camera stopped.</p></div>
 </section>
 </main>
@@ -140,12 +140,13 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
 });
 // A local PSBT is never treated as trusted authorization. This integrates the
 // already-proven camera decoder with exact gift-specific signature verification.
-let giftCameraReceiver=null, giftPsbtEvidence=null;
+let giftCameraReceiver=null, giftPsbtEvidence=null, unsignedQrTimer=null;
 const giftCameraStart=document.getElementById('giftCameraStart');
 const giftCameraStop=document.getElementById('giftCameraStop');
 const giftCameraStatus=document.getElementById('giftCameraStatus');
 function stopGiftCamera(){if(giftCameraReceiver){giftCameraReceiver.stop();giftCameraReceiver=null;}giftCameraStop.disabled=true;giftCameraStart.disabled=!giftPsbtEvidence;}
-function clearGiftPsbt(){stopGiftCamera();giftPsbtEvidence=null;giftCameraStart.disabled=true;giftCameraStatus.textContent='No gift-specific PSBT loaded. No signing or broadcast.';}
+function hideUnsignedQr(){if(unsignedQrTimer){clearInterval(unsignedQrTimer);unsignedQrTimer=null;}document.getElementById('unsignedQrImage').style.display='none';document.getElementById('unsignedQrImage').removeAttribute('src');document.getElementById('hideUnsignedQr').disabled=true;document.getElementById('unsignedQrStatus').textContent='No unsigned QR displayed. Do not sign unauthenticated gift data.';}
+function clearGiftPsbt(){hideUnsignedQr();document.getElementById('showUnsignedQr').disabled=true;stopGiftCamera();giftPsbtEvidence=null;giftCameraStart.disabled=true;giftCameraStatus.textContent='No gift-specific PSBT loaded. No signing or broadcast.';}
 document.getElementById('selectedRelease').addEventListener('change',clearGiftPsbt);
 document.getElementById('publicGiftFile').addEventListener('change',clearGiftPsbt);
 document.getElementById('giftPsbtFile').addEventListener('change',async event=>{
@@ -164,9 +165,25 @@ document.getElementById('giftPsbtFile').addEventListener('change',async event=>{
   if(binding.transactionMatchesSuppliedRelease!==true)throw Error('PSBT mismatch');
   giftPsbtEvidence={gift,release:gift.releases.find(r=>r.releaseNumber===n),...evidence};
   giftCameraStart.disabled=false;
+  document.getElementById('showUnsignedQr').disabled=false;
   giftCameraStatus.textContent='Selected gift PSBT matches supplied public gift record. UNTRUSTED source; scan for verification only. No broadcast.';
  }catch(error){giftCameraStatus.textContent='Rejected gift PSBT: '+String(error.message||error);}
 });
+document.getElementById('showUnsignedQr').addEventListener('click',async()=>{
+ hideUnsignedQr();
+ try{
+  if(!giftPsbtEvidence)throw Error('Load a matching selected gift PSBT first');
+  const {images}=await globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr(giftPsbtEvidence);
+  if(!images.length)throw Error('No QR frames');
+  const img=document.getElementById('unsignedQrImage');let i=0;
+  img.src=images[0];img.style.display='block';
+  unsignedQrTimer=setInterval(()=>{i=(i+1)%images.length;img.src=images[i];},180);
+  document.getElementById('hideUnsignedQr').disabled=false;
+  document.getElementById('unsignedQrStatus').textContent='Animating '+images.length+' unsigned QR frames for selected release. DIAGNOSTIC ONLY: gift provenance unverified; do not authorize a real spend.';
+ }catch(error){hideUnsignedQr();document.getElementById('unsignedQrStatus').textContent='Unsigned QR error: '+String(error.message||error);}
+});
+document.getElementById('hideUnsignedQr').addEventListener('click',hideUnsignedQr);
+window.addEventListener('pagehide',hideUnsignedQr);
 giftCameraStart.addEventListener('click',async()=>{
  giftCameraStart.disabled=true;giftCameraStop.disabled=false;
  try{
