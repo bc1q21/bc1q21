@@ -153,6 +153,26 @@ try{
  assert.equal(await page.locator('#unsignedQrImage').isVisible(),true);
  assert.ok((await page.locator('#unsignedQrImage').getAttribute('src')).startsWith('data:image/png;base64,'));
  await page.locator('#hideUnsignedQr').click();
+ // A delayed signed-camera callback cannot mark a different selected release as verified.
+ await page.evaluate(()=>{
+  const original=globalThis.bc1q21ProfessionalAttachGiftCamera;
+  window.__staleGiftCameraCallbacks=null;
+  globalThis.bc1q21ProfessionalAttachGiftCamera=options=>{
+   window.__staleGiftCameraCallbacks=options;
+   return {start:async()=>{},stop:()=>{}};
+  };
+  window.__restoreGiftCamera=()=>{globalThis.bc1q21ProfessionalAttachGiftCamera=original;};
+ });
+ await page.locator('#giftCameraStart').click();
+ await page.waitForFunction(()=>window.__staleGiftCameraCallbacks!==null);
+ await page.locator('#selectedRelease').selectOption('');
+ await page.evaluate(()=>{
+  window.__staleGiftCameraCallbacks.onStatus('stale scanning status');
+  window.__staleGiftCameraCallbacks.onVerified({selectedRelease:1});
+  window.__restoreGiftCamera();
+ });
+ assert.doesNotMatch(await page.locator('#giftCameraStatus').innerText(),/PASS: Jade signature verified|stale scanning status/);
+ assert.equal(await page.locator('#giftCameraStart').isDisabled(),true);
  // A slow QR renderer must not display an old release after selection changes.
  await page.evaluate(()=>{
   const original=globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr;
