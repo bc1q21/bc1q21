@@ -78,9 +78,25 @@ document.getElementById('selectedRelease').addEventListener('change',event=>{
   evidence.textContent='Funding transaction: '+selected.fundingTxid+' | Output: '+selected.fundingVout+' | Lock height: '+selected.lockHeight+' | Input: '+selected.inputSats+' sats. Public consistency only; not chain verified.';
  }catch(error){label.textContent='Selected release rejected: '+String(error.message||error);}
 });
+// Once a public gift record is supplied, display its releases rather than mock amounts.
+function renderPublicReleaseOptions(record){
+ const select=document.getElementById('selectedRelease');
+ select.replaceChildren(new Option('Select release',''));
+ if(record){
+  for(const r of [...record.releases].sort((a,b)=>a.releaseNumber-b.releaseNumber)){
+   select.add(new Option('Release '+r.releaseNumber+' — '+r.inputSats.toLocaleString('en-US')+' sats (unverified)',String(r.releaseNumber)));
+  }
+ }else{
+  for(const [n,sats] of [[1,12000],[2,15000],[3,18000],[4,21000]])
+   select.add(new Option('Release '+n+' — '+sats.toLocaleString('en-US')+' sats (demo)',String(n)));
+ }
+ select.value='';
+ select.dispatchEvent(new Event('change'));
+}
 document.getElementById('publicGiftFile').addEventListener('change',async event=>{
  const status=document.getElementById('giftRecordStatus');
  globalThis.bc1q21ProfessionalPublicGiftRecord=null;
+ renderPublicReleaseOptions(null);
  document.getElementById('giftRecordSource').textContent='No record loaded';
  document.getElementById('selectedReleaseEvidence').textContent='No gift-specific transaction evidence loaded.';
  const file=event.target.files?.[0];
@@ -92,6 +108,7 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
   if(!Array.isArray(record.releases)||record.releases.length===0)throw Error('No releases');
   for(const release of record.releases)globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift:record,recipientLocator:locator,releaseNumber:release.releaseNumber});
   globalThis.bc1q21ProfessionalPublicGiftRecord=record;
+  renderPublicReleaseOptions(record);
   document.getElementById('giftRecordSource').textContent='Local JSON file (untrusted)';
   status.textContent='Public gift record loaded for '+record.releases.length+' releases. File content is not authenticated or chain-verified.';
   document.getElementById('selectedRelease').dispatchEvent(new Event('change'));
