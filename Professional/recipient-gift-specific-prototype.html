@@ -36,7 +36,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <tr><td>3</td><td>150</td><td>18,000 sats</td><td><span class="status">Tested</span></td></tr>
 <tr><td>4</td><td>160</td><td>21,000 sats</td><td><span class="status">Tested</span></td></tr></tbody></table></div>
 <p class="muted">These are known public synthetic fixtures from our isolated regtest work—not live balances, spendable UTXO discoveries, or dates derived from the recipient's real gift.</p></section>
-<section><h2>Selected gift release</h2><label for="selectedRelease">Choose a release to review:</label> <select id="selectedRelease"><option value="">Select release</option><option value="1">Release 1 — 12,000 sats</option><option value="2">Release 2 — 15,000 sats</option><option value="3">Release 3 — 18,000 sats</option><option value="4">Release 4 — 21,000 sats</option></select><p id="selectedReleaseStatus" role="status">No release selected. Signing remains locked.</p><p id="selectedReleaseEvidence" class="mono" aria-live="polite">No gift-specific transaction evidence loaded.</p></section>
+<section><h2>Selected gift release</h2><label for="selectedRelease">Choose a release to review:</label> <select id="selectedRelease"><option value="">Select release</option><option value="1">Release 1 — 12,000 sats</option><option value="2">Release 2 — 15,000 sats</option><option value="3">Release 3 — 18,000 sats</option><option value="4">Release 4 — 21,000 sats</option></select><p id="selectedReleaseStatus" role="status">No release selected. Signing remains locked.</p><p><label for="publicGiftFile">Load a public gift record (JSON, offline):</label> <input id="publicGiftFile" type="file" accept=".json,application/json"></p><p id="giftRecordStatus" role="status">No public gift record loaded. A local file is not proof of blockchain validity.</p><p id="selectedReleaseEvidence" class="mono" aria-live="polite">No gift-specific transaction evidence loaded.</p></section>
 <section><h2>Release payments — offline signer</h2>
 <div class="step"><div class="number">1</div><div>Review the matured release, destination and fee on this gift-specific page.</div></div>
 <div class="step"><div class="number">2</div><div>Open the unsigned transaction as animated QR frames, and review it on Jade.</div></div>
@@ -77,6 +77,23 @@ document.getElementById('selectedRelease').addEventListener('change',event=>{
    gift:globalThis.bc1q21ProfessionalPublicGiftRecord,recipientLocator:locator,releaseNumber:n});
   evidence.textContent='Funding transaction: '+selected.fundingTxid+' | Output: '+selected.fundingVout+' | Lock height: '+selected.lockHeight+' | Input: '+selected.inputSats+' sats. Public consistency only; not chain verified.';
  }catch(error){label.textContent='Selected release rejected: '+String(error.message||error);}
+});
+document.getElementById('publicGiftFile').addEventListener('change',async event=>{
+ const status=document.getElementById('giftRecordStatus');
+ globalThis.bc1q21ProfessionalPublicGiftRecord=null;
+ document.getElementById('selectedReleaseEvidence').textContent='No gift-specific transaction evidence loaded.';
+ const file=event.target.files?.[0];
+ if(!file){status.textContent='No public gift record loaded.';return;}
+ if(file.size>65536){status.textContent='Rejected: public gift record exceeds 64 KiB.';return;}
+ try{
+  const record=JSON.parse(await file.text());
+  const locator=new URLSearchParams(location.search).get('a')||new URLSearchParams(location.search).get('address')||'';
+  if(!Array.isArray(record.releases)||record.releases.length===0)throw Error('No releases');
+  for(const release of record.releases)globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift:record,recipientLocator:locator,releaseNumber:release.releaseNumber});
+  globalThis.bc1q21ProfessionalPublicGiftRecord=record;
+  status.textContent='Public gift record loaded for '+record.releases.length+' releases. File content is not authenticated or chain-verified.';
+  document.getElementById('selectedRelease').dispatchEvent(new Event('change'));
+ }catch(error){status.textContent='Rejected public gift record: '+String(error.message||error);}
 });
 const startCamera=document.getElementById('startCamera');
 const stopCamera=document.getElementById('stopCamera');
