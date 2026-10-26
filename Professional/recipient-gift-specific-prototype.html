@@ -43,8 +43,10 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <div class="step"><div class="number">4</div><div>Broadcast only after verifying authorization, maturity, signature and transaction details.</div></div>
 <div class="actions"><button id="sign" disabled aria-describedby="message">Sign matured release with offline wallet</button><button class="secondary" id="explain">Why is signing disabled?</button></div>
 <p id="message" role="status">Gift-specific release remains disabled while the Jade camera is integrated.</p><p class="warn">Jade signed-QR camera test: <a href="./browser-integration/professional-verification-diagnostic.html">Open the existing offline signing camera diagnostic</a>. This verifies a fixed regtest fixture, not the gift shown above.</p>
+<div class="warn"><h3>Signed QR camera — regtest diagnostic only</h3><p>Scan the disposable Jade test signature. This does not sign or release the gift shown above.</p><video id="jadeVideo" playsinline muted style="width:100%;max-width:460px;background:#18283b;min-height:160px"></video><canvas id="jadeCanvas" hidden></canvas><div class="actions"><button type="button" id="startCamera">Start test camera</button><button type="button" id="stopCamera" disabled>Stop camera</button></div><p id="cameraStatus" role="status">Camera stopped.</p></div>
 </section>
 </main>
+<script src="./browser-integration/professional-verifier.bundle.js"></script>
 <script>
 'use strict';
 (function(){
