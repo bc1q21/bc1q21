@@ -30,6 +30,13 @@ try{
  await page.locator('#coreUtxoFile').setInputFiles({name:'spent.json',mimeType:'application/json',buffer:Buffer.from('null')});
  assert.match(await page.locator('#coreUtxoStatus').innerText(),/Rejected Core response/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
+ await page.locator('#coreUtxoFile').setInputFiles({name:'wrong-value.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...goodCore,value:0.00016}))});
+ assert.match(await page.locator('#coreUtxoStatus').innerText(),/amount or script does not match/);
+ await page.locator('#coreUtxoFile').setInputFiles({name:'wrong-script.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...goodCore,scriptPubKey:{hex:'a914'+'22'.repeat(20)+'87'}}))});
+ assert.match(await page.locator('#coreUtxoStatus').innerText(),/amount or script does not match/);
+ await page.locator('#coreUtxoFile').setInputFiles({name:'bad-tip.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...goodCore,bestblock:'not-a-block'}))});
+ assert.match(await page.locator('#coreUtxoStatus').innerText(),/Invalid Core bestblock identifier/);
+ assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
