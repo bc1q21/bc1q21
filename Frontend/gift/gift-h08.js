@@ -171,6 +171,7 @@ if (this.giftTxCandidates.length === 1) {
     }));
 
   this.buildRowsWithoutSchedule();
+  await this.refreshPublicPreviewStatuses(previewTx);
 }
 
             // Spend status
@@ -1033,6 +1034,49 @@ childIndex: r.childIndex ?? null
           }
         },
 
+        // Read-only display status; never sets checkedSpent, validation, or utxoCache.
+        // The authenticated release path continues to use refreshSpentStatuses().
+        async refreshPublicPreviewStatuses(previewTx) {
+          const txid = previewTx?.txid;
+          if (!/^[a-fA-F0-9]{64}$/.test(txid || '')) return;
+          const outputs = Array.isArray(previewTx.vout) ? previewTx.vout : [];
+          const checks = await Promise.all(this.rows.map(async row => {
+            const vout = outputs.findIndex(o =>
+              o.scriptpubkey_address === row.address && Number(o.value) === row.sats);
+            if (vout < 0) return { address: row.address, status: null };
+            try {
+              const [utxoResponse, historyResponse] = await Promise.all([
+                fetch(`${this.baseApi}/address/${encodeURIComponent(row.address)}/utxo`, { cache: 'no-store' }),
+                fetch(`${this.baseApi}/address/${encodeURIComponent(row.address)}/txs`, { cache: 'no-store' })
+              ]);
+              if (!utxoResponse.ok || !historyResponse.ok ||
+                  utxoResponse.headers.get('x-stale') === 'true' ||
+                  historyResponse.headers.get('x-stale') === 'true')
+                return { address: row.address, status: null };
+              const [utxos, history] = await Promise.all([utxoResponse.json(), historyResponse.json()]);
+              if (!Array.isArray(utxos) || !Array.isArray(history))
+                return { address: row.address, status: null };
+              const matching = utxos.filter(u => u.txid === txid &&
+                Number(u.vout) === vout && Number(u.value) === row.sats);
+              if (matching.length > 1)
+                return { address: row.address, status: null };
+              const spending = history.find(tx => Array.isArray(tx.vin) &&
+                tx.vin.some(v => v.txid === txid && Number(v.vout) === vout));
+              if (spending)
+                return { address: row.address, status: spending.status?.confirmed
+                  ? 'Claimed' : 'Pending confirmation' };
+              return { address: row.address, status: matching.length === 1
+                ? 'Unclaimed' : null };
+            } catch (_) {
+              return { address: row.address, status: null };
+            }
+          }));
+          const byAddress = new Map(checks.map(c => [c.address, c.status]));
+          this.rows = this.rows.map(row => ({
+            ...row, publicPreviewStatus: byAddress.get(row.address) || null
+          }));
+        },
+
         async refreshSpentStatuses() {
           // Fail closed when the chain state is missing, stale or ambiguous.
           this.utxoCache.clear();
@@ -1086,6 +1130,7 @@ childIndex: r.childIndex ?? null
         statusLabel(o) {
           if (!o) return 'Status unavailable';
           if (o.releaseDate && !this.isReadyForRelease(o.releaseDate)) return 'Locked';
+          if (!this.unlocked) return o.publicPreviewStatus || 'Status unavailable';
           if (!o.checkedSpent) return 'Status unavailable';
           if (o.spent) return 'Claimed';
           if (o.pending) return 'Pending confirmation';
