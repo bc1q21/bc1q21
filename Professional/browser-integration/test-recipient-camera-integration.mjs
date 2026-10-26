@@ -107,6 +107,20 @@ try{
   releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256
  }))});
  assert.match(await page.locator('#giftCameraStatus').innerText(),/PSBT matches supplied public gift record/);
+ // A malicious JSON evidence file must not override the selected gift/release.
+ await page.locator('#giftPsbtFile').setInputFiles({name:'override.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({
+  releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256,
+  gift:{fundingAddress:'attacker'},release:{releaseNumber:999,fundingTxid:'ff'.repeat(32)}
+ }))});
+ assert.equal(await page.locator('#showUnsignedQr').isEnabled(),true);
+ const selectedIdentity=await page.evaluate(()=>({
+  gift:globalThis.bc1q21ProfessionalPublicGiftRecord.fundingAddress,
+  // The prepared QR verifier must still reject a mismatched release supplied explicitly.
+  reject:(()=>{try{globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding({gift:globalThis.bc1q21ProfessionalPublicGiftRecord,
+   release:{releaseNumber:999,fundingTxid:'ff'.repeat(32)},approvedUnsignedBase64:'',expectedApprovedSha256:'ff'.repeat(32)});return false}catch{return true}})()
+ }));
+ assert.equal(selectedIdentity.gift,actualGift.fundingAddress);
+ assert.equal(selectedIdentity.reject,true);
  assert.equal(await page.locator('#showUnsignedQr').isEnabled(),true);
  assert.equal(await page.locator('#giftScheduleRows tr').count(),1);
  assert.match(await page.locator('#giftTotalContext').innerText(),/12,000 sats across 1 releases.*untrusted gift record/);
