@@ -173,6 +173,12 @@ try{
  });
  assert.doesNotMatch(await page.locator('#giftCameraStatus').innerText(),/PASS: Jade signature verified|stale scanning status/);
  assert.equal(await page.locator('#giftCameraStart').isDisabled(),true);
+ // Re-select the gift and reload its evidence; changing releases intentionally clears the PSBT.
+ await page.locator('#selectedRelease').selectOption('1');
+ await page.locator('#giftPsbtFile').setInputFiles({name:'reselected-psbt.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({
+  releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256
+ }))});
+ await page.waitForFunction(()=>document.querySelector('#showUnsignedQr').disabled===false);
  // A slow QR renderer must not display an old release after selection changes.
  await page.evaluate(()=>{
   const original=globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr;
