@@ -130,6 +130,24 @@ try{
  assert.equal(await page.locator('#unsignedQrImage').isVisible(),true);
  assert.ok((await page.locator('#unsignedQrImage').getAttribute('src')).startsWith('data:image/png;base64,'));
  await page.locator('#hideUnsignedQr').click();
+ // A slow QR renderer must not display an old release after selection changes.
+ await page.evaluate(()=>{
+  const original=globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr;
+  globalThis.__resumeOldQr=null;
+  globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr=async args=>{
+   await new Promise(resolve=>{globalThis.__resumeOldQr=resolve;});
+   return original(args);
+  };
+  globalThis.__restoreQr=()=>{globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr=original;};
+ });
+ await page.locator('#showUnsignedQr').click();
+ await page.waitForFunction(()=>typeof globalThis.__resumeOldQr==='function');
+ await page.locator('#selectedRelease').selectOption('');
+ await page.evaluate(()=>{globalThis.__resumeOldQr();globalThis.__restoreQr();});
+ await page.waitForTimeout(250);
+ assert.equal(await page.locator('#unsignedQrImage').isVisible(),false,'Stale QR must not appear after release changes');
+ assert.equal(await page.locator('#showUnsignedQr').isDisabled(),true);
+
  assert.equal(await page.locator('#unsignedQrImage').isVisible(),false);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#startCamera').click();
