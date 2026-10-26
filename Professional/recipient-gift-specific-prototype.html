@@ -228,7 +228,9 @@ giftCameraStart.addEventListener('click',async()=>{
    ...evidence,onStatus:m=>{if(cameraToken===giftCameraGeneration&&evidence===giftPsbtEvidence)giftCameraStatus.textContent=m;},
    onVerified:result=>{if(cameraToken!==giftCameraGeneration||evidence!==giftPsbtEvidence)return;giftCameraStatus.textContent='PASS: Jade signature verified for selected release '+result.selectedRelease+'. No broadcast; gift provenance and authorization still required.';stopGiftCamera();}
   });
-  await giftCameraReceiver.start();
+  const receiver=giftCameraReceiver;
+  await receiver.start();
+  if(cameraToken!==giftCameraGeneration||evidence!==giftPsbtEvidence){receiver.stop();return;}
  }catch(error){if(cameraToken===giftCameraGeneration){stopGiftCamera();giftCameraStatus.textContent='Gift camera error: '+String(error.message||error);}}
 });
 giftCameraStop.addEventListener('click',()=>{stopGiftCamera();giftCameraStatus.textContent='Gift camera stopped.';});
