@@ -35,6 +35,10 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <h2>2. Gift creation</h2><p>The final Professional version must preserve Retail's Plan, Recovery, Add Funds and Finish flow, including schedule validation, funding addresses, gift card and recipient link. These temporary fields do not replace the Retail wizard.</p>
 <label for="recipient">Recipient name (demonstration only)</label><input id="recipient" maxlength="100" autocomplete="off">
 <label for="purpose">Gift occasion (demonstration only)</label><select id="purpose"><option>Legacy gift</option><option>Wedding</option><option>Birthday</option><option>Inheritance</option><option>Philanthropy</option><option>Other</option></select>
+<h3>Gift release plan — local draft</h3><p class="muted">Draft the recipient's release schedule before generating funding addresses. This preview is not a Bitcoin transaction and cannot be funded.</p>
+<label for="release-count">Number of planned releases</label><select id="release-count"><option value="1">1 release</option><option value="2">2 releases</option><option value="3">3 releases</option><option value="4">4 releases</option><option value="6">6 releases</option><option value="12">12 releases</option><option value="24">24 releases</option></select>
+<div id="release-plan-inputs"></div><button type="button" id="review-release-plan">Review gift plan</button><p id="release-plan-status" class="status" role="status">No release plan reviewed.</p>
+<div id="release-plan-preview" hidden><h3>Draft schedule</h3><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Release</th><th>Unlock date</th><th>Amount (sats)</th></tr></thead><tbody id="release-plan-rows"></tbody></table></div><p><strong>Total planned gift:</strong> <span id="release-plan-total"></span></p><p class="notice">Planning only. The validated gift engine must translate dates into chain-specific lock heights and construct the actual funding outputs.</p></div>
 <p class="notice">Gift amounts, release dates, destination scripts and actual unsigned PSBTs must come from the validated gift engine. They are not invented on this page.</p>
 <button class="secondary" data-back="profile">Back</button><button id="to-jade">Continue to Jade Plus</button>
 </section>
@@ -58,6 +62,36 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <script src="./browser-integration/professional-verifier.bundle.js"></script>
 <script>
 'use strict';
+const releaseCount=document.getElementById('release-count'),releaseInputs=document.getElementById('release-plan-inputs'),planPreview=document.getElementById('release-plan-preview'),planStatus=document.getElementById('release-plan-status');
+function renderReleaseInputs(){
+ const previous=[...releaseInputs.querySelectorAll('.draft-release')].map(row=>({date:row.querySelector('input[type=date]').value,sats:row.querySelector('input[type=number]').value}));
+ releaseInputs.replaceChildren();planPreview.hidden=true;planStatus.textContent='Review the updated release plan.';
+ for(let i=0;i<Number(releaseCount.value);i++){
+  const row=document.createElement('div');row.className='draft-release';
+  const title=document.createElement('h4');title.textContent='Release '+(i+1);row.append(title);
+  const dateLabel=document.createElement('label');dateLabel.textContent='Unlock date';const date=document.createElement('input');date.type='date';date.required=true;date.value=previous[i]?.date||'';dateLabel.append(date);
+  const satsLabel=document.createElement('label');satsLabel.textContent='Amount (satoshis)';const sats=document.createElement('input');sats.type='number';sats.min='1';sats.max='2100000000000000';sats.step='1';sats.required=true;sats.value=previous[i]?.sats||'';satsLabel.append(sats);
+  row.append(dateLabel,satsLabel);releaseInputs.append(row);
+ }
+}
+releaseCount.addEventListener('change',renderReleaseInputs);renderReleaseInputs();
+releaseInputs.addEventListener('input',()=>{planPreview.hidden=true;planStatus.textContent='Draft changed — review again before continuing.';});
+document.getElementById('review-release-plan').addEventListener('click',()=>{
+ const rows=[...releaseInputs.querySelectorAll('.draft-release')],today=new Date().toISOString().slice(0,10);
+ let total=0n,prior='',items=[];
+ for(const [index,row] of rows.entries()){
+  const date=row.querySelector('input[type=date]').value,raw=row.querySelector('input[type=number]').value;
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||date<=today||date<=prior){planPreview.hidden=true;planStatus.textContent='Release '+(index+1)+': choose a future unlock date later than the previous release.';return;}
+  if(!/^[1-9]\\d*$/.test(raw)){planPreview.hidden=true;planStatus.textContent='Release '+(index+1)+': enter a positive whole-satoshi amount.';return;}
+  const sats=BigInt(raw);if(sats>2100000000000000n){planPreview.hidden=true;planStatus.textContent='Release '+(index+1)+': amount exceeds Bitcoin supply.';return;}
+  total+=sats;if(total>2100000000000000n){planPreview.hidden=true;planStatus.textContent='Planned total exceeds Bitcoin supply.';return;}
+  prior=date;items.push({date,sats});
+ }
+ const body=document.getElementById('release-plan-rows');body.replaceChildren();
+ items.forEach((item,i)=>{const tr=document.createElement('tr');for(const v of [i+1,item.date,item.sats.toLocaleString('en-US')]){const td=document.createElement('td');td.textContent=String(v);td.style.padding='8px';tr.append(td);}body.append(tr);});
+ document.getElementById('release-plan-total').textContent=total.toLocaleString('en-US')+' sats';
+ planPreview.hidden=false;planStatus.textContent='Local draft reviewed. No funding addresses or Bitcoin transactions created.';
+});
 const stages=['profile','gift','jade','funding','card'];
 const showStage=name=>{stages.forEach((id,i)=>{document.getElementById(id).hidden=id!==name;document.querySelectorAll('.steps span')[i].classList.toggle('active',id===name)});if(name!=='jade')stopCamera();};
 document.getElementById('to-gift').onclick=()=>{
