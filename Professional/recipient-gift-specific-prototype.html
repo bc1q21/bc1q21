@@ -158,17 +158,17 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
 });
 // A local PSBT is never treated as trusted authorization. This integrates the
 // already-proven camera decoder with exact gift-specific signature verification.
-let giftCameraReceiver=null, giftPsbtEvidence=null, unsignedQrTimer=null;
+let giftCameraReceiver=null, giftPsbtEvidence=null, unsignedQrTimer=null, unsignedQrGeneration=0, giftImportGeneration=0;
 const giftCameraStart=document.getElementById('giftCameraStart');
 const giftCameraStop=document.getElementById('giftCameraStop');
 const giftCameraStatus=document.getElementById('giftCameraStatus');
 function stopGiftCamera(){if(giftCameraReceiver){giftCameraReceiver.stop();giftCameraReceiver=null;}giftCameraStop.disabled=true;giftCameraStart.disabled=!giftPsbtEvidence;if(typeof startCamera!=='undefined')startCamera.disabled=false;}
-function hideUnsignedQr(){if(unsignedQrTimer){clearInterval(unsignedQrTimer);unsignedQrTimer=null;}document.getElementById('unsignedQrImage').style.display='none';document.getElementById('unsignedQrImage').removeAttribute('src');document.getElementById('hideUnsignedQr').disabled=true;document.getElementById('unsignedQrStatus').textContent='No unsigned QR displayed. Do not sign unauthenticated gift data.';}
-function clearGiftPsbt(){hideUnsignedQr();document.getElementById('showUnsignedQr').disabled=true;stopGiftCamera();giftPsbtEvidence=null;giftCameraStart.disabled=true;giftCameraStatus.textContent='No gift-specific PSBT loaded. No signing or broadcast.';}
+function hideUnsignedQr(){unsignedQrGeneration++;if(unsignedQrTimer){clearInterval(unsignedQrTimer);unsignedQrTimer=null;}document.getElementById('unsignedQrImage').style.display='none';document.getElementById('unsignedQrImage').removeAttribute('src');document.getElementById('hideUnsignedQr').disabled=true;document.getElementById('unsignedQrStatus').textContent='No unsigned QR displayed. Do not sign unauthenticated gift data.';}
+function clearGiftPsbt(){giftImportGeneration++;hideUnsignedQr();document.getElementById('showUnsignedQr').disabled=true;stopGiftCamera();giftPsbtEvidence=null;giftCameraStart.disabled=true;giftCameraStatus.textContent='No gift-specific PSBT loaded. No signing or broadcast.';}
 document.getElementById('selectedRelease').addEventListener('change',clearGiftPsbt);
 document.getElementById('publicGiftFile').addEventListener('change',clearGiftPsbt);
 document.getElementById('giftPsbtFile').addEventListener('change',async event=>{
- clearGiftPsbt();const file=event.target.files?.[0];if(!file)return;
+ clearGiftPsbt();const importToken=giftImportGeneration;const file=event.target.files?.[0];if(!file)return;
  try{
   if(file.size>160000)throw Error('PSBT evidence file too large');
   const gift=globalThis.bc1q21ProfessionalPublicGiftRecord;
@@ -177,6 +177,7 @@ document.getElementById('giftPsbtFile').addEventListener('change',async event=>{
   const locator=new URLSearchParams(location.search).get('a')||new URLSearchParams(location.search).get('address')||'';
   const release=globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift,recipientLocator:locator,releaseNumber:n});
   const evidence=JSON.parse(await file.text());
+  if(importToken!==giftImportGeneration)throw Error('Gift or selected release changed during import');
   if(evidence.releaseNumber!==n)throw Error('PSBT belongs to another release');
   if(typeof globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding!=='function')throw Error('Gift PSBT verifier unavailable');
   const binding=globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding({gift,release:{...gift.releases.find(r=>r.releaseNumber===n)},approvedUnsignedBase64:evidence.approvedUnsignedBase64,expectedApprovedSha256:evidence.expectedApprovedSha256});
@@ -185,20 +186,21 @@ document.getElementById('giftPsbtFile').addEventListener('change',async event=>{
   giftCameraStart.disabled=false;
   document.getElementById('showUnsignedQr').disabled=false;
   giftCameraStatus.textContent='Selected gift PSBT matches supplied public gift record. UNTRUSTED source; scan for verification only. No broadcast.';
- }catch(error){giftCameraStatus.textContent='Rejected gift PSBT: '+String(error.message||error);}
+ }catch(error){if(importToken===giftImportGeneration)giftCameraStatus.textContent='Rejected gift PSBT: '+String(error.message||error);}
 });
 document.getElementById('showUnsignedQr').addEventListener('click',async()=>{
- hideUnsignedQr();
+ hideUnsignedQr();const qrToken=unsignedQrGeneration;const evidence=giftPsbtEvidence;
  try{
-  if(!giftPsbtEvidence)throw Error('Load a matching selected gift PSBT first');
-  const {images}=await globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr(giftPsbtEvidence);
+  if(!evidence)throw Error('Load a matching selected gift PSBT first');
+  const {images}=await globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr(evidence);
+  if(qrToken!==unsignedQrGeneration||evidence!==giftPsbtEvidence)return;
   if(!images.length)throw Error('No QR frames');
   const img=document.getElementById('unsignedQrImage');let i=0;
   img.src=images[0];img.style.display='block';
   unsignedQrTimer=setInterval(()=>{i=(i+1)%images.length;img.src=images[i];},180);
   document.getElementById('hideUnsignedQr').disabled=false;
   document.getElementById('unsignedQrStatus').textContent='Animating '+images.length+' unsigned QR frames for selected release. DIAGNOSTIC ONLY: gift provenance unverified; do not authorize a real spend.';
- }catch(error){hideUnsignedQr();document.getElementById('unsignedQrStatus').textContent='Unsigned QR error: '+String(error.message||error);}
+ }catch(error){if(qrToken===unsignedQrGeneration){hideUnsignedQr();document.getElementById('unsignedQrStatus').textContent='Unsigned QR error: '+String(error.message||error);}}
 });
 document.getElementById('hideUnsignedQr').addEventListener('click',hideUnsignedQr);
 window.addEventListener('pagehide',hideUnsignedQr);
