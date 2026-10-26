@@ -162,7 +162,7 @@ let giftCameraReceiver=null, giftPsbtEvidence=null, unsignedQrTimer=null;
 const giftCameraStart=document.getElementById('giftCameraStart');
 const giftCameraStop=document.getElementById('giftCameraStop');
 const giftCameraStatus=document.getElementById('giftCameraStatus');
-function stopGiftCamera(){if(giftCameraReceiver){giftCameraReceiver.stop();giftCameraReceiver=null;}giftCameraStop.disabled=true;giftCameraStart.disabled=!giftPsbtEvidence;}
+function stopGiftCamera(){if(giftCameraReceiver){giftCameraReceiver.stop();giftCameraReceiver=null;}giftCameraStop.disabled=true;giftCameraStart.disabled=!giftPsbtEvidence;if(typeof startCamera!=='undefined')startCamera.disabled=false;}
 function hideUnsignedQr(){if(unsignedQrTimer){clearInterval(unsignedQrTimer);unsignedQrTimer=null;}document.getElementById('unsignedQrImage').style.display='none';document.getElementById('unsignedQrImage').removeAttribute('src');document.getElementById('hideUnsignedQr').disabled=true;document.getElementById('unsignedQrStatus').textContent='No unsigned QR displayed. Do not sign unauthenticated gift data.';}
 function clearGiftPsbt(){hideUnsignedQr();document.getElementById('showUnsignedQr').disabled=true;stopGiftCamera();giftPsbtEvidence=null;giftCameraStart.disabled=true;giftCameraStatus.textContent='No gift-specific PSBT loaded. No signing or broadcast.';}
 document.getElementById('selectedRelease').addEventListener('change',clearGiftPsbt);
@@ -181,7 +181,7 @@ document.getElementById('giftPsbtFile').addEventListener('change',async event=>{
   if(typeof globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding!=='function')throw Error('Gift PSBT verifier unavailable');
   const binding=globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding({gift,release:{...gift.releases.find(r=>r.releaseNumber===n)},approvedUnsignedBase64:evidence.approvedUnsignedBase64,expectedApprovedSha256:evidence.expectedApprovedSha256});
   if(binding.transactionMatchesSuppliedRelease!==true)throw Error('PSBT mismatch');
-  giftPsbtEvidence={gift,release:gift.releases.find(r=>r.releaseNumber===n),...evidence};
+  giftPsbtEvidence=Object.freeze({gift,release:gift.releases.find(r=>r.releaseNumber===n),approvedUnsignedBase64:evidence.approvedUnsignedBase64,expectedApprovedSha256:evidence.expectedApprovedSha256});
   giftCameraStart.disabled=false;
   document.getElementById('showUnsignedQr').disabled=false;
   giftCameraStatus.textContent='Selected gift PSBT matches supplied public gift record. UNTRUSTED source; scan for verification only. No broadcast.';
@@ -204,6 +204,8 @@ document.getElementById('hideUnsignedQr').addEventListener('click',hideUnsignedQ
 window.addEventListener('pagehide',hideUnsignedQr);
 giftCameraStart.addEventListener('click',async()=>{
  giftCameraStart.disabled=true;giftCameraStop.disabled=false;
+ if(typeof stopJadeCamera==='function')stopJadeCamera();
+ startCamera.disabled=true;
  try{
   if(!giftPsbtEvidence)throw Error('Missing approved PSBT evidence');
   giftCameraReceiver=globalThis.bc1q21ProfessionalAttachGiftCamera({
@@ -220,8 +222,10 @@ const startCamera=document.getElementById('startCamera');
 const stopCamera=document.getElementById('stopCamera');
 const cameraStatus=document.getElementById('cameraStatus');
 let cameraReceiver=null;
-function stopJadeCamera(){if(cameraReceiver){cameraReceiver.stop();cameraReceiver=null;}startCamera.disabled=false;stopCamera.disabled=true;}
+function stopJadeCamera(){if(cameraReceiver){cameraReceiver.stop();cameraReceiver=null;}startCamera.disabled=false;stopCamera.disabled=true;giftCameraStart.disabled=!giftPsbtEvidence;}
 startCamera.addEventListener('click',async()=>{
+ stopGiftCamera();
+ giftCameraStart.disabled=true;
  startCamera.disabled=true;stopCamera.disabled=false;
  try{
   if(typeof globalThis.bc1q21ProfessionalAttachCamera!=='function')throw Error('Jade verifier bundle unavailable');
