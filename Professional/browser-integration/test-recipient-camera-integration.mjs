@@ -90,6 +90,26 @@ try{
   return {matched:matched.utxoSnapshotMatchesSelectedRelease,authorized:matched.signingAuthorized,chainVerified:matched.chainVerified,rejected};
  });
  assert.deepEqual(gateResult,{matched:true,authorized:false,chainVerified:false,rejected:true});
+ // A delayed older gift file must not overwrite a newer imported gift.
+ await page.evaluate(()=>{
+  const original=File.prototype.text;
+  window.__releaseDelayedGift=null;
+  File.prototype.text=function(){
+   if(this.name==='delayed-old-gift.json')return new Promise(resolve=>{
+    window.__releaseDelayedGift=()=>resolve(original.call(this));
+   });
+   return original.call(this);
+  };
+  window.__restoreGiftFileText=()=>{File.prototype.text=original;};
+ });
+ await page.locator('#publicGiftFile').setInputFiles({name:'delayed-old-gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
+ await page.waitForFunction(()=>typeof window.__releaseDelayedGift==='function');
+ await page.locator('#publicGiftFile').setInputFiles({name:'new-gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
+ await page.waitForFunction(()=>document.querySelector('#giftRecordSource').textContent==='Local JSON file (untrusted)');
+ await page.evaluate(()=>{window.__releaseDelayedGift();window.__restoreGiftFileText();});
+ await page.waitForTimeout(100);
+ assert.equal(await page.locator('#giftRecordSource').innerText(),'Local JSON file (untrusted)');
+ assert.equal(await page.locator('#selectedRelease option').count(),2);
  // End-to-end recipient page integration using the actual disposable funded gift PSBT.
  const handoff=JSON.parse(readFileSync(resolve('../fixtures/same-gift-unsigned-handoff.json'),'utf8'));
  const funded=JSON.parse(readFileSync(resolve('../fixtures/original-funded-24-public-evidence.json'),'utf8'));
