@@ -952,13 +952,13 @@ Download a printable gift card that includes the QR with this recipient link.
   openRecipient.disabled=true;document.getElementById('professional-plan-summary').hidden=true;
   const file=planFile.files&&planFile.files[0];
   if(!file){planStatus.textContent='No gift plan loaded.';return;}
-  if(file.size>250000){planStatus.textContent='File too large (250 KB maximum).';return;}
+  if(file.size>80000){planStatus.textContent='File too large (80 KB maximum).';return;}
   try{
    const plan=JSON.parse(await file.text());
-   if(!plan||plan.schema!=='bc1q21-professional-unfunded-regtest-plan-v1'||!Array.isArray(plan.releases)||!plan.releases.length){throw Error('Not a supported unfunded Professional regtest plan.');}
+   if(!plan||plan.format!=='bc1q21-professional-unfunded-regtest-plan-v1'||plan.network!=='regtest'||plan.status!=='UNFUNDED_DRAFT_DO_NOT_SEND'||plan.fundingConfirmed!==false||plan.signingAuthorized!==false||plan.broadcastAuthorized!==false||!Array.isArray(plan.releases)||!plan.releases.length){throw Error('Not a supported unfunded Professional regtest plan.');}
    const summary=document.getElementById('professional-plan-summary'),list=document.getElementById('professional-plan-releases');
    list.replaceChildren();
-   document.getElementById('professional-plan-recipient').textContent='Recipient: '+String(plan.recipient||'Not specified').slice(0,100);
+   document.getElementById('professional-plan-recipient').textContent='Recipient: '+String(plan.gift?.recipient||'Not specified').slice(0,100);
    for(const release of plan.releases.slice(0,60)){
     const item=document.createElement('li');
     const sats=release.amountSats??release.sats??'Unspecified';
@@ -967,11 +967,30 @@ Download a printable gift card that includes the QR with this recipient link.
     list.appendChild(item);
    }
    summary.hidden=false;
-   planStatus.textContent='Recognized '+plan.releases.length+' planned release(s). Import this same JSON into the recipient panel for verification.';
+   planStatus.textContent='Recognized '+plan.releases.length+' planned release(s). Continue to recipient to load this draft automatically.';
    openRecipient.disabled=false;
   }catch(e){planStatus.textContent='Unable to read plan: '+String(e.message||e);}
  });
- openRecipient.addEventListener('click',()=>{select(true);document.getElementById('professional-jade-workflow').scrollIntoView({behavior:'smooth'});});
+ let pendingDraft=null;
+ planFile.addEventListener('change',()=>{pendingDraft=null;});
+ openRecipient.addEventListener('click',()=>{
+  pendingDraft=planFile.files?.[0]||null;
+  select(true);
+  document.getElementById('professional-jade-workflow').scrollIntoView({behavior:'smooth'});
+  handoffDraft();
+ });
+ function handoffDraft(){
+  if(!pendingDraft||!recipient.contentDocument)return;
+  const input=recipient.contentDocument.getElementById('draftGiftFile');
+  if(!input)return;
+  const transfer=new DataTransfer();
+  transfer.items.add(pendingDraft);
+  input.files=transfer.files;
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  pendingDraft=null;
+  planStatus.textContent='Unfunded draft delivered to the recipient panel for its own validation.';
+ }
+ recipient.addEventListener('load',handoffDraft);
  document.getElementById('professional-start-creator').addEventListener('click',()=>{select(false);document.getElementById('professional-jade-workflow').scrollIntoView({behavior:'smooth'});});ct.addEventListener('click',()=>select(false));rt.addEventListener('click',()=>select(true));select(false);
 })();
 </script>
