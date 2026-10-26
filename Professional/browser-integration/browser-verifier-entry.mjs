@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import {verifyProfessionalPublicHandoff} from '../public-handoff.mjs';
 import {makeCryptoPsbtFrames} from '../crypto-psbt-frames.mjs';
 import {verifyGiftReleaseBinding} from './verify-gift-release-binding.mjs';
 import {parseBitcoinCoreGettxout} from '../bitcoin-core-gettxout-adapter.mjs';
@@ -11,6 +12,8 @@ import { URDecoder } from '@ngraveio/bc-ur';
 import cbor from 'cbor';
 import { verifyProfessionalReturnedSignature } from './verify-returned-signature.mjs';
 globalThis.Buffer=Buffer;
+// Public-only CLTV script/address verification; does not attest wallet origin.
+globalThis.bc1q21ProfessionalVerifyPublicHandoff=verifyProfessionalPublicHandoff;
 const approved='cHNidP8BAFICAAAAAZWWt9gtVaCtotddOPqVTUGGgcsGQIpROecI+/ZeSn2cAAAAAAD+////AbiCAQAAAAAAFgAUGFFAu1RwSp5zUBb6p6jb7kRJvdyAuFJlAAEAkwIAAAAB+eJO7arUra5pLt/blCfI60nvYZORs/xymLzqf5iOd8IAAAAAAP3///8DoIYBAAAAAAAXqRQhC8kpXH2XCPq0ZEw5Ow4ZCyDbk4dADQMAAAAAABepFHoIVN0kKE8sHtcfNOPSv3EqBT1Sh3Fk/pQAAAAAF6kUNnw+XxO0qIp/bD0ln/OzKGPPs2iHagEAAAEEKgSAuFJlsXUhA0gDJaBQZbLx/Ss+EMiC++3e2cv68v0KRX8vLNbIKZdArCIGA0gDJaBQZbLx/Ss+EMiC++3e2cv68v0KRX8vLNbIKZdAGOKawTxUAACAAAAAgAAAAIABAAAAAAAAAAAA';
 const digest='c5cfe8f53212d2aa3a4f2a747993f62a1284e5f973627b1c9410b1ad61659961';
 globalThis.bc1q21ProfessionalVerify=async function(frames){
