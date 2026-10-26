@@ -26,6 +26,11 @@ try{
  assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#publicGiftFile').setInputFiles({name:'gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
  assert.match(await page.locator('#giftRecordStatus').innerText(),/public gift record loaded/i);
+ const invalid={...giftFixture,fundingAddress:'bc1q21wronggiftlocator12345678901234567890'};
+ await page.locator('#publicGiftFile').setInputFiles({name:'wrong.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});
+ assert.match(await page.locator('#giftRecordStatus').innerText(),/Rejected public gift record/);
+ assert.equal(await page.locator('#sign').isDisabled(),true);
+ await page.locator('#publicGiftFile').setInputFiles({name:'gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  assert.equal(await page.locator('#stopCamera').isDisabled(),true);
