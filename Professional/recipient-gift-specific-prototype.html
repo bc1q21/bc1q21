@@ -60,7 +60,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
  gift.textContent=valid?value:'DEMO-ONLY — no gift address provided';
  status.textContent=valid?'Gift-specific address from recipient link (not queried or authenticated).':'A real gift link will supply a public funding-address locator.';
  document.getElementById('explain').addEventListener('click',()=>{
-  document.getElementById('message').textContent='The four regtest spends have been tested independently. This prototype does not yet connect a gift link to verified on-chain release discovery, unsigned PSBT construction, offline QR signing, or broadcasting. No keys are requested.';
+  document.getElementById('message').textContent='The isolated prototype supports offline unsigned PSBT QR display and signed Jade QR verification for supplied regtest gift evidence. It does not yet authenticate the gift record, discover trusted live on-chain release state, construct a verified release PSBT from that state, authorize spending, or broadcast. No keys are requested.';
  });
 })();
 document.getElementById('selectedRelease').addEventListener('change',event=>{
