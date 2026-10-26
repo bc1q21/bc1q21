@@ -111,7 +111,7 @@ try{
  await page.locator('#showUnsignedQr').click();
  assert.match(await page.locator('#unsignedQrStatus').innerText(),/Animating/);
  assert.equal(await page.locator('#unsignedQrImage').isVisible(),true);
- assert.match(await page.locator('#unsignedQrImage').getAttribute('src'),/^data:image\\/png;base64,/);
+ assert.ok((await page.locator('#unsignedQrImage').getAttribute('src')).startsWith('data:image/png;base64,'));
  await page.locator('#hideUnsignedQr').click();
  assert.equal(await page.locator('#unsignedQrImage').isVisible(),false);
  assert.equal(await page.locator('#sign').isDisabled(),true);
