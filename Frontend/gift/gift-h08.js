@@ -1083,6 +1083,15 @@ childIndex: r.childIndex ?? null
           return Number.isFinite(value) ? value : NaN;
         },
 
+        statusLabel(o) {
+          if (!o) return 'Status unavailable';
+          if (o.releaseDate && !this.isReadyForRelease(o.releaseDate)) return 'Locked';
+          if (!o.checkedSpent) return 'Status unavailable';
+          if (o.spent) return 'Claimed';
+          if (o.pending) return 'Pending confirmation';
+          return o.ready ? 'Ready' : 'Locked';
+        },
+
         // --- helpers used by your existing template ---
         formatUSD(v) {
           if (isNaN(v)) return '-';
