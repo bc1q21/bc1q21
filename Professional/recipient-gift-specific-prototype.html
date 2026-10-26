@@ -135,7 +135,9 @@ document.getElementById('coreUtxoFile').addEventListener('change',async event=>{
   status.textContent='PASS: supplied Core response matches selected release outpoint, amount and script. UNTRUSTED FILE — not independently chain-verified. Signing disabled.';
  }catch(error){status.textContent='Rejected Core response: '+String(error.message||error);}
 });
+let publicGiftImportGeneration=0;
 document.getElementById('publicGiftFile').addEventListener('change',async event=>{
+ const importToken=++publicGiftImportGeneration;
  const status=document.getElementById('giftRecordStatus');
  globalThis.bc1q21ProfessionalPublicGiftRecord=null;
  renderPublicReleaseOptions(null);
@@ -146,6 +148,7 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
  if(file.size>65536){status.textContent='Rejected: public gift record exceeds 64 KiB.';return;}
  try{
   const record=JSON.parse(await file.text());
+  if(importToken!==publicGiftImportGeneration)return;
   const locator=new URLSearchParams(location.search).get('a')||new URLSearchParams(location.search).get('address')||'';
   if(!Array.isArray(record.releases)||record.releases.length===0)throw Error('No releases');
   for(const release of record.releases)globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift:record,recipientLocator:locator,releaseNumber:release.releaseNumber});
@@ -154,7 +157,7 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
   document.getElementById('giftRecordSource').textContent='Local JSON file (untrusted)';
   status.textContent='Public gift record loaded for '+record.releases.length+' releases. File content is not authenticated or chain-verified.';
   document.getElementById('selectedRelease').dispatchEvent(new Event('change'));
- }catch(error){status.textContent='Rejected public gift record: '+String(error.message||error);}
+ }catch(error){if(importToken===publicGiftImportGeneration)status.textContent='Rejected public gift record: '+String(error.message||error);}
 });
 // A local PSBT is never treated as trusted authorization. This integrates the
 // already-proven camera decoder with exact gift-specific signature verification.
