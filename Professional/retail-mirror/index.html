@@ -27,7 +27,18 @@
   <div style="background:#fff0d4;border:3px solid #a86200;padding:12px;text-align:center;font-weight:700">bc1q21 Professional — isolated Retail source mirror. DEVELOPMENT ONLY. Do not create or fund real gifts.</div>
   <div style="background:#e7f0fa;padding:16px;text-align:center"><strong id="professional-practice-name">Professional practice preview</strong><br><span id="professional-practice-contact"></span><br><a href="../Professional/index.html">Edit professional identity</a> · <a href="../Professional/professional-creator-prototype.html">Jade public-wallet / QR integration</a> · <a href="../Professional/recipient-gift-specific-prototype.html">Recipient Jade release page</a></div>
   <section style="margin:18px auto;max-width:920px;border:2px solid #09518b;padding:16px;border-radius:10px;background:white"><h2 style="margin-top:0;color:#09518b">Professional · Offline Jade Plus</h2><p>Retail gift planning and design are preserved below. The Professional workflow uses public-only Jade wallet information for time-locked addresses, and the existing animated QR camera exchange for offline recipient release signing.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><a style="padding:10px;background:#09518b;color:white;border-radius:7px" href="../Professional/professional-creator-prototype.html">Open Jade creator step</a><a style="padding:10px;background:#09518b;color:white;border-radius:7px" href="../Professional/recipient-gift-specific-prototype.html">Open recipient QR signing</a></div><p style="font-weight:700;color:#9b4b00">Development only. Retail-derived controls below are not connected to a Professional funding engine. Do not enter recovery words or send funds.</p></section>
-  <main class="container" x-data="giftWizard">
+  <section id="professional-jade-workflow" style="max-width:1100px;margin:20px auto;padding:18px;background:white;border:2px solid #09518b;border-radius:12px">
+    <h2 style="color:#09518b">Professional · Jade Plus workflow</h2>
+    <p>Use the integrated creator and recipient panels below. The existing camera, animated QR, and public wallet tools run inside the Professional page; no separate browser tab is required.</p>
+    <div role="tablist" aria-label="Professional Jade workflow" style="display:flex;gap:12px;flex-wrap:wrap">
+      <button type="button" id="professional-creator-tab" aria-selected="true" aria-controls="professional-creator-frame">Creator · Public wallet and QR</button>
+      <button type="button" id="professional-recipient-tab" aria-selected="false" aria-controls="professional-recipient-frame">Recipient · Jade signed QR</button>
+    </div>
+    <iframe id="professional-creator-frame" title="Professional creator Jade workflow" src="../Professional/professional-creator-prototype.html" style="width:100%;height:1000px;border:1px solid #d9e2ed;margin-top:16px" allow="camera"></iframe>
+    <iframe id="professional-recipient-frame" title="Professional recipient Jade signing" data-src="../Professional/recipient-gift-specific-prototype.html" hidden style="width:100%;height:1000px;border:1px solid #d9e2ed;margin-top:16px" allow="camera"></iframe>
+    <p style="color:#9b4b00;font-weight:700">Isolated regtest integration. Signing does not authorize spending; real funding and broadcast remain disabled.</p>
+  </section>
+  <main class="container" x-data="giftWizard" inert aria-label="Retail design reference, disabled in isolated Professional development">
     <header class="brand">
       <img src="static/img/bc1q21-logo.png" alt="bc1q21 logo"><br>
       <div>
@@ -911,6 +922,13 @@ Download a printable gift card that includes the QR with this recipient link.
 <script src="static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
 <script>
 (function(){try{const data=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');if(!data||!data.business)return;document.getElementById('professional-practice-name').textContent=data.business+' · '+data.practice;document.getElementById('professional-practice-contact').textContent=[data.contact,data.address,data.email,data.phone].filter(Boolean).join(' · ');}catch(e){}})();
+</script>
+<script>
+(function(){
+ const creator=document.getElementById('professional-creator-frame'),recipient=document.getElementById('professional-recipient-frame'),ct=document.getElementById('professional-creator-tab'),rt=document.getElementById('professional-recipient-tab');
+ function select(recipientSelected){creator.hidden=recipientSelected;recipient.hidden=!recipientSelected;ct.setAttribute('aria-selected',String(!recipientSelected));rt.setAttribute('aria-selected',String(recipientSelected));if(recipientSelected&&!recipient.src){recipient.src=recipient.dataset.src;}}
+ ct.addEventListener('click',()=>select(false));rt.addEventListener('click',()=>select(true));
+})();
 </script>
 </body>  
 </html>
