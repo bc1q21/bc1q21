@@ -36,7 +36,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <tr><td>3</td><td>150</td><td>18,000 sats</td><td><span class="status">Tested</span></td></tr>
 <tr><td>4</td><td>160</td><td>21,000 sats</td><td><span class="status">Tested</span></td></tr></tbody></table></div>
 <p class="muted" id="scheduleProvenance">These are known public synthetic fixtures from our isolated regtest work—not live balances, spendable UTXO discoveries, or dates derived from the recipient's real gift.</p></section>
-<section><h2>Selected gift release</h2><label for="selectedRelease">Choose a release to review:</label> <select id="selectedRelease"><option value="">Select release</option><option value="1">Release 1 — 12,000 sats</option><option value="2">Release 2 — 15,000 sats</option><option value="3">Release 3 — 18,000 sats</option><option value="4">Release 4 — 21,000 sats</option></select><p id="selectedReleaseStatus" role="status">No release selected. Signing remains locked.</p><p><label for="publicGiftFile">Load a public gift record (JSON, offline):</label> <input id="publicGiftFile" type="file" accept=".json,application/json"></p><p id="giftRecordStatus" role="status">No public gift record loaded. A local file is not proof of blockchain validity.</p><p><strong>Gift record source:</strong> <span id="giftRecordSource">No record loaded</span></p><p id="selectedReleaseEvidence" class="mono" aria-live="polite">No gift-specific transaction evidence loaded.</p></section>
+<section><h2>Selected gift release</h2><label for="selectedRelease">Choose a release to review:</label> <select id="selectedRelease"><option value="">Select release</option><option value="1">Release 1 — 12,000 sats</option><option value="2">Release 2 — 15,000 sats</option><option value="3">Release 3 — 18,000 sats</option><option value="4">Release 4 — 21,000 sats</option></select><p id="selectedReleaseStatus" role="status">No release selected. Signing remains locked.</p><p><label for="publicGiftFile">Load a public gift record (JSON, offline):</label> <input id="publicGiftFile" type="file" accept=".json,application/json"></p><p id="giftRecordStatus" role="status">No public gift record loaded. A local file is not proof of blockchain validity.</p><p><strong>Gift record source:</strong> <span id="giftRecordSource">No record loaded</span></p><p id="selectedReleaseEvidence" class="mono" aria-live="polite">No gift-specific transaction evidence loaded.</p><p id="utxoEvidenceStatus" role="status">No trusted Bitcoin Core UTXO evidence connected. Signing remains disabled.</p></section>
 <section><h2>Release payments — offline signer</h2>
 <div class="step"><div class="number">1</div><div>Review the matured release, destination and fee on this gift-specific page.</div></div>
 <div class="step"><div class="number">2</div><div>Open the unsigned transaction as animated QR frames, and review it on Jade.</div></div>
@@ -66,6 +66,7 @@ document.getElementById('selectedRelease').addEventListener('change',event=>{
  const n=Number(event.target.value),label=document.getElementById('selectedReleaseStatus');
  const evidence=document.getElementById('selectedReleaseEvidence');
  evidence.textContent='No gift-specific transaction evidence loaded.';
+ document.getElementById('utxoEvidenceStatus').textContent='No trusted Bitcoin Core UTXO evidence connected. Signing remains disabled.';
  if(!n){label.textContent='No release selected. Signing remains locked.';return;}
  label.textContent='Release '+n+' selected for review only. Gift-specific signing is not enabled.';
  // Public metadata is deliberately not inferred from the gift URL or mock schedule.
@@ -76,6 +77,7 @@ document.getElementById('selectedRelease').addEventListener('change',event=>{
   const selected=globalThis.bc1q21ProfessionalSelectPublicGiftRelease({
    gift:globalThis.bc1q21ProfessionalPublicGiftRecord,recipientLocator:locator,releaseNumber:n});
   evidence.textContent='Funding transaction: '+selected.fundingTxid+' | Output: '+selected.fundingVout+' | Lock height: '+selected.lockHeight+' | Input: '+selected.inputSats+' sats. Public consistency only; not chain verified.';
+  document.getElementById('utxoEvidenceStatus').textContent='Selected outpoint '+selected.fundingTxid+':'+selected.fundingVout+' requires authenticated Bitcoin Core confirmation, unspent status, maturity and authorization. No signing or broadcast.';
  }catch(error){label.textContent='Selected release rejected: '+String(error.message||error);}
 });
 // Once a public gift record is supplied, display its releases rather than mock amounts.
