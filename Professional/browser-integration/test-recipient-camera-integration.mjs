@@ -41,6 +41,24 @@ try{
  await page.locator('#coreUtxoFile').setInputFiles({name:'bad-tip.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...goodCore,bestblock:'not-a-block'}))});
  await page.waitForFunction(pattern=>new RegExp(pattern).test(document.querySelector('#coreUtxoStatus').textContent),"Invalid Core bestblock identifier");
  assert.equal(await page.locator('#sign').isDisabled(),true);
+ // A delayed Core JSON read cannot leave a PASS message after the release changes.
+ await page.evaluate(()=>{
+  const original=File.prototype.text;
+  window.__resumeOldCore=null;
+  File.prototype.text=function(){
+   if(this.name==='delayed-core.json')return new Promise(resolve=>{
+    window.__resumeOldCore=()=>resolve(original.call(this));
+   });
+   return original.call(this);
+  };
+  window.__restoreCoreFileText=()=>{File.prototype.text=original;};
+ });
+ await page.locator('#coreUtxoFile').setInputFiles({name:'delayed-core.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(goodCore))});
+ await page.waitForFunction(()=>typeof window.__resumeOldCore==='function');
+ await page.locator('#selectedRelease').selectOption('');
+ await page.evaluate(()=>{window.__resumeOldCore();window.__restoreCoreFileText();});
+ await page.waitForTimeout(100);
+ assert.doesNotMatch(await page.locator('#coreUtxoStatus').innerText(),/PASS: supplied Core response matches/);
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
