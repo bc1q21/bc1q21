@@ -25,7 +25,8 @@
 
 <body>
   <div style="background:#fff0d4;border:3px solid #a86200;padding:12px;text-align:center;font-weight:700">bc1q21 Professional — isolated Retail source mirror. DEVELOPMENT ONLY. Do not create or fund real gifts.</div>
-  <div style="background:#e7f0fa;padding:12px;text-align:center"><a href="../professional-creator-prototype.html">Professional identity and Jade development page</a> · <a href="../recipient-gift-specific-prototype.html">Professional recipient development page</a></div>
+  <div style="background:#e7f0fa;padding:16px;text-align:center"><strong id="professional-practice-name">Professional practice preview</strong><br><span id="professional-practice-contact"></span><br><a href="../Professional/index.html">Edit professional identity</a> · <a href="../Professional/professional-creator-prototype.html">Jade public-wallet / QR integration</a> · <a href="../Professional/recipient-gift-specific-prototype.html">Recipient Jade release page</a></div>
+  <section style="margin:18px auto;max-width:920px;border:2px solid #09518b;padding:16px;border-radius:10px;background:white"><h2 style="margin-top:0;color:#09518b">Professional · Offline Jade Plus</h2><p>Retail gift planning and design are preserved below. The Professional workflow uses public-only Jade wallet information for time-locked addresses, and the existing animated QR camera exchange for offline recipient release signing.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><a style="padding:10px;background:#09518b;color:white;border-radius:7px" href="../Professional/professional-creator-prototype.html">Open Jade creator step</a><a style="padding:10px;background:#09518b;color:white;border-radius:7px" href="../Professional/recipient-gift-specific-prototype.html">Open recipient QR signing</a></div><p style="font-weight:700;color:#9b4b00">Development only. Retail-derived controls below are not connected to a Professional funding engine. Do not enter recovery words or send funds.</p></section>
   <main class="container" x-data="giftWizard">
     <header class="brand">
       <img src="static/img/bc1q21-logo.png" alt="bc1q21 logo"><br>
@@ -908,5 +909,8 @@ Download a printable gift card that includes the QR with this recipient link.
 <script type="text/javascript" src="bc1q21-h08.js" integrity="sha384-ztxQ+BnqeMOBG1GJ8OVE9nT2rYsq/C1bkNv67Qy7b1qJgAxgqhJbewnqN9AjtUL4" crossorigin="anonymous"></script>
 <script src="alpine-csp-adapter.js" integrity="sha384-g80uvNzwbOLdPrXjhlPGYR0r6GUMDaUXHWRX8YmxpuYxamN1rzCaJsmSdJTaIJuS" crossorigin="anonymous" defer></script>
 <script src="static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
+<script>
+(function(){try{const data=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');if(!data||!data.business)return;document.getElementById('professional-practice-name').textContent=data.business+' · '+data.practice;document.getElementById('professional-practice-contact').textContent=[data.contact,data.address,data.email,data.phone].filter(Boolean).join(' · ');}catch(e){}})();
+</script>
 </body>  
 </html>
