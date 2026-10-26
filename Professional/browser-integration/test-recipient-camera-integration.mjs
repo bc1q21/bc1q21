@@ -45,7 +45,7 @@ try{
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#publicGiftFile').setInputFiles({name:'gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
- assert.match(await page.locator('#giftRecordStatus').innerText(),/public gift record loaded/i);
+ await page.waitForFunction(()=>/public gift record loaded/i.test(document.querySelector('#giftRecordStatus').textContent));
  assert.equal(await page.locator('#giftRecordSource').innerText(),'Local JSON file (untrusted)');
  assert.equal(await page.locator('#selectedRelease option').count(),2);
  assert.match(await page.locator('#scheduleProvenance').innerText(),/NOT authenticated/);
@@ -62,6 +62,7 @@ try{
  assert.equal(await page.evaluate(()=>globalThis.bc1q21ProfessionalPublicGiftRecord),null);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#publicGiftFile').setInputFiles({name:'gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
+ await page.waitForFunction(()=>/public gift record loaded/i.test(document.querySelector('#giftRecordStatus').textContent));
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
@@ -102,6 +103,7 @@ try{
  }]};
  await page.evaluate(locator=>history.replaceState(null,'','?a='+encodeURIComponent(locator)),actualGift.fundingAddress);
  await page.locator('#publicGiftFile').setInputFiles({name:'actual-gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(actualGift))});
+ await page.waitForFunction(()=>/public gift record loaded/i.test(document.querySelector('#giftRecordStatus').textContent));
  await page.locator('#selectedRelease').selectOption('1');
  await page.locator('#giftPsbtFile').setInputFiles({name:'actual-psbt.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({
   releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256
@@ -112,6 +114,7 @@ try{
   releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256,
   gift:{fundingAddress:'attacker'},release:{releaseNumber:999,fundingTxid:'ff'.repeat(32)}
  }))});
+ await page.waitForFunction(()=>document.querySelector('#giftCameraStatus').textContent.includes('PSBT matches supplied public gift record'));
  assert.equal(await page.locator('#showUnsignedQr').isEnabled(),true);
  const selectedIdentity=await page.evaluate(()=>({
   gift:globalThis.bc1q21ProfessionalPublicGiftRecord.fundingAddress,
