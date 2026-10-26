@@ -1,3 +1,4 @@
+import {checkGiftReleaseAgainstUtxoSnapshot} from './verify-gift-release-binding.mjs';
 import {selectPublicGiftRelease} from './select-public-gift-release.mjs';
 import { createJadeSignedCameraReceiver } from '../recipient-jade-signed-camera.browser.mjs';
 // bc1q21 Professional isolated regtest browser integration; fixture-only, no broadcast.
@@ -41,3 +42,6 @@ globalThis.bc1q21ProfessionalAttachCamera=function({video,canvas,onStatus,onVeri
 
 // Public gift/release review is independent of the fixed Jade signing diagnostic.
 globalThis.bc1q21ProfessionalSelectPublicGiftRelease=selectPublicGiftRelease;
+
+// Caller-supplied UTXO snapshots are consistency checks, not authenticated RPC evidence.
+globalThis.bc1q21ProfessionalCheckUtxoSnapshot=checkGiftReleaseAgainstUtxoSnapshot;
