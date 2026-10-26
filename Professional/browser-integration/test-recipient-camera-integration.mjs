@@ -23,6 +23,13 @@ try{
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/abababab/);
  assert.match(await page.locator('#utxoEvidenceStatus').innerText(),/requires authenticated Bitcoin Core confirmation/);
+ const goodCore={value:0.00015,confirmations:3,scriptPubKey:{hex:'a914'+'11'.repeat(20)+'87'}};
+ await page.locator('#coreUtxoFile').setInputFiles({name:'core.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(goodCore))});
+ assert.match(await page.locator('#coreUtxoStatus').innerText(),/PASS: supplied Core response matches/);
+ assert.equal(await page.locator('#sign').isDisabled(),true);
+ await page.locator('#coreUtxoFile').setInputFiles({name:'spent.json',mimeType:'application/json',buffer:Buffer.from('null')});
+ assert.match(await page.locator('#coreUtxoStatus').innerText(),/Rejected Core response/);
+ assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
