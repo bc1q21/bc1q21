@@ -1,3 +1,4 @@
+import {selectPublicGiftRelease} from './select-public-gift-release.mjs';
 import { createJadeSignedCameraReceiver } from '../recipient-jade-signed-camera.browser.mjs';
 // bc1q21 Professional isolated regtest browser integration; fixture-only, no broadcast.
 import { Buffer } from 'buffer';
@@ -37,3 +38,6 @@ globalThis.bc1q21ProfessionalAttachCamera=function({video,canvas,onStatus,onVeri
   }});
  return receiver;
 };
+
+// Public gift/release review is independent of the fixed Jade signing diagnostic.
+globalThis.bc1q21ProfessionalSelectPublicGiftRelease=selectPublicGiftRelease;
