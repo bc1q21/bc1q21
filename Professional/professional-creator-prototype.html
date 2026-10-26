@@ -64,6 +64,7 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <script>
 'use strict';
 let reviewedPlan=null;
+let verifiedPublicHandoff=null;
 const releaseCount=document.getElementById('release-count'),releaseInputs=document.getElementById('release-plan-inputs'),planPreview=document.getElementById('release-plan-preview'),planStatus=document.getElementById('release-plan-status');
 function renderReleaseInputs(){
  const previous=[...releaseInputs.querySelectorAll('.draft-release')].map(row=>({date:row.querySelector('input[type=date]').value,sats:row.querySelector('input[type=number]').value}));
@@ -103,13 +104,14 @@ document.getElementById('to-gift').onclick=()=>{
  document.getElementById('profile-preview').textContent=business+' · '+practice;showStage('gift');
 };
 document.getElementById('to-jade').onclick=()=>{if(!reviewedPlan){planStatus.textContent='Review a valid release schedule before continuing.';return;}showStage('jade');};
+document.getElementById('to-jade').addEventListener('click',()=>{document.getElementById('creator-public-status').textContent=verifiedPublicHandoff?'Verified public CLTV handoff loaded. This is not a complete gift funding schedule.':'Import public-only Jade wallet information to inspect its CLTV script and test address.';});
 document.getElementById('to-funding-preview').onclick=()=>{if(!reviewedPlan){showStage('gift');return;}document.getElementById('funding-preview-summary').textContent=reviewedPlan.items.length+' planned releases · '+BigInt(reviewedPlan.totalSats).toLocaleString('en-US')+' sats total · no funding address generated.';showStage('funding');};
 document.getElementById('to-card-preview').onclick=()=>{if(!reviewedPlan){showStage('gift');return;}document.getElementById('card-preview-title').textContent='Planned gift for '+(reviewedPlan.recipient||'recipient');document.getElementById('card-preview-purpose').textContent='Occasion: '+reviewedPlan.purpose;document.getElementById('card-preview-schedule').textContent=reviewedPlan.items.length+' releases · '+BigInt(reviewedPlan.totalSats).toLocaleString('en-US')+' sats planned';document.getElementById('card-preview-practice').textContent='Prepared by: '+document.getElementById('business').value.trim();showStage('card');};
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>showStage(b.dataset.back));
 let publicHandoffImportGeneration=0;
 document.getElementById('creator-public-handoff').addEventListener('change',async event=>{
  const token=++publicHandoffImportGeneration,file=event.target.files?.[0],status=document.getElementById('creator-public-status'),summary=document.getElementById('creator-public-summary');
- summary.hidden=true;status.textContent='No public wallet handoff imported.';
+ summary.hidden=true;verifiedPublicHandoff=null;status.textContent='No public wallet handoff imported.';
  if(!file)return;
  try{
   if(file.size>8192)throw Error('Public handoff exceeds 8 KB');
@@ -117,6 +119,7 @@ document.getElementById('creator-public-handoff').addEventListener('change',asyn
   if(token!==publicHandoffImportGeneration)return;
   if(typeof globalThis.bc1q21ProfessionalVerifyPublicHandoff!=='function')throw Error('Public handoff verifier unavailable');
   const verified=globalThis.bc1q21ProfessionalVerifyPublicHandoff(payload);
+  verifiedPublicHandoff=verified;
   document.getElementById('creator-public-signer').textContent=verified.signerPubkeyHex;
   document.getElementById('creator-public-lock').textContent=String(verified.locktime);
   document.getElementById('creator-public-address').textContent=verified.fundingAddress;
