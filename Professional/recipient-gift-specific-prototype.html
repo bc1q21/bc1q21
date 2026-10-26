@@ -28,10 +28,10 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <p class="muted">This is the gift-specific recipient page reached through a gift card's link or QR code. It is not the general bc1q21 homepage.</p>
 <p class="warn"><strong>Offline demonstration only.</strong> Fictional gift and wallet address. No real Bitcoin. No wallet connection, blockchain queries, transaction construction, signing, or broadcast.</p>
 <section><h2>Gift identification</h2><p>Recipient link context:</p><p class="mono" id="giftId"></p><p class="muted" id="linkStatus"></p><small>The retail recipient link is based on the funding address: /gift/&lt;address&gt; or ?a=&lt;address&gt;. This prototype never queries that address or assumes possession of it authorizes spending.</small></section>
-<section class="overview"><h2>Your total gift value</h2><div class="big">0.00066000 BTC</div><p>66,000 disposable regtest satoshis in four example releases</p></section>
+<section class="overview"><h2>Your total gift value</h2><div class="big" id="giftTotal">0.00066000 BTC</div><p id="giftTotalContext">66,000 disposable regtest satoshis in four example releases</p></section>
 <section><h2>Security: your wallet stays offline</h2><p class="pledge">Do not type your 12 recovery words into this page. Your Jade or other hardware signer keeps the private signing keys offline. A gift link is a locator, never authorization to spend.</p><p>Instead of the retail recovery-word field, a real Professional page will exchange unsigned and signed transaction QR data with your offline signer. That exchange is <strong>not enabled in this mockup</strong>.</p></section>
 <section><h2>Gift release schedule</h2><div style="overflow-x:auto"><table><thead><tr><th>Release</th><th>Unlock height</th><th>Amount</th><th>Current status</th></tr></thead>
-<tbody><tr><td>1</td><td>130</td><td>12,000 sats</td><td><span class="status">Tested</span></td></tr>
+<tbody id="giftScheduleRows"><tr><td>1</td><td>130</td><td>12,000 sats</td><td><span class="status">Tested</span></td></tr>
 <tr><td>2</td><td>140</td><td>15,000 sats</td><td><span class="status">Tested</span></td></tr>
 <tr><td>3</td><td>150</td><td>18,000 sats</td><td><span class="status">Tested</span></td></tr>
 <tr><td>4</td><td>160</td><td>21,000 sats</td><td><span class="status">Tested</span></td></tr></tbody></table></div>
@@ -83,7 +83,25 @@ document.getElementById('selectedRelease').addEventListener('change',event=>{
  }catch(error){label.textContent='Selected release rejected: '+String(error.message||error);}
 });
 // Once a public gift record is supplied, display its releases rather than mock amounts.
+function renderPublicGiftOverview(record){
+ const rows=document.getElementById('giftScheduleRows');
+ rows.replaceChildren();
+ const releases=record?[...record.releases].sort((a,b)=>a.releaseNumber-b.releaseNumber):[
+  {releaseNumber:1,lockHeight:130,inputSats:12000},{releaseNumber:2,lockHeight:140,inputSats:15000},
+  {releaseNumber:3,lockHeight:150,inputSats:18000},{releaseNumber:4,lockHeight:160,inputSats:21000}];
+ const total=releases.reduce((sum,r)=>sum+BigInt(r.inputSats),0n);
+ document.getElementById('giftTotal').textContent=(Number(total)/1e8).toFixed(8)+' BTC';
+ document.getElementById('giftTotalContext').textContent=total.toLocaleString('en-US')+' sats across '+releases.length+' releases — '+(record?'imported untrusted gift record; NOT verified balance':'disposable regtest demonstration');
+ for(const r of releases){
+  const tr=document.createElement('tr');
+  for(const value of [r.releaseNumber,r.lockHeight,Number(r.inputSats).toLocaleString('en-US')+' sats',record?'Unverified':'Demo']){
+   const td=document.createElement('td');td.textContent=String(value);tr.append(td);
+  }
+  rows.append(tr);
+ }
+}
 function renderPublicReleaseOptions(record){
+ renderPublicGiftOverview(record);
  const select=document.getElementById('selectedRelease');
  select.replaceChildren(new Option('Select release',''));
  if(record){
