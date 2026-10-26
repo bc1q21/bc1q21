@@ -35,7 +35,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <tr><td>2</td><td>140</td><td>15,000 sats</td><td><span class="status">Tested</span></td></tr>
 <tr><td>3</td><td>150</td><td>18,000 sats</td><td><span class="status">Tested</span></td></tr>
 <tr><td>4</td><td>160</td><td>21,000 sats</td><td><span class="status">Tested</span></td></tr></tbody></table></div>
-<p class="muted">These are known public synthetic fixtures from our isolated regtest work—not live balances, spendable UTXO discoveries, or dates derived from the recipient's real gift.</p></section>
+<p class="muted" id="scheduleProvenance">These are known public synthetic fixtures from our isolated regtest work—not live balances, spendable UTXO discoveries, or dates derived from the recipient's real gift.</p></section>
 <section><h2>Selected gift release</h2><label for="selectedRelease">Choose a release to review:</label> <select id="selectedRelease"><option value="">Select release</option><option value="1">Release 1 — 12,000 sats</option><option value="2">Release 2 — 15,000 sats</option><option value="3">Release 3 — 18,000 sats</option><option value="4">Release 4 — 21,000 sats</option></select><p id="selectedReleaseStatus" role="status">No release selected. Signing remains locked.</p><p><label for="publicGiftFile">Load a public gift record (JSON, offline):</label> <input id="publicGiftFile" type="file" accept=".json,application/json"></p><p id="giftRecordStatus" role="status">No public gift record loaded. A local file is not proof of blockchain validity.</p><p><strong>Gift record source:</strong> <span id="giftRecordSource">No record loaded</span></p><p id="selectedReleaseEvidence" class="mono" aria-live="polite">No gift-specific transaction evidence loaded.</p></section>
 <section><h2>Release payments — offline signer</h2>
 <div class="step"><div class="number">1</div><div>Review the matured release, destination and fee on this gift-specific page.</div></div>
@@ -90,6 +90,7 @@ function renderPublicReleaseOptions(record){
   for(const [n,sats] of [[1,12000],[2,15000],[3,18000],[4,21000]])
    select.add(new Option('Release '+n+' — '+sats.toLocaleString('en-US')+' sats (demo)',String(n)));
  }
+ document.getElementById('scheduleProvenance').textContent=record?'Release selector uses the locally imported public gift record. Its schedule and amounts are NOT authenticated, chain-verified, or spendable evidence.':'These are synthetic regtest demonstration releases—not a recipient\'s actual gift.';
  select.value='';
  select.dispatchEvent(new Event('change'));
 }
