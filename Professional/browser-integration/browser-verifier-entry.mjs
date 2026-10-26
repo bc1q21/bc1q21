@@ -71,3 +71,6 @@ globalThis.bc1q21ProfessionalAttachGiftCamera=function({
     giftProvenanceVerified:false,chainVerified:false,signingAuthorized:false,broadcast:false}));
   }});
 };
+
+// Public-only selected release/PSBT binding; does not confer spending authority.
+globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding=verifyGiftReleaseBinding;
