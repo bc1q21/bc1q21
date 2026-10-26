@@ -211,7 +211,7 @@
                     <span
                       :class="['status-dot', o.checkedSpent && o.spent ? 'dot-spent' : (o.checkedSpent && o.ready ? 'dot-ready' : 'dot-pending')]"></span>
                     <span
-                      x-text="o.releaseDate && new Date(o.releaseDate + 'T00:00:00Z') > new Date() ? 'Locked' : (!o.checkedSpent ? 'Status unavailable' : (o.spent ? 'Claimed' : (o.pending ? 'Pending confirmation' : (o.ready ? 'Ready' : 'Locked'))))"></span>
+                      x-text="statusLabel(o)"></span>
                   </td>
                   <td x-text="o.releaseDate"></td>
                   <td class="mono" x-text="o.btc.toFixed(8)"></td>
