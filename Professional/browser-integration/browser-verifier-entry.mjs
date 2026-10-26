@@ -1,3 +1,5 @@
+import QRCode from 'qrcode';
+import {makeCryptoPsbtFrames} from '../crypto-psbt-frames.mjs';
 import {verifyGiftReleaseBinding} from './verify-gift-release-binding.mjs';
 import {parseBitcoinCoreGettxout} from '../bitcoin-core-gettxout-adapter.mjs';
 import {checkGiftReleaseAgainstUtxoSnapshot} from './verify-gift-release-binding.mjs';
@@ -74,3 +76,18 @@ globalThis.bc1q21ProfessionalAttachGiftCamera=function({
 
 // Public-only selected release/PSBT binding; does not confer spending authority.
 globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding=verifyGiftReleaseBinding;
+
+/** Render a supplied, gift-matched unsigned PSBT as Jade animated QR images.
+ * Diagnostic only: the caller must separately authenticate gift provenance.
+ */
+globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr=async function({
+ gift,release,approvedUnsignedBase64,expectedApprovedSha256
+}){
+ verifyGiftReleaseBinding({gift,release,approvedUnsignedBase64,expectedApprovedSha256});
+ const frames=makeCryptoPsbtFrames(Buffer.from(approvedUnsignedBase64,'base64'));
+ const images=await Promise.all(frames.map(frame=>QRCode.toDataURL(frame,{
+  errorCorrectionLevel:'L',margin:2,width:360
+ })));
+ return Object.freeze({frames,images,network:'regtest',giftProvenanceVerified:false,
+  signingAuthorized:false,broadcast:false});
+};
