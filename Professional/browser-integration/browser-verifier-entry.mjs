@@ -1,5 +1,9 @@
 import QRCode from 'qrcode';
 import bitcoin from 'bitcoinjs-lib';
+import {secp256k1} from '@noble/curves/secp256k1';
+import {createHmac} from '@noble/hashes/hmac';
+import {sha512} from '@noble/hashes/sha512';
+import {sha256} from '@noble/hashes/sha256';
 import {makeCryptoPsbtFrames} from '../crypto-psbt-frames.mjs';
 import {verifyGiftReleaseBinding} from './verify-gift-release-binding.mjs';
 import {parseBitcoinCoreGettxout} from '../bitcoin-core-gettxout-adapter.mjs';
@@ -12,6 +16,37 @@ import { URDecoder } from '@ngraveio/bc-ur';
 import cbor from 'cbor';
 import { verifyProfessionalReturnedSignature } from './verify-returned-signature.mjs';
 globalThis.Buffer=Buffer;
+// Browser-only BIP32 non-hardened public derivation. No seed or private-key handling.
+globalThis.bc1q21ProfessionalDerivePublicReleasePlan=function({accountXpub,releaseHeights}){
+ if(typeof accountXpub!=='string'||!/^xpub[1-9A-HJ-NP-Za-km-z]{100,120}$/.test(accountXpub))throw Error('Only account xpub supported');
+ if(!Array.isArray(releaseHeights)||releaseHeights.length<1||releaseHeights.length>24||releaseHeights.some(n=>!Number.isSafeInteger(n)||n<17||n>499999999))throw Error('Invalid regtest block-height release plan');
+ const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+ let n=0n;for(const c of accountXpub){const k=alphabet.indexOf(c);if(k<0)throw Error('Invalid xpub alphabet');n=n*58n+BigInt(k);}
+ let hex=n.toString(16);if(hex.length%2)hex='0'+hex;
+ const zeros=(accountXpub.match(/^1*/)||[''])[0].length;
+ const data=Buffer.concat([Buffer.alloc(zeros),Buffer.from(hex,'hex')]);
+ const hash=b=>Buffer.from(sha256(sha256(b)));
+ if(data.length!==82||!hash(data.subarray(0,78)).subarray(0,4).equals(data.subarray(78)))throw Error('Invalid xpub checksum');
+ if(data.readUInt32BE(0)!==0x0488b21e||data[4]!==3||data.readUInt32BE(9)!==0x80000000)throw Error('Expected account xpub depth 3, account 0');
+ const derive=(node,index)=>{
+  const indexBytes=Buffer.alloc(4);indexBytes.writeUInt32BE(index);
+  const h=Buffer.from(createHmac(sha512,node.chain,Buffer.concat([node.pub,indexBytes])));
+  const k=BigInt('0x'+h.subarray(0,32).toString('hex'));
+  if(k===0n||k>=secp256k1.CURVE.n)throw Error('Invalid child derivation scalar');
+  const point=secp256k1.ProjectivePoint.BASE.multiply(k).add(secp256k1.ProjectivePoint.fromHex(node.pub));
+  if(point.equals(secp256k1.ProjectivePoint.ZERO))throw Error('Invalid derived point');
+  return {pub:Buffer.from(point.toRawBytes(true)),chain:h.subarray(32)};
+ };
+ const account={chain:data.subarray(13,45),pub:data.subarray(45,78)};
+ secp256k1.ProjectivePoint.fromHex(account.pub);
+ const branch=derive(account,1);
+ return Object.freeze(releaseHeights.map((height,index)=>{
+  const signer=derive(branch,index).pub;
+  const redeem=bitcoin.script.compile([bitcoin.script.number.encode(height),bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,bitcoin.opcodes.OP_DROP,signer,bitcoin.opcodes.OP_CHECKSIG]);
+  const payment=bitcoin.payments.p2sh({redeem:{output:redeem},network:bitcoin.networks.regtest});
+  return Object.freeze({index,lockHeight:height,signerPubkeyHex:signer.toString('hex'),redeemScriptHex:redeem.toString('hex'),fundingAddress:payment.address,fundingScriptPubKeyHex:payment.output.toString('hex'),network:'regtest',originAuthenticated:false,fundingAuthorized:false});
+ }));
+};
 // Public-only CLTV script/address verification; does not attest wallet origin.
 globalThis.bc1q21ProfessionalVerifyPublicHandoff=function(payload){
  const fields=['version','network','signerPubkeyHex','locktime','redeemScriptHex','fundingAddress'];
