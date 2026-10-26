@@ -21,7 +21,7 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 </style></head><body>
 <main><header class="brand"><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21 logo"><div><h1>Gifting Wizard</h1></div></header><div class="section-bar"><h2>Professional · Gift Creation</h2><strong>Isolated prototype</strong></div>
 <p class="notice"><strong>ISOLATED REGTEST INTERFACE — NOT LIVE.</strong> This is a workflow integration prototype. No real gifts, keys, funding transactions, blockchain requests, or broadcasts are made. Never enter recovery words here.</p>
-<div class="steps" aria-label="Creation steps"><span class="active">1 · Professional</span><span>2 · Gift details</span><span>3 · Jade Plus</span><span>4 · Funding</span><span>5 · Gift card</span></div>
+<div class="steps" aria-label="Prototype sections"><span class="active">Professional profile</span><span>Retail gift plan (placeholder)</span><span>Jade research (diagnostic)</span><span>Retail Add Funds (locked)</span><span>Retail Finish (locked)</span></div><p class="muted"><small>Retail production wizard: Plan → Recovery → Add Funds → Finish. These prototype sections are not a replacement for those four Retail steps.</small></p>
 <section class="panel stage" id="profile">
 <h2>1. Your professional identity</h2><p class="muted">Your details are kept in this browser session only; this prototype does not upload or save them.</p>
 <label for="practice">Professional practice</label><select id="practice"><option value="">Select a practice</option><option>Lawyer</option><option>Accountant</option><option>Financial adviser</option><option>Estate planner</option><option>Other professional</option></select>
@@ -103,11 +103,13 @@ start.onclick=async()=>{
     if(token!==epoch)return;
     if(verified.signatureCryptographicallyVerified!==true||verified.transactionMatches!==true||verified.broadcast!==false)throw Error('Diagnostic signature validation failed');
     cameraStatus.textContent='PASS: physical Jade QR signature matches fixed disposable regtest diagnostic. NOT verified for the gift being created. Funding remains locked.';
-    camera=null;start.disabled=false;stop.disabled=true;
+    // Release the camera after a successful diagnostic; do not imply gift authorization.
+    receiver.stop();camera=null;start.disabled=false;stop.disabled=true;
    }
   });
   camera=receiver;await receiver.start();
   if(token!==epoch){receiver.stop();return;}
+  if(!camera){stop.disabled=true;start.disabled=false;}
  }catch(e){if(token===epoch){stopCamera();cameraStatus.textContent='Camera/verification unavailable: '+String(e.message||e);}}
 };
 stop.onclick=stopCamera;
