@@ -111,6 +111,7 @@ document.getElementById('coreUtxoFile').addEventListener('change',async event=>{
   const release=globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift,recipientLocator:locator,releaseNumber:n});
   const response=JSON.parse(await file.text());
   const parsed=globalThis.bc1q21ProfessionalParseCoreGettxout(release.fundingTxid,release.fundingVout,response);
+  if(response?.bestblock!==undefined&&(!/^[0-9a-f]{64}$/i.test(response.bestblock)))throw Error('Invalid Core bestblock identifier');
   if(parsed.valueSats!==release.inputSats||parsed.scriptPubKeyHex!==release.fundingScriptHex)throw Error('Core response amount or script does not match selected release');
   status.textContent='PASS: supplied Core response matches selected release outpoint, amount and script. UNTRUSTED FILE — not independently chain-verified. Signing disabled.';
  }catch(error){status.textContent='Rejected Core response: '+String(error.message||error);}
