@@ -29,6 +29,7 @@ try{
  assert.match(await page.locator('#giftRecordStatus').innerText(),/public gift record loaded/i);
  assert.equal(await page.locator('#giftRecordSource').innerText(),'Local JSON file (untrusted)');
  assert.equal(await page.locator('#selectedRelease option').count(),2);
+ assert.match(await page.locator('#scheduleProvenance').innerText(),/NOT authenticated/);
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/abababab/);
  const invalid={...giftFixture,fundingAddress:'bc1q21wronggiftlocator12345678901234567890'};
@@ -36,6 +37,7 @@ try{
  assert.match(await page.locator('#giftRecordStatus').innerText(),/Rejected public gift record/);
  assert.equal(await page.locator('#giftRecordSource').innerText(),'No record loaded');
  assert.equal(await page.locator('#selectedRelease option').count(),5);
+ assert.match(await page.locator('#scheduleProvenance').innerText(),/synthetic regtest demonstration/);
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/No gift-specific transaction evidence loaded/);
  assert.equal(await page.evaluate(()=>globalThis.bc1q21ProfessionalPublicGiftRecord),null);
  assert.equal(await page.locator('#sign').isDisabled(),true);
