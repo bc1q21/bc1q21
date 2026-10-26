@@ -54,3 +54,11 @@ assert.equal(selected.signingAuthorized,false);
 assert.throws(()=>selectPublicGiftRelease({gift:publicGift,recipientLocator:'wrong',releaseNumber:1}),/link does not match/);
 assert.throws(()=>selectPublicGiftRelease({gift:publicGift,recipientLocator:gift.fundingAddress,releaseNumber:2}),/absent/);
 assert.throws(()=>selectPublicGiftRelease({gift:{...publicGift,releases:[release,release]},recipientLocator:gift.fundingAddress,releaseNumber:1}),/Duplicate/);
+
+// Multiple releases: selection must never silently substitute another outpoint.
+const second={...release,releaseNumber:2,fundingVout:release.fundingVout+1};
+const twoReleaseGift={fundingAddress:gift.fundingAddress,releases:[release,second]};
+assert.equal(selectPublicGiftRelease({gift:twoReleaseGift,recipientLocator:gift.fundingAddress,releaseNumber:2}).fundingVout,second.fundingVout);
+assert.throws(()=>selectPublicGiftRelease({gift:{...twoReleaseGift,releases:[release,{...second,fundingTxid:'bad'}]},recipientLocator:gift.fundingAddress,releaseNumber:1}),/Invalid release funding evidence/);
+assert.throws(()=>selectPublicGiftRelease({gift:{...twoReleaseGift,releases:[release,{...second,releaseNumber:1}]},recipientLocator:gift.fundingAddress,releaseNumber:1}),/Duplicate/);
+assert.throws(()=>selectPublicGiftRelease({gift:twoReleaseGift,recipientLocator:gift.fundingAddress,releaseNumber:0}),/Invalid release selection/);
