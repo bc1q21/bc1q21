@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>bc1q21 Professional — gift-specific recipient prototype (offline)</title>
 <style>
 :root{color-scheme:light;font:16px system-ui,Arial,sans-serif;background:#f4f7fb;color:#16263a}
@@ -42,7 +42,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <div class="step"><div class="number">3</div><div>Scan Jade's signed QR back into the page and verify the returned PSBT publicly.</div></div>
 <div class="step"><div class="number">4</div><div>Broadcast only after verifying authorization, maturity, signature and transaction details.</div></div>
 <div class="actions"><button id="sign" disabled aria-describedby="message">Sign matured release with offline wallet</button><button class="secondary" id="explain">Why is signing disabled?</button></div>
-<p id="message" role="status">QR-signing integration is intentionally disabled. This page is a public-only UX prototype.</p>
+<p id="message" role="status">Gift-specific release remains disabled while the Jade camera is integrated.</p>
 </section>
 </main>
 <script>
