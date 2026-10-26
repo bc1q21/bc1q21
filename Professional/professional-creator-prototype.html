@@ -56,7 +56,7 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <p><strong>Signature verification:</strong> Fixed release-spend diagnostic only, not connected to this gift. <strong>Funding:</strong> Disabled in this prototype; Retail's funding sequence remains the reference.</p>
 <button class="secondary" data-back="gift">Back</button><button type="button" id="to-funding-preview">Review funding stage (preview only)</button>
 </section>
-<section class="panel stage" id="funding" hidden><h2>4. Add Funds — planning preview</h2><p class="notice"><strong>Not fundable.</strong> No funding address, Bitcoin transaction, deposit QR, or payment request has been generated. Do not send Bitcoin.</p><p id="funding-preview-summary" class="status">Review the release plan first.</p><h3>Release funding plan — regtest preview</h3><div id="funding-release-rows"></div><p id="funding-address-warning" class="status">No verified release addresses available. Do not fund.</p><p>The real Professional Add Funds step will show independently derived time-locked outputs and require confirmed funding before Finish.</p><button class="secondary" data-back="jade">Back</button><button type="button" id="to-card-preview">Preview Finish stage</button></section>
+<section class="panel stage" id="funding" hidden><h2>4. Add Funds — planning preview</h2><p class="notice"><strong>Not fundable.</strong> No funding address, Bitcoin transaction, deposit QR, or payment request has been generated. Do not send Bitcoin.</p><p id="funding-preview-summary" class="status">Review the release plan first.</p><h3>Release funding plan — regtest preview</h3><div id="funding-release-rows"></div><button type="button" id="export-funding-plan" disabled>Save local funding plan (JSON)</button><p id="funding-export-status" class="status">Derive all release addresses to enable a local plan export.</p><p id="funding-address-warning" class="status">No verified release addresses available. Do not fund.</p><p>The real Professional Add Funds step will show independently derived time-locked outputs and require confirmed funding before Finish.</p><button class="secondary" data-back="jade">Back</button><button type="button" id="to-card-preview">Preview Finish stage</button></section>
 <section class="panel stage" id="card" hidden><h2>5. Finish — gift card preview</h2><p class="notice"><strong>Not a valid gift card.</strong> No recipient link or QR is issued until authenticated funding is confirmed. Do not deliver this preview.</p><div class="panel"><h3 id="card-preview-title">Planned gift</h3><p id="card-preview-purpose"></p><p id="card-preview-schedule"></p><p id="card-preview-practice"></p></div><button class="secondary" data-back="funding">Back</button></section>
 <p class="muted"><small>Development scope: Professional branch only. No wallet recovery words, private keys, network calls or broadcast. Refresh clears the entered details.</small></p>
 </main>
@@ -66,13 +66,14 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 let reviewedPlan=null;
 let verifiedPublicHandoff=null;
 let derivedReleasePlan=null;
+let derivationAccountXpub=null;
 function renderCreatorHeights(){
- const holder=document.getElementById('creator-heights');holder.replaceChildren();derivedReleasePlan=null;document.getElementById('creator-derived-addresses').replaceChildren();
+ const holder=document.getElementById('creator-heights');holder.replaceChildren();derivedReleasePlan=null;derivationAccountXpub=null;document.getElementById('creator-derived-addresses').replaceChildren();
  if(!reviewedPlan)return;
  reviewedPlan.items.forEach((item,index)=>{const label=document.createElement('label');label.textContent='Release '+(index+1)+' ('+item.date+') — regtest unlock block height';const input=document.createElement('input');input.type='number';input.min='17';input.max='499999999';input.step='1';input.dataset.heightIndex=String(index);label.append(input);holder.append(label);});
 }
 document.getElementById('derive-creator-addresses').onclick=()=>{
- const status=document.getElementById('creator-derivation-status'),holder=document.getElementById('creator-derived-addresses');holder.replaceChildren();derivedReleasePlan=null;
+ const status=document.getElementById('creator-derivation-status'),holder=document.getElementById('creator-derived-addresses');holder.replaceChildren();derivedReleasePlan=null;derivationAccountXpub=null;
  try{
   if(!reviewedPlan)throw Error('Review a valid release plan first');
   if(typeof globalThis.bc1q21ProfessionalDerivePublicReleasePlan!=='function')throw Error('Public derivation engine unavailable');
@@ -80,14 +81,14 @@ document.getElementById('derive-creator-addresses').onclick=()=>{
   if(heights.length!==reviewedPlan.items.length||heights.some((h,i)=>!Number.isSafeInteger(h)||h<17||h>499999999||(i>0&&h<=heights[i-1])))throw Error('Enter strictly increasing valid regtest block heights');
   const addresses=globalThis.bc1q21ProfessionalDerivePublicReleasePlan({accountXpub:document.getElementById('creator-account-xpub').value.trim(),releaseHeights:heights});
   addresses.forEach((entry,index)=>{const p=document.createElement('p');p.textContent='Release '+(index+1)+' · block '+entry.lockHeight+' · '+entry.fundingAddress+' · '+reviewedPlan.items[index].sats+' sats planned';p.style.overflowWrap='anywhere';holder.append(p);});
-  derivedReleasePlan=addresses;status.textContent='Derived '+addresses.length+' public-only regtest CLTV addresses. Not authenticated to Jade, not funded, do not send Bitcoin.';
+  derivedReleasePlan=addresses;derivationAccountXpub=document.getElementById('creator-account-xpub').value.trim();status.textContent='Derived '+addresses.length+' public-only regtest CLTV addresses. Not authenticated to Jade, not funded, do not send Bitcoin.';
  }catch(error){status.textContent='Cannot derive: '+String(error.message||error);}
 };
 
 const releaseCount=document.getElementById('release-count'),releaseInputs=document.getElementById('release-plan-inputs'),planPreview=document.getElementById('release-plan-preview'),planStatus=document.getElementById('release-plan-status');
 function renderReleaseInputs(){
  const previous=[...releaseInputs.querySelectorAll('.draft-release')].map(row=>({date:row.querySelector('input[type=date]').value,sats:row.querySelector('input[type=number]').value}));
- releaseInputs.replaceChildren();reviewedPlan=null;derivedReleasePlan=null;planPreview.hidden=true;planStatus.textContent='Review the updated release plan.';
+ releaseInputs.replaceChildren();reviewedPlan=null;derivedReleasePlan=null;derivationAccountXpub=null;planPreview.hidden=true;planStatus.textContent='Review the updated release plan.';
  for(let i=0;i<Number(releaseCount.value);i++){
   const row=document.createElement('div');row.className='draft-release';
   const title=document.createElement('h4');title.textContent='Release '+(i+1);row.append(title);
@@ -97,7 +98,7 @@ function renderReleaseInputs(){
  }
 }
 releaseCount.addEventListener('change',renderReleaseInputs);renderReleaseInputs();
-releaseInputs.addEventListener('input',()=>{reviewedPlan=null;derivedReleasePlan=null;planPreview.hidden=true;planStatus.textContent='Draft changed — review again before continuing.';});
+releaseInputs.addEventListener('input',()=>{reviewedPlan=null;derivedReleasePlan=null;derivationAccountXpub=null;planPreview.hidden=true;planStatus.textContent='Draft changed — review again before continuing.';});
 document.getElementById('review-release-plan').addEventListener('click',()=>{
  const rows=[...releaseInputs.querySelectorAll('.draft-release')],today=new Date().toISOString().slice(0,10);
  let total=0n,prior='',items=[];
@@ -125,13 +126,24 @@ document.getElementById('to-gift').onclick=()=>{
 document.getElementById('to-jade').onclick=()=>{if(!reviewedPlan){planStatus.textContent='Review a valid release schedule before continuing.';return;}renderCreatorHeights();showStage('jade');};
 document.getElementById('to-jade').addEventListener('click',()=>{document.getElementById('creator-public-status').textContent=verifiedPublicHandoff?'Verified public CLTV handoff loaded. This is not a complete gift funding schedule.':'Import public-only Jade wallet information to inspect its CLTV script and test address.';});
 document.getElementById('to-funding-preview').onclick=()=>{if(!reviewedPlan){showStage('gift');return;}document.getElementById('funding-preview-summary').textContent=reviewedPlan.items.length+' planned releases · '+BigInt(reviewedPlan.totalSats).toLocaleString('en-US')+' sats total · funding disabled.';
-const rows=document.getElementById('funding-release-rows');rows.replaceChildren();
+const rows=document.getElementById('funding-release-rows');rows.replaceChildren();document.getElementById('export-funding-plan').disabled=true;
 const warning=document.getElementById('funding-address-warning');
-if(derivedReleasePlan&&derivedReleasePlan.length===reviewedPlan.items.length){
+if(derivedReleasePlan&&derivationAccountXpub===document.getElementById('creator-account-xpub').value.trim()&&derivedReleasePlan.length===reviewedPlan.items.length){
  derivedReleasePlan.forEach((entry,index)=>{const row=document.createElement('p');row.style.overflowWrap='anywhere';row.textContent='Release '+(index+1)+' · '+reviewedPlan.items[index].date+' · '+reviewedPlan.items[index].sats+' sats · regtest block '+entry.lockHeight+' · '+entry.fundingAddress;rows.append(row);});
+ document.getElementById('export-funding-plan').disabled=false;
  warning.textContent='These are derived regtest preview addresses. Jade ownership, calendar/block-height mapping, and funding have NOT been authenticated. Do not send Bitcoin.';
 }else warning.textContent='No complete public-derived release addresses. Return to the Jade stage to derive the regtest preview. Do not fund.';
 showStage('funding');};
+document.getElementById('export-funding-plan').onclick=()=>{
+ const status=document.getElementById('funding-export-status');
+ try{
+  if(!reviewedPlan||!derivedReleasePlan||derivedReleasePlan.length!==reviewedPlan.items.length||derivationAccountXpub!==document.getElementById('creator-account-xpub').value.trim())throw Error('Derive a current release plan before exporting');
+  const data={format:'bc1q21-professional-unfunded-regtest-plan-v1',network:'regtest',status:'UNFUNDED_DRAFT_DO_NOT_SEND',gift:{recipient:reviewedPlan.recipient,occasion:reviewedPlan.purpose,practice:document.getElementById('practice').value,practiceName:document.getElementById('business').value.trim()},totalSats:reviewedPlan.totalSats,releases:derivedReleasePlan.map((entry,index)=>({releaseNumber:index+1,plannedDate:reviewedPlan.items[index].date,amountSats:reviewedPlan.items[index].sats.toString(),unlockBlockHeight:entry.lockHeight,signerPubkeyHex:entry.signerPubkeyHex,redeemScriptHex:entry.redeemScriptHex,fundingScriptPubKeyHex:entry.fundingScriptPubKeyHex,regtestAddress:entry.fundingAddress})),walletOriginAuthenticated:false,chainVerified:false,fundingConfirmed:false,signingAuthorized:false,broadcastAuthorized:false};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)+'\\n'],{type:'application/json'}));
+  const link=document.createElement('a');link.href=url;link.download='bc1q21-professional-unfunded-regtest-plan.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  status.textContent='Local unfunded plan saved. This is not a funded gift, gift card, or recipient release record.';
+ }catch(error){status.textContent='Export unavailable: '+String(error.message||error);}
+};
 document.getElementById('to-card-preview').onclick=()=>{if(!reviewedPlan){showStage('gift');return;}document.getElementById('card-preview-title').textContent='Planned gift for '+(reviewedPlan.recipient||'recipient');document.getElementById('card-preview-purpose').textContent='Occasion: '+reviewedPlan.purpose;document.getElementById('card-preview-schedule').textContent=reviewedPlan.items.length+' releases · '+BigInt(reviewedPlan.totalSats).toLocaleString('en-US')+' sats planned';document.getElementById('card-preview-practice').textContent='Prepared by: '+document.getElementById('business').value.trim();showStage('card');};
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>showStage(b.dataset.back));
 let publicHandoffImportGeneration=0;
