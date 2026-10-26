@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>bc1q21 Professional — gift-specific recipient prototype (offline)</title>
 <style>
 :root{color-scheme:light;font:16px system-ui,Arial,sans-serif;background:#f4f7fb;color:#16263a}
 *{box-sizing:border-box}body{margin:0}main{max-width:930px;margin:0 auto;padding:24px 18px 65px}
-header{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0 20px;border-bottom:3px solid #064c85}
+header{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0 20px;border-bottom:3px solid #064c85}header img{max-height:100px;max-width:50%;object-fit:contain}.section-bar{background:#09518b;color:#fff;padding:12px 16px;border-radius:7px;margin:12px 0}
 .brand{color:#064c85;font-size:1.7rem;font-weight:800}.tag{font-size:.74rem;font-weight:700;color:#fff;background:#34465c;padding:7px 10px;border-radius:6px}
 section{background:#fff;border:1px solid #d9e2ee;border-radius:12px;padding:20px;margin:18px 0;box-shadow:0 2px 6px #1428400c}
 h1{font-size:1.65rem;margin:20px 0 8px}h2{font-size:1.13rem;margin:0 0 13px}p{line-height:1.5}.muted{color:#506174}.warn{background:#fff1dc;border-left:4px solid #ba760d;padding:12px 16px}.pledge{background:#eaf5ee;border-left:4px solid #167447;padding:12px 16px}
@@ -23,7 +23,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 </style>
 </head>
 <body><main>
-<header><div class="brand">bc1q21</div><div class="tag">PROFESSIONAL · REGTEST PROTOTYPE</div></header>
+<header><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21 logo"><div class="tag">PROFESSIONAL · REGTEST PROTOTYPE</div></header><div class="section-bar"><strong>Gift recipient</strong></div>
 <h1>Your Gift Overview</h1>
 <p class="muted">This is the gift-specific recipient page reached through a gift card's link or QR code. It is not the general bc1q21 homepage.</p>
 <p class="warn"><strong>Offline demonstration only.</strong> Fictional gift and wallet address. No real Bitcoin. No wallet connection, blockchain queries, transaction construction, signing, or broadcast.</p>
