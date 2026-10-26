@@ -40,6 +40,7 @@ try{
  assert.equal(await page.evaluate(()=>globalThis.bc1q21ProfessionalPublicGiftRecord),null);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#publicGiftFile').setInputFiles({name:'gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
+ await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  assert.equal(await page.locator('#stopCamera').isDisabled(),true);
