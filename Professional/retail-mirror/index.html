@@ -965,7 +965,6 @@ Download a printable gift card that includes the QR with this recipient link.
      transfer.items.add(new File([bytes],link.download,{type:'application/json'}));
      planFile.files=transfer.files;
      planFile.dispatchEvent(new Event('change',{bubbles:true}));
-     planStatus.textContent='Creator draft received. Validating locally…';
     }catch(error){planStatus.textContent='Select the downloaded draft below: '+String(error.message||error);}
    },true);
   }catch(e){}
