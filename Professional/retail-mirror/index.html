@@ -49,6 +49,11 @@
       <label for="professional-plan-file">Choose exported Professional gift plan (JSON)</label>
       <input id="professional-plan-file" type="file" accept=".json,application/json" style="display:block;margin:10px 0">
       <p id="professional-plan-status" role="status">No gift plan loaded.</p>
+      <div id="professional-plan-summary" hidden style="background:white;border:1px solid #cbd8e5;border-radius:7px;padding:12px;margin:12px 0">
+        <strong>Gift release schedule · Preview only</strong>
+        <p id="professional-plan-recipient"></p>
+        <ol id="professional-plan-releases"></ol>
+      </div>
       <button type="button" id="professional-open-recipient" disabled>Continue to recipient signing preview →</button>
     </div>
     <p style="color:#9b4b00;font-weight:700">Isolated regtest integration. Signing does not authorize spending; real funding and broadcast remain disabled.</p>
@@ -944,13 +949,24 @@ Download a printable gift card that includes the QR with this recipient link.
  function select(recipientSelected){creator.hidden=recipientSelected;recipient.hidden=!recipientSelected;creator.style.display=recipientSelected?"none":"block";recipient.style.display=recipientSelected?"block":"none";ct.setAttribute('aria-selected',String(!recipientSelected));rt.setAttribute('aria-selected',String(recipientSelected));if(recipientSelected&&!recipient.src){recipient.src=recipient.dataset.src;}}
  const planFile=document.getElementById('professional-plan-file'),planStatus=document.getElementById('professional-plan-status'),openRecipient=document.getElementById('professional-open-recipient');
  planFile.addEventListener('change',async()=>{
-  openRecipient.disabled=true;
+  openRecipient.disabled=true;document.getElementById('professional-plan-summary').hidden=true;
   const file=planFile.files&&planFile.files[0];
   if(!file){planStatus.textContent='No gift plan loaded.';return;}
   if(file.size>250000){planStatus.textContent='File too large (250 KB maximum).';return;}
   try{
    const plan=JSON.parse(await file.text());
    if(!plan||plan.schema!=='bc1q21-professional-unfunded-regtest-plan-v1'||!Array.isArray(plan.releases)||!plan.releases.length){throw Error('Not a supported unfunded Professional regtest plan.');}
+   const summary=document.getElementById('professional-plan-summary'),list=document.getElementById('professional-plan-releases');
+   list.replaceChildren();
+   document.getElementById('professional-plan-recipient').textContent='Recipient: '+String(plan.recipient||'Not specified').slice(0,100);
+   for(const release of plan.releases.slice(0,60)){
+    const item=document.createElement('li');
+    const sats=release.amountSats??release.sats??'Unspecified';
+    const date=release.releaseDate??release.date??release.unlockDate??'Date not specified';
+    item.textContent=String(date).slice(0,60)+' — '+String(sats).slice(0,30)+' sats';
+    list.appendChild(item);
+   }
+   summary.hidden=false;
    planStatus.textContent='Recognized '+plan.releases.length+' planned release(s). Import this same JSON into the recipient panel for verification.';
    openRecipient.disabled=false;
   }catch(e){planStatus.textContent='Unable to read plan: '+String(e.message||e);}
