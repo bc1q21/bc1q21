@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src blob: data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>bc1q21 Professional — Creation Flow Prototype</title>
+<style>
+:root{font:16px system-ui,Segoe UI,sans-serif;color:#172c43;background:#f3f6fa}*{box-sizing:border-box}body{margin:0}
+header{background:#fff;border-bottom:2px solid #d9e4f0;padding:18px max(20px,calc((100vw - 1000px)/2));display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:1.65rem;font-weight:800;color:#09518b}nav{display:flex;gap:20px;font-weight:650}nav span:last-child{color:#09518b;border-bottom:3px solid #09518b}
+main{max-width:1000px;margin:auto;padding:22px 18px 65px}h1{margin:10px 0}p{line-height:1.55}
+.notice{background:#fff1da;border-left:4px solid #bc7b17;padding:14px 18px;border-radius:6px}
+.steps{display:flex;flex-wrap:wrap;gap:8px;margin:25px 0}.steps span{background:#dce5ee;padding:10px;border-radius:7px;font-size:.87rem}.steps .active{background:#09518b;color:white}
+.panel{background:white;padding:24px;border:1px solid #d9e2ed;border-radius:12px;box-shadow:0 2px 8px #1636570a}
+label{display:block;font-weight:650;margin:18px 0 5px}input,select,textarea{font:inherit;padding:11px;border:1px solid #aebdcc;border-radius:7px;width:100%;max-width:650px}
+textarea{min-height:100px}button{font:inherit;background:#09518b;color:#fff;border:0;border-radius:7px;padding:12px 18px;cursor:pointer;margin:12px 8px 0 0}
+button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#dce9f5;color:#164568}
+small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;margin:18px 0;flex-wrap:wrap}
+#logo-preview{max-width:130px;max-height:95px;object-fit:contain}#qr{width:min(100%,380px);height:auto;display:block;margin:20px auto;background:#fff}
+#camera{width:min(100%,440px);background:#152536;min-height:200px;display:block;margin:15px 0}
+.stage[hidden]{display:none}.status{background:#eaf0f7;padding:12px;border-radius:7px;white-space:pre-wrap}
+@media(max-width:600px){nav{gap:10px;font-size:.9rem}.panel{padding:16px}}
+</style></head><body>
+<header><div class="brand">bc1q21</div><nav aria-label="Prototype navigation"><span>Home</span><span>Gifts</span><span>Professional</span></nav></header>
+<main><h1>Professional gift creation</h1>
+<p class="notice"><strong>ISOLATED REGTEST INTERFACE — NOT LIVE.</strong> This is a workflow integration prototype. No real gifts, keys, funding transactions, blockchain requests, or broadcasts are made. Never enter recovery words here.</p>
+<div class="steps" aria-label="Creation steps"><span class="active">1 · Professional</span><span>2 · Gift details</span><span>3 · Jade Plus</span><span>4 · Funding</span><span>5 · Gift card</span></div>
+<section class="panel stage" id="profile">
+<h2>1. Your professional identity</h2><p class="muted">Your details are kept in this browser session only; this prototype does not upload or save them.</p>
+<label for="practice">Professional practice</label><select id="practice"><option value="">Select a practice</option><option>Lawyer</option><option>Accountant</option><option>Financial adviser</option><option>Estate planner</option><option>Other professional</option></select>
+<label for="business">Business or practice name</label><input id="business" maxlength="100" autocomplete="off" placeholder="Practice name">
+<label for="contact">Professional contact name (optional)</label><input id="contact" maxlength="100" autocomplete="off">
+<label for="logo">Business logo (optional, local preview only)</label><input id="logo" type="file" accept="image/png,image/jpeg,image/webp">
+<div class="preview"><img id="logo-preview" alt="Selected professional logo preview" hidden><strong id="profile-preview"></strong></div>
+<button id="to-gift">Continue to gift details</button>
+</section>
+<section class="panel stage" id="gift" hidden>
+<h2>2. Gift creation</h2><p>The final Professional version will use the established Retail gift-creation fields and validation. This screen establishes the flow without copying or changing Retail code.</p>
+<label for="recipient">Recipient name (demonstration only)</label><input id="recipient" maxlength="100" autocomplete="off">
+<label for="purpose">Gift occasion (demonstration only)</label><select id="purpose"><option>Legacy gift</option><option>Wedding</option><option>Birthday</option><option>Inheritance</option><option>Philanthropy</option><option>Other</option></select>
+<p class="notice">Gift amounts, release dates, destination scripts and actual unsigned PSBTs must come from the validated gift engine. They are not invented on this page.</p>
+<button class="secondary" data-back="profile">Back</button><button id="to-jade">Continue to Jade Plus</button>
+</section>
+<section class="panel stage" id="jade" hidden>
+<h2>3. Jade Plus — offline signing</h2><p>This is the new step immediately <strong>before funding</strong>. The professional reviews an exact gift transaction, scans its animated unsigned PSBT QR with Jade Plus, then returns a signed QR to the computer camera.</p>
+<p class="notice">The QR transport preview below is deliberately separate from gift authorization. Imported images are not proof that a transaction belongs to this gift. Funding remains locked until a gift-specific verifier is integrated.</p>
+<h3>Animated QR display — local test frames</h3><label for="qr-files">Select locally generated QR PNG/JPEG/WebP frames (test data only)</label><input id="qr-files" type="file" accept="image/png,image/jpeg,image/webp" multiple>
+<img id="qr" alt="Selected animated QR frame" hidden><p id="qr-count" class="status">No QR frames loaded.</p>
+<button id="qr-toggle" disabled>Pause animation</button><button id="qr-slower" disabled>Slower</button><button id="qr-faster" disabled>Faster</button>
+<h3>Camera — Jade Plus return</h3><p>Camera preview only. The existing verified signed-QR decoder will be integrated with this exact gift's approval context; camera visibility alone never approves signing.</p>
+<video id="camera" playsinline muted aria-label="Jade Plus camera preview"></video>
+<button id="camera-start">Start camera preview</button><button id="camera-stop" disabled>Stop camera</button>
+<p id="camera-status" class="status">Camera inactive. No signature verified.</p>
+<p><strong>Signature verification:</strong> Not connected to this gift. <strong>Funding:</strong> Disabled.</p>
+<button class="secondary" data-back="gift">Back</button><button disabled title="Requires independently verified gift-bound Jade signature">Proceed to funding (locked)</button>
+</section>
+<section class="panel stage" id="funding" hidden><h2>4. Funding</h2><p>Locked until verified gift-bound offline signing.</p></section>
+<section class="panel stage" id="card" hidden><h2>5. Gift card</h2><p>Locked until funding confirmation.</p></section>
+<p class="muted"><small>Development scope: Professional branch only. No wallet recovery words, private keys, network calls or broadcast. Refresh clears the entered details.</small></p>
+</main>
+<script>
+'use strict';
+const stages=['profile','gift','jade','funding','card'];
+const showStage=name=>{stages.forEach((id,i)=>{document.getElementById(id).hidden=id!==name;document.querySelectorAll('.steps span')[i].classList.toggle('active',id===name)});if(name!=='jade')stopCamera();};
+document.getElementById('to-gift').onclick=()=>{
+ const practice=document.getElementById('practice').value,business=document.getElementById('business').value.trim();
+ if(!practice||!business){alert('Select a practice and enter a business name.');return;}
+ document.getElementById('profile-preview').textContent=business+' · '+practice;showStage('gift');
+};
+document.getElementById('to-jade').onclick=()=>showStage('jade');
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>showStage(b.dataset.back));
+let logoUrl=null;
+document.getElementById('logo').onchange=e=>{
+ const f=e.target.files?.[0],img=document.getElementById('logo-preview');if(logoUrl)URL.revokeObjectURL(logoUrl);logoUrl=null;img.hidden=true;
+ if(!f)return;
+ if(f.size>1024*1024||!['image/png','image/jpeg','image/webp'].includes(f.type)){alert('Logo must be PNG, JPEG or WebP and under 1 MB.');e.target.value='';return;}
+ logoUrl=URL.createObjectURL(f);img.src=logoUrl;img.hidden=false;
+};
+let urls=[],index=0,delay=400,playing=false,timer=null;
+const qr=document.getElementById('qr'),counter=document.getElementById('qr-count');
+const controls=['qr-toggle','qr-slower','qr-faster'].map(id=>document.getElementById(id));
+function clearFrames(){playing=false;clearTimeout(timer);urls.forEach(u=>URL.revokeObjectURL(u));urls=[];index=0;qr.hidden=true;controls.forEach(b=>b.disabled=true);controls[0].textContent='Pause animation';}
+function tick(){if(!playing||!urls.length)return;qr.src=urls[index];qr.hidden=false;counter.textContent='Local test QR frame '+(index+1)+' of '+urls.length+' — NOT gift-verified';index=(index+1)%urls.length;timer=setTimeout(tick,delay);}
+function restart(){clearTimeout(timer);if(playing)tick();}
+document.getElementById('qr-files').onchange=e=>{
+ clearFrames();const files=Array.from(e.target.files||[]);
+ if(!files.length){counter.textContent='No QR frames loaded.';return;}
+ if(files.length>256||files.some(f=>f.size>500000||!['image/png','image/jpeg','image/webp'].includes(f.type))){counter.textContent='Rejected: up to 256 PNG/JPEG/WebP frames, each under 500 KB.';e.target.value='';return;}
+ urls=files.map(f=>URL.createObjectURL(f));controls.forEach(b=>b.disabled=false);playing=true;tick();
+};
+controls[0].onclick=()=>{playing=!playing;controls[0].textContent=playing?'Pause animation':'Resume animation';restart();};
+controls[1].onclick=()=>{delay=Math.min(1500,delay+100);restart();};
+controls[2].onclick=()=>{delay=Math.max(150,delay-100);restart();};
+let stream=null,epoch=0;
+const video=document.getElementById('camera'),start=document.getElementById('camera-start'),stop=document.getElementById('camera-stop'),cameraStatus=document.getElementById('camera-status');
+function stopCamera(){epoch++;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}video.srcObject=null;start.disabled=false;stop.disabled=true;cameraStatus.textContent='Camera inactive. No signature verified.';}
+start.onclick=async()=>{
+ const token=++epoch;start.disabled=true;stop.disabled=false;cameraStatus.textContent='Waiting for camera permission…';
+ try{if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera requires HTTPS or localhost');
+ const acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+ if(token!==epoch){acquired.getTracks().forEach(t=>t.stop());return;}
+ stream=acquired;video.srcObject=stream;await video.play();if(token!==epoch)return;
+ cameraStatus.textContent='Camera preview active — no QR decoding or signature approval on this page.';
+ }catch(e){if(token===epoch){stopCamera();cameraStatus.textContent='Camera unavailable: '+String(e.message||e);}}
+};
+stop.onclick=stopCamera;
+window.addEventListener('pagehide',()=>{stopCamera();clearFrames();if(logoUrl)URL.revokeObjectURL(logoUrl);});
+</script></body></html>
