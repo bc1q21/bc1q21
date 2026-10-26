@@ -1,3 +1,4 @@
+import {parseBitcoinCoreGettxout} from '../bitcoin-core-gettxout-adapter.mjs';
 import {checkGiftReleaseAgainstUtxoSnapshot} from './verify-gift-release-binding.mjs';
 import {selectPublicGiftRelease} from './select-public-gift-release.mjs';
 import { createJadeSignedCameraReceiver } from '../recipient-jade-signed-camera.browser.mjs';
@@ -45,3 +46,6 @@ globalThis.bc1q21ProfessionalSelectPublicGiftRelease=selectPublicGiftRelease;
 
 // Caller-supplied UTXO snapshots are consistency checks, not authenticated RPC evidence.
 globalThis.bc1q21ProfessionalCheckUtxoSnapshot=checkGiftReleaseAgainstUtxoSnapshot;
+
+// Parsing an externally supplied response does not authenticate its Bitcoin Core origin.
+globalThis.bc1q21ProfessionalParseCoreGettxout=parseBitcoinCoreGettxout;
