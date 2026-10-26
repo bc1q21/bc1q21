@@ -24,6 +24,10 @@ try{
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/abababab/);
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
+ await page.locator('#publicGiftFile').setInputFiles({name:'gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
+ assert.match(await page.locator('#giftRecordStatus').innerText(),/public gift record loaded/i);
+ assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
+ assert.equal(await page.locator('#sign').isDisabled(),true);
  assert.equal(await page.locator('#stopCamera').isDisabled(),true);
  assert.equal(await page.locator('#startCamera').isEnabled(),true);
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalAttachCamera),'function','Recipient requires built Jade browser verifier');
