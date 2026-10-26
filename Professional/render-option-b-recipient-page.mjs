@@ -21,7 +21,7 @@ export function renderOptionBRecipientPage(url,published,commitment) {
  const rows=view.releases.map(release=>
   '<tr><td>'+escapeHtml(release.index+1)+'</td><td>'+escapeHtml(release.date)+
   '</td><td colspan="2">Scheduled (chain status not checked)</td></tr>').join('\n');
- html=html.replace(/<tbody(?:\\s+[^>]*)?>[\\s\\S]*?<\\/tbody>/,
+ html=html.replace(new RegExp('<tbody(?:\\s+[^>]*)?>[\\s\\S]*?</tbody>'),
   '<tbody>'+rows+'</tbody>');
  html=html.replace('<th>Unlock height</th><th>Amount</th><th>Current status</th>',
   '<th>Release date (UTC)</th><th colspan="2">Status</th>');
