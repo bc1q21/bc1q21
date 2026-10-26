@@ -21,14 +21,14 @@ export function renderOptionBRecipientPage(url,published,commitment) {
  const rows=view.releases.map(release=>
   '<tr><td>'+escapeHtml(release.index+1)+'</td><td>'+escapeHtml(release.date)+
   '</td><td colspan="2">Scheduled (chain status not checked)</td></tr>').join('\n');
- html=html.replace(/<tbody>[\s\S]*?<\/tbody>/,
+ html=html.replace(/<tbody(?:\\s+[^>]*)?>[\\s\\S]*?<\\/tbody>/,
   '<tbody>'+rows+'</tbody>');
  html=html.replace('<th>Unlock height</th><th>Amount</th><th>Current status</th>',
   '<th>Release date (UTC)</th><th colspan="2">Status</th>');
- html=html.replace('<div class="big">0.00066000 BTC</div>',
+ html=html.replace('<div class="big" id="giftTotal">0.00066000 BTC</div>',
   '<div class="big">'+escapeHtml(view.releaseCount)+' scheduled releases</div>');
- html=html.replace('66,000 disposable regtest satoshis in four example releases',
-  'Dates verified against supplied public CLTV scripts; no balance or funding claim');
+ html=html.replace('<p id="giftTotalContext">66,000 disposable regtest satoshis in four example releases</p>',
+  '<p id="giftTotalContext">Dates verified against supplied public CLTV scripts; no balance or funding claim</p>');
  html=html.replace('Fictional gift and wallet address. No real Bitcoin.',
   'Gift-specific public schedule, generated offline from supplied script-verified metadata. No live funding or Bitcoin spending is established.');
  html=html.replace('These are known public synthetic fixtures from our isolated regtest work—not live balances, spendable UTXO discoveries, or dates derived from the recipient\'s real gift.',
