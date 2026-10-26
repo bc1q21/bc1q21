@@ -1,5 +1,6 @@
 // Regtest selected-release binding tests. No keys, network or broadcast.
 import assert from 'node:assert/strict';
+import {selectPublicGiftRelease} from './select-public-gift-release.mjs';
 import bitcoin from 'bitcoinjs-lib';
 import {sha256} from '@noble/hashes/sha256';
 import {verifyGiftReleaseBinding,checkGiftReleaseAgainstUtxoSnapshot} from './verify-gift-release-binding.mjs';
@@ -44,3 +45,12 @@ for(const [field,value] of [['txid','00'.repeat(32)],['vout',release.fundingVout
 }
 assert.throws(()=>snapshotGate(snapshot,{transactionMatchesSuppliedRelease:false}),/must match approved PSBT/);
 console.log('PASS: gift release binding checks funding outpoint, CLTV height, amount, destination and digest');
+
+const publicGift={fundingAddress:gift.fundingAddress,releases:[{...release,releaseNumber:1}]};
+const selected=selectPublicGiftRelease({gift:publicGift,recipientLocator:gift.fundingAddress,releaseNumber:1});
+assert.equal(selected.fundingTxid,release.fundingTxid);
+assert.equal(selected.fundingVout,release.fundingVout);
+assert.equal(selected.signingAuthorized,false);
+assert.throws(()=>selectPublicGiftRelease({gift:publicGift,recipientLocator:'wrong',releaseNumber:1}),/link does not match/);
+assert.throws(()=>selectPublicGiftRelease({gift:publicGift,recipientLocator:gift.fundingAddress,releaseNumber:2}),/absent/);
+assert.throws(()=>selectPublicGiftRelease({gift:{...publicGift,releases:[release,release]},recipientLocator:gift.fundingAddress,releaseNumber:1}),/Duplicate/);
