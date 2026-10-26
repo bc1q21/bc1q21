@@ -34,8 +34,8 @@
       <button type="button" id="professional-creator-tab" aria-selected="true" aria-controls="professional-creator-frame">Creator · Public wallet and QR</button>
       <button type="button" id="professional-recipient-tab" aria-selected="false" aria-controls="professional-recipient-frame">Recipient · Jade signed QR</button>
     </div>
-    <iframe id="professional-creator-frame" title="Professional creator Jade workflow" src="../Professional/professional-creator-prototype.html" style="width:100%;height:1000px;border:1px solid #d9e2ed;margin-top:16px" allow="camera"></iframe>
-    <iframe id="professional-recipient-frame" title="Professional recipient Jade signing" data-src="../Professional/recipient-gift-specific-prototype.html" hidden style="width:100%;height:1000px;border:1px solid #d9e2ed;margin-top:16px" allow="camera"></iframe>
+    <iframe sandbox="allow-scripts allow-same-origin" id="professional-creator-frame" title="Professional creator Jade workflow" src="../Professional/professional-creator-prototype.html" style="width:100%;height:1000px;border:1px solid #d9e2ed;margin-top:16px" allow="camera"></iframe>
+    <iframe sandbox="allow-scripts allow-same-origin" id="professional-recipient-frame" title="Professional recipient Jade signing" data-src="../Professional/recipient-gift-specific-prototype.html" hidden style="width:100%;height:1000px;border:1px solid #d9e2ed;margin-top:16px" allow="camera"></iframe>
     <p style="color:#9b4b00;font-weight:700">Isolated regtest integration. Signing does not authorize spending; real funding and broadcast remain disabled.</p>
   </section>
   <main class="container" x-data="giftWizard" inert aria-label="Retail design reference, disabled in isolated Professional development">
@@ -926,8 +926,8 @@ Download a printable gift card that includes the QR with this recipient link.
 <script>
 (function(){
  const creator=document.getElementById('professional-creator-frame'),recipient=document.getElementById('professional-recipient-frame'),ct=document.getElementById('professional-creator-tab'),rt=document.getElementById('professional-recipient-tab');
- function select(recipientSelected){creator.hidden=recipientSelected;recipient.hidden=!recipientSelected;ct.setAttribute('aria-selected',String(!recipientSelected));rt.setAttribute('aria-selected',String(recipientSelected));if(recipientSelected&&!recipient.src){recipient.src=recipient.dataset.src;}}
- ct.addEventListener('click',()=>select(false));rt.addEventListener('click',()=>select(true));
+ function select(recipientSelected){creator.hidden=recipientSelected;recipient.hidden=!recipientSelected;creator.style.display=recipientSelected?"none":"block";recipient.style.display=recipientSelected?"block":"none";ct.setAttribute('aria-selected',String(!recipientSelected));rt.setAttribute('aria-selected',String(recipientSelected));if(recipientSelected&&!recipient.src){recipient.src=recipient.dataset.src;}}
+ ct.addEventListener('click',()=>select(false));rt.addEventListener('click',()=>select(true));select(false);
 })();
 </script>
 </body>  
