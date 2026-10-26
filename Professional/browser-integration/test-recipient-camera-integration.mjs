@@ -13,6 +13,9 @@ try{
  });
  await page.goto(pathToFileURL(resolve('../recipient-gift-specific-prototype.html')).href);
  assert.equal(await page.locator('#sign').isDisabled(),true);
+ assert.equal(await page.locator('#giftCameraStart').isDisabled(),true);
+ assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalAttachGiftCamera),'function');
+ assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding),'function');
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseStatus').innerText(),/Release 2 selected/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
