@@ -61,5 +61,29 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
   document.getElementById('message').textContent='The four regtest spends have been tested independently. This prototype does not yet connect a gift link to verified on-chain release discovery, unsigned PSBT construction, offline QR signing, or broadcasting. No keys are requested.';
  });
 })();
+const startCamera=document.getElementById('startCamera');
+const stopCamera=document.getElementById('stopCamera');
+const cameraStatus=document.getElementById('cameraStatus');
+let cameraReceiver=null;
+function stopJadeCamera(){if(cameraReceiver){cameraReceiver.stop();cameraReceiver=null;}startCamera.disabled=false;stopCamera.disabled=true;}
+startCamera.addEventListener('click',async()=>{
+ startCamera.disabled=true;stopCamera.disabled=false;
+ try{
+  if(typeof globalThis.bc1q21ProfessionalAttachCamera!=='function')throw Error('Jade verifier bundle unavailable');
+  cameraReceiver=globalThis.bc1q21ProfessionalAttachCamera({
+   video:document.getElementById('jadeVideo'),canvas:document.getElementById('jadeCanvas'),
+   onStatus:message=>{cameraStatus.textContent=message;},
+   onVerified:result=>{
+    if(result.signatureCryptographicallyVerified!==true||result.transactionMatches!==true||result.broadcast!==false)throw Error('Diagnostic verification failed');
+    cameraStatus.textContent='PASS: fixed regtest Jade signature verified. Gift release remains disabled.';
+    stopJadeCamera();
+   }
+  });
+  await cameraReceiver.start();
+ }catch(error){stopJadeCamera();cameraStatus.textContent='Camera error: '+String(error.message||error);}
+});
+stopCamera.addEventListener('click',()=>{stopJadeCamera();cameraStatus.textContent='Camera stopped.';});
+window.addEventListener('pagehide',stopJadeCamera);
+
 </script>
 </body></html>
