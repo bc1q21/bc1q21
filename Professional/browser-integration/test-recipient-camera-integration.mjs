@@ -31,6 +31,7 @@ try{
  await page.locator('#publicGiftFile').setInputFiles({name:'wrong.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});
  assert.match(await page.locator('#giftRecordStatus').innerText(),/Rejected public gift record/);
  assert.equal(await page.locator('#giftRecordSource').innerText(),'No record loaded');
+ assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/No gift-specific transaction evidence loaded/);
  assert.equal(await page.evaluate(()=>globalThis.bc1q21ProfessionalPublicGiftRecord),null);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#publicGiftFile').setInputFiles({name:'gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
