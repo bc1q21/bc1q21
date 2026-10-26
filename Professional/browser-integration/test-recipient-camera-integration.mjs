@@ -17,6 +17,13 @@ try{
  assert.match(await page.locator('#selectedReleaseStatus').innerText(),/Release 2 selected/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/No gift-specific transaction evidence loaded/);
+ const giftFixture={fundingAddress:'bc1q21publicgiftlocator12345678901234567890',releases:[{releaseNumber:2,fundingTxid:'ab'.repeat(32),fundingVout:1,lockHeight:500,inputSats:15000,fundingScriptHex:'a914'+'11'.repeat(20)+'87'}]};
+ await page.evaluate(record=>{globalThis.bc1q21ProfessionalPublicGiftRecord=record;history.replaceState(null,'','?a='+record.fundingAddress);},giftFixture);
+ await page.locator('#selectedRelease').selectOption('');
+ await page.locator('#selectedRelease').selectOption('2');
+ assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/abababab/);
+ assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
+ assert.equal(await page.locator('#sign').isDisabled(),true);
  assert.equal(await page.locator('#stopCamera').isDisabled(),true);
  assert.equal(await page.locator('#startCamera').isEnabled(),true);
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalAttachCamera),'function','Recipient requires built Jade browser verifier');
