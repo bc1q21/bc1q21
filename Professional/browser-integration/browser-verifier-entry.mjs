@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import {verifyProfessionalPublicHandoff} from '../public-handoff.mjs';
+import bitcoin from 'bitcoinjs-lib';
 import {makeCryptoPsbtFrames} from '../crypto-psbt-frames.mjs';
 import {verifyGiftReleaseBinding} from './verify-gift-release-binding.mjs';
 import {parseBitcoinCoreGettxout} from '../bitcoin-core-gettxout-adapter.mjs';
@@ -13,7 +13,17 @@ import cbor from 'cbor';
 import { verifyProfessionalReturnedSignature } from './verify-returned-signature.mjs';
 globalThis.Buffer=Buffer;
 // Public-only CLTV script/address verification; does not attest wallet origin.
-globalThis.bc1q21ProfessionalVerifyPublicHandoff=verifyProfessionalPublicHandoff;
+globalThis.bc1q21ProfessionalVerifyPublicHandoff=function(payload){
+ const fields=['version','network','signerPubkeyHex','locktime','redeemScriptHex','fundingAddress'];
+ if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).length!==fields.length||Object.keys(payload).some(k=>!fields.includes(k)))throw Error('Invalid public-only handoff fields');
+ if(payload.version!==1||payload.network!=='regtest'||typeof payload.signerPubkeyHex!=='string'||!/^(02|03)[0-9a-f]{64}$/i.test(payload.signerPubkeyHex)||!Number.isSafeInteger(payload.locktime)||payload.locktime<1||payload.locktime>0xffffffff||typeof payload.redeemScriptHex!=='string'||!/^[0-9a-f]+$/i.test(payload.redeemScriptHex))throw Error('Invalid regtest public handoff');
+ const pubkey=Buffer.from(payload.signerPubkeyHex,'hex');
+ const redeem=bitcoin.script.compile([bitcoin.script.number.encode(payload.locktime),bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,bitcoin.opcodes.OP_DROP,pubkey,bitcoin.opcodes.OP_CHECKSIG]);
+ if(redeem.toString('hex')!==payload.redeemScriptHex.toLowerCase())throw Error('Public handoff redeem script mismatch');
+ const payment=bitcoin.payments.p2sh({redeem:{output:redeem},network:bitcoin.networks.regtest});
+ if(payload.fundingAddress!==payment.address)throw Error('Public handoff funding address mismatch');
+ return Object.freeze({network:'regtest',version:1,signerPubkeyHex:pubkey.toString('hex'),locktime:payload.locktime,redeemScriptHex:redeem.toString('hex'),fundingAddress:payment.address,fundingScriptPubKeyHex:payment.output.toString('hex'),secretsReceived:false});
+};
 const approved='cHNidP8BAFICAAAAAZWWt9gtVaCtotddOPqVTUGGgcsGQIpROecI+/ZeSn2cAAAAAAD+////AbiCAQAAAAAAFgAUGFFAu1RwSp5zUBb6p6jb7kRJvdyAuFJlAAEAkwIAAAAB+eJO7arUra5pLt/blCfI60nvYZORs/xymLzqf5iOd8IAAAAAAP3///8DoIYBAAAAAAAXqRQhC8kpXH2XCPq0ZEw5Ow4ZCyDbk4dADQMAAAAAABepFHoIVN0kKE8sHtcfNOPSv3EqBT1Sh3Fk/pQAAAAAF6kUNnw+XxO0qIp/bD0ln/OzKGPPs2iHagEAAAEEKgSAuFJlsXUhA0gDJaBQZbLx/Ss+EMiC++3e2cv68v0KRX8vLNbIKZdArCIGA0gDJaBQZbLx/Ss+EMiC++3e2cv68v0KRX8vLNbIKZdAGOKawTxUAACAAAAAgAAAAIABAAAAAAAAAAAA';
 const digest='c5cfe8f53212d2aa3a4f2a747993f62a1284e5f973627b1c9410b1ad61659961';
 globalThis.bc1q21ProfessionalVerify=async function(frames){
