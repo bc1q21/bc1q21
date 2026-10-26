@@ -16,6 +16,7 @@ try{
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseStatus').innerText(),/Release 2 selected/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
+ assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/No gift-specific transaction evidence loaded/);
  assert.equal(await page.locator('#stopCamera').isDisabled(),true);
  assert.equal(await page.locator('#startCamera').isEnabled(),true);
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalAttachCamera),'function','Recipient requires built Jade browser verifier');
