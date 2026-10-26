@@ -1,3 +1,4 @@
+import {verifyGiftReleaseBinding} from './verify-gift-release-binding.mjs';
 import {parseBitcoinCoreGettxout} from '../bitcoin-core-gettxout-adapter.mjs';
 import {checkGiftReleaseAgainstUtxoSnapshot} from './verify-gift-release-binding.mjs';
 import {selectPublicGiftRelease} from './select-public-gift-release.mjs';
@@ -49,3 +50,24 @@ globalThis.bc1q21ProfessionalCheckUtxoSnapshot=checkGiftReleaseAgainstUtxoSnapsh
 
 // Parsing an externally supplied response does not authenticate its Bitcoin Core origin.
 globalThis.bc1q21ProfessionalParseCoreGettxout=parseBitcoinCoreGettxout;
+
+/** Gift-specific signed Jade camera verification. No approval or broadcast.
+ *  Caller-provided gift data and PSBT are NOT proof of authentic provenance.
+ */
+globalThis.bc1q21ProfessionalAttachGiftCamera=function({
+ video,canvas,gift,release,approvedUnsignedBase64,expectedApprovedSha256,onStatus,onVerified
+}){
+ if(typeof onVerified!=='function')throw Error('Gift-specific verification callback required');
+ const binding=verifyGiftReleaseBinding({gift,release,approvedUnsignedBase64,expectedApprovedSha256});
+ if(binding.transactionMatchesSuppliedRelease!==true)throw Error('Gift-specific unsigned PSBT mismatch');
+ return createJadeSignedCameraReceiver({video,canvas,onStatus,
+  onSignedPsbt:async bytes=>{
+   const verified=verifyProfessionalReturnedSignature(
+    approvedUnsignedBase64,Buffer.from(bytes).toString('base64'),expectedApprovedSha256);
+   if(verified.signatureCryptographicallyVerified!==true||
+      verified.transactionMatches!==true||verified.broadcast!==false)
+    throw Error('Gift-specific Jade signature failed verification');
+   await onVerified(Object.freeze({...verified,selectedRelease:release.releaseNumber,
+    giftProvenanceVerified:false,chainVerified:false,signingAuthorized:false,broadcast:false}));
+  }});
+};
