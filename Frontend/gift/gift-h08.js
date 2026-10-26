@@ -1058,15 +1058,15 @@ childIndex: r.childIndex ?? null
                 return { address: row.address, status: null };
               const matching = utxos.filter(u => u.txid === txid &&
                 Number(u.vout) === vout && Number(u.value) === row.sats);
-              if (matching.length === 1)
-                return { address: row.address, status: 'Unclaimed' };
               if (matching.length > 1)
                 return { address: row.address, status: null };
               const spending = history.find(tx => Array.isArray(tx.vin) &&
                 tx.vin.some(v => v.txid === txid && Number(v.vout) === vout));
-              return { address: row.address, status: spending
-                ? (spending.status?.confirmed ? 'Claimed' : 'Pending confirmation')
-                : null };
+              if (spending)
+                return { address: row.address, status: spending.status?.confirmed
+                  ? 'Claimed' : 'Pending confirmation' };
+              return { address: row.address, status: matching.length === 1
+                ? 'Unclaimed' : null };
             } catch (_) {
               return { address: row.address, status: null };
             }
