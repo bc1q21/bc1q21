@@ -41,6 +41,16 @@ try{
  assert.equal(await page.locator('#startCamera').isEnabled(),true);
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalAttachCamera),'function','Recipient requires built Jade browser verifier');
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalCheckUtxoSnapshot),'function','Recipient bundle requires read-only UTXO consistency gate');
+ const gateResult=await page.evaluate(()=>{
+  const release={fundingTxid:'ab'.repeat(32),fundingVout:1,inputSats:15000,fundingScriptHex:'a914'+'11'.repeat(20)+'87'};
+  const snapshot={txid:release.fundingTxid,vout:release.fundingVout,valueSats:15000,scriptPubKeyHex:release.fundingScriptHex,confirmed:true,spent:false};
+  const binding={transactionMatchesSuppliedRelease:true};
+  const matched=globalThis.bc1q21ProfessionalCheckUtxoSnapshot({binding,release,snapshot});
+  let rejected=false;
+  try{globalThis.bc1q21ProfessionalCheckUtxoSnapshot({binding,release,snapshot:{...snapshot,spent:true}})}catch{rejected=true}
+  return {matched:matched.utxoSnapshotMatchesSelectedRelease,authorized:matched.signingAuthorized,chainVerified:matched.chainVerified,rejected};
+ });
+ assert.deepEqual(gateResult,{matched:true,authorized:false,chainVerified:false,rejected:true});
  await page.locator('#startCamera').click();
  await page.waitForFunction(()=>document.querySelector('#cameraStatus').textContent!=='Camera stopped.');
  assert.equal(await page.locator('#sign').isDisabled(),true,'Camera must never unlock gift release');
