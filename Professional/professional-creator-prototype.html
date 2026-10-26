@@ -53,19 +53,20 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <button id="camera-start">Scan signed Jade QR</button><button id="camera-stop" disabled>Stop camera</button>
 <p id="camera-status" class="status">Camera inactive. No signature verified.</p>
 <p><strong>Signature verification:</strong> Fixed release-spend diagnostic only, not connected to this gift. <strong>Funding:</strong> Disabled in this prototype; Retail's funding sequence remains the reference.</p>
-<button class="secondary" data-back="gift">Back</button><button disabled title="Requires independently verified gift-bound Jade signature">Proceed to funding (locked)</button>
+<button class="secondary" data-back="gift">Back</button><button type="button" id="to-funding-preview">Review funding stage (preview only)</button>
 </section>
-<section class="panel stage" id="funding" hidden><h2>4. Funding</h2><p>Locked until verified gift-bound offline signing.</p></section>
-<section class="panel stage" id="card" hidden><h2>5. Gift card</h2><p>Locked until funding confirmation.</p></section>
+<section class="panel stage" id="funding" hidden><h2>4. Add Funds — planning preview</h2><p class="notice"><strong>Not fundable.</strong> No funding address, Bitcoin transaction, deposit QR, or payment request has been generated. Do not send Bitcoin.</p><p id="funding-preview-summary" class="status">Review the release plan first.</p><p>The real Professional Add Funds step will show independently derived time-locked outputs and require confirmed funding before Finish.</p><button class="secondary" data-back="jade">Back</button><button type="button" id="to-card-preview">Preview Finish stage</button></section>
+<section class="panel stage" id="card" hidden><h2>5. Finish — gift card preview</h2><p class="notice"><strong>Not a valid gift card.</strong> No recipient link or QR is issued until authenticated funding is confirmed. Do not deliver this preview.</p><div class="panel"><h3 id="card-preview-title">Planned gift</h3><p id="card-preview-purpose"></p><p id="card-preview-schedule"></p><p id="card-preview-practice"></p></div><button class="secondary" data-back="funding">Back</button></section>
 <p class="muted"><small>Development scope: Professional branch only. No wallet recovery words, private keys, network calls or broadcast. Refresh clears the entered details.</small></p>
 </main>
 <script src="./browser-integration/professional-verifier.bundle.js"></script>
 <script>
 'use strict';
+let reviewedPlan=null;
 const releaseCount=document.getElementById('release-count'),releaseInputs=document.getElementById('release-plan-inputs'),planPreview=document.getElementById('release-plan-preview'),planStatus=document.getElementById('release-plan-status');
 function renderReleaseInputs(){
  const previous=[...releaseInputs.querySelectorAll('.draft-release')].map(row=>({date:row.querySelector('input[type=date]').value,sats:row.querySelector('input[type=number]').value}));
- releaseInputs.replaceChildren();planPreview.hidden=true;planStatus.textContent='Review the updated release plan.';
+ releaseInputs.replaceChildren();reviewedPlan=null;planPreview.hidden=true;planStatus.textContent='Review the updated release plan.';
  for(let i=0;i<Number(releaseCount.value);i++){
   const row=document.createElement('div');row.className='draft-release';
   const title=document.createElement('h4');title.textContent='Release '+(i+1);row.append(title);
@@ -75,7 +76,7 @@ function renderReleaseInputs(){
  }
 }
 releaseCount.addEventListener('change',renderReleaseInputs);renderReleaseInputs();
-releaseInputs.addEventListener('input',()=>{planPreview.hidden=true;planStatus.textContent='Draft changed — review again before continuing.';});
+releaseInputs.addEventListener('input',()=>{reviewedPlan=null;planPreview.hidden=true;planStatus.textContent='Draft changed — review again before continuing.';});
 document.getElementById('review-release-plan').addEventListener('click',()=>{
  const rows=[...releaseInputs.querySelectorAll('.draft-release')],today=new Date().toISOString().slice(0,10);
  let total=0n,prior='',items=[];
@@ -90,6 +91,7 @@ document.getElementById('review-release-plan').addEventListener('click',()=>{
  const body=document.getElementById('release-plan-rows');body.replaceChildren();
  items.forEach((item,i)=>{const tr=document.createElement('tr');for(const v of [i+1,item.date,item.sats.toLocaleString('en-US')]){const td=document.createElement('td');td.textContent=String(v);td.style.padding='8px';tr.append(td);}body.append(tr);});
  document.getElementById('release-plan-total').textContent=total.toLocaleString('en-US')+' sats';
+ reviewedPlan=Object.freeze({items:items.map(item=>Object.freeze({...item})),totalSats:total.toString(),recipient:document.getElementById('recipient').value.trim(),purpose:document.getElementById('purpose').value});
  planPreview.hidden=false;planStatus.textContent='Local draft reviewed. No funding addresses or Bitcoin transactions created.';
 });
 const stages=['profile','gift','jade','funding','card'];
@@ -99,7 +101,9 @@ document.getElementById('to-gift').onclick=()=>{
  if(!practice||!business){alert('Select a practice and enter a business name.');return;}
  document.getElementById('profile-preview').textContent=business+' · '+practice;showStage('gift');
 };
-document.getElementById('to-jade').onclick=()=>showStage('jade');
+document.getElementById('to-jade').onclick=()=>{if(!reviewedPlan){planStatus.textContent='Review a valid release schedule before continuing.';return;}showStage('jade');};
+document.getElementById('to-funding-preview').onclick=()=>{if(!reviewedPlan){showStage('gift');return;}document.getElementById('funding-preview-summary').textContent=reviewedPlan.items.length+' planned releases · '+BigInt(reviewedPlan.totalSats).toLocaleString('en-US')+' sats total · no funding address generated.';showStage('funding');};
+document.getElementById('to-card-preview').onclick=()=>{if(!reviewedPlan){showStage('gift');return;}document.getElementById('card-preview-title').textContent='Planned gift for '+(reviewedPlan.recipient||'recipient');document.getElementById('card-preview-purpose').textContent='Occasion: '+reviewedPlan.purpose;document.getElementById('card-preview-schedule').textContent=reviewedPlan.items.length+' releases · '+BigInt(reviewedPlan.totalSats).toLocaleString('en-US')+' sats planned';document.getElementById('card-preview-practice').textContent='Prepared by: '+document.getElementById('business').value.trim();showStage('card');};
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>showStage(b.dataset.back));
 let logoUrl=null;
 document.getElementById('logo').onchange=e=>{
