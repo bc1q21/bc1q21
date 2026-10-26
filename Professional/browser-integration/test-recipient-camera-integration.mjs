@@ -40,6 +40,7 @@ try{
  assert.equal(await page.locator('#stopCamera').isDisabled(),true);
  assert.equal(await page.locator('#startCamera').isEnabled(),true);
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalAttachCamera),'function','Recipient requires built Jade browser verifier');
+ assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalCheckUtxoSnapshot),'function','Recipient bundle requires read-only UTXO consistency gate');
  await page.locator('#startCamera').click();
  await page.waitForFunction(()=>document.querySelector('#cameraStatus').textContent!=='Camera stopped.');
  assert.equal(await page.locator('#sign').isDisabled(),true,'Camera must never unlock gift release');
