@@ -44,6 +44,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <div class="step"><div class="number">4</div><div>Broadcast only after verifying authorization, maturity, signature and transaction details.</div></div>
 <div class="actions"><button id="sign" disabled aria-describedby="message">Sign matured release with offline wallet</button><button class="secondary" id="explain">Why is signing disabled?</button></div>
 <p id="message" role="status">Gift-specific release remains disabled while the Jade camera is integrated.</p><p class="warn">Jade signed-QR camera test: <a href="./browser-integration/professional-verification-diagnostic.html">Open the existing offline signing camera diagnostic</a>. This verifies a fixed regtest fixture, not the gift shown above.</p>
+<div class="warn"><h3>Gift-specific Jade camera — isolated integration</h3><p>Load the approved unsigned PSBT evidence for the selected gift release (local JSON: approvedUnsignedBase64, expectedApprovedSha256, releaseNumber). This does not authenticate the gift or authorize spending.</p><input id="giftPsbtFile" type="file" accept=".json,application/json"><div class="actions"><button type="button" id="giftCameraStart" disabled>Scan signed Jade QR for selected release</button><button type="button" id="giftCameraStop" disabled>Stop gift camera</button></div><p id="giftCameraStatus" role="status">No gift-specific PSBT loaded. No signing or broadcast.</p></div>
 <div class="warn"><h3>Signed QR camera — regtest diagnostic only</h3><p>Scan the disposable Jade test signature. This does not sign or release the gift shown above.</p><video id="jadeVideo" playsinline muted style="width:100%;max-width:460px;background:#18283b;min-height:160px"></video><canvas id="jadeCanvas" hidden></canvas><div class="actions"><button type="button" id="startCamera">Start test camera</button><button type="button" id="stopCamera" disabled>Stop camera</button></div><p id="cameraStatus" role="status">Camera stopped.</p></div>
 </section>
 </main>
@@ -137,6 +138,49 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
   document.getElementById('selectedRelease').dispatchEvent(new Event('change'));
  }catch(error){status.textContent='Rejected public gift record: '+String(error.message||error);}
 });
+// A local PSBT is never treated as trusted authorization. This integrates the
+// already-proven camera decoder with exact gift-specific signature verification.
+let giftCameraReceiver=null, giftPsbtEvidence=null;
+const giftCameraStart=document.getElementById('giftCameraStart');
+const giftCameraStop=document.getElementById('giftCameraStop');
+const giftCameraStatus=document.getElementById('giftCameraStatus');
+function stopGiftCamera(){if(giftCameraReceiver){giftCameraReceiver.stop();giftCameraReceiver=null;}giftCameraStop.disabled=true;giftCameraStart.disabled=!giftPsbtEvidence;}
+function clearGiftPsbt(){stopGiftCamera();giftPsbtEvidence=null;giftCameraStart.disabled=true;giftCameraStatus.textContent='No gift-specific PSBT loaded. No signing or broadcast.';}
+document.getElementById('selectedRelease').addEventListener('change',clearGiftPsbt);
+document.getElementById('publicGiftFile').addEventListener('change',clearGiftPsbt);
+document.getElementById('giftPsbtFile').addEventListener('change',async event=>{
+ clearGiftPsbt();const file=event.target.files?.[0];if(!file)return;
+ try{
+  if(file.size>160000)throw Error('PSBT evidence file too large');
+  const gift=globalThis.bc1q21ProfessionalPublicGiftRecord;
+  const n=Number(document.getElementById('selectedRelease').value);
+  if(!gift||!n)throw Error('Select a loaded gift release first');
+  const locator=new URLSearchParams(location.search).get('a')||new URLSearchParams(location.search).get('address')||'';
+  const release=globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift,recipientLocator:locator,releaseNumber:n});
+  const evidence=JSON.parse(await file.text());
+  if(evidence.releaseNumber!==n)throw Error('PSBT belongs to another release');
+  if(typeof globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding!=='function')throw Error('Gift PSBT verifier unavailable');
+  const binding=globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding({gift,release:{...gift.releases.find(r=>r.releaseNumber===n)},approvedUnsignedBase64:evidence.approvedUnsignedBase64,expectedApprovedSha256:evidence.expectedApprovedSha256});
+  if(binding.transactionMatchesSuppliedRelease!==true)throw Error('PSBT mismatch');
+  giftPsbtEvidence={gift,release:gift.releases.find(r=>r.releaseNumber===n),...evidence};
+  giftCameraStart.disabled=false;
+  giftCameraStatus.textContent='Selected gift PSBT matches supplied public gift record. UNTRUSTED source; scan for verification only. No broadcast.';
+ }catch(error){giftCameraStatus.textContent='Rejected gift PSBT: '+String(error.message||error);}
+});
+giftCameraStart.addEventListener('click',async()=>{
+ giftCameraStart.disabled=true;giftCameraStop.disabled=false;
+ try{
+  if(!giftPsbtEvidence)throw Error('Missing approved PSBT evidence');
+  giftCameraReceiver=globalThis.bc1q21ProfessionalAttachGiftCamera({
+   video:document.getElementById('jadeVideo'),canvas:document.getElementById('jadeCanvas'),
+   ...giftPsbtEvidence,onStatus:m=>{giftCameraStatus.textContent=m;},
+   onVerified:result=>{giftCameraStatus.textContent='PASS: Jade signature verified for selected release '+result.selectedRelease+'. No broadcast; gift provenance and authorization still required.';stopGiftCamera();}
+  });
+  await giftCameraReceiver.start();
+ }catch(error){stopGiftCamera();giftCameraStatus.textContent='Gift camera error: '+String(error.message||error);}
+});
+giftCameraStop.addEventListener('click',()=>{stopGiftCamera();giftCameraStatus.textContent='Gift camera stopped.';});
+window.addEventListener('pagehide',stopGiftCamera);
 const startCamera=document.getElementById('startCamera');
 const stopCamera=document.getElementById('stopCamera');
 const cameraStatus=document.getElementById('cameraStatus');
