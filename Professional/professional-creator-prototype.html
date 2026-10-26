@@ -32,14 +32,14 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <button id="to-gift">Continue to gift details</button>
 </section>
 <section class="panel stage" id="gift" hidden>
-<h2>2. Gift creation</h2><p>The final Professional version will use the established Retail gift-creation fields and validation. This screen establishes the flow without copying or changing Retail code.</p>
+<h2>2. Gift creation</h2><p>The final Professional version must preserve Retail's Plan, Recovery, Add Funds and Finish flow, including schedule validation, funding addresses, gift card and recipient link. These temporary fields do not replace the Retail wizard.</p>
 <label for="recipient">Recipient name (demonstration only)</label><input id="recipient" maxlength="100" autocomplete="off">
 <label for="purpose">Gift occasion (demonstration only)</label><select id="purpose"><option>Legacy gift</option><option>Wedding</option><option>Birthday</option><option>Inheritance</option><option>Philanthropy</option><option>Other</option></select>
 <p class="notice">Gift amounts, release dates, destination scripts and actual unsigned PSBTs must come from the validated gift engine. They are not invented on this page.</p>
 <button class="secondary" data-back="profile">Back</button><button id="to-jade">Continue to Jade Plus</button>
 </section>
 <section class="panel stage" id="jade" hidden>
-<h2>3. Jade Plus — offline signing</h2><p>This is the new step immediately <strong>before funding</strong>. The professional reviews an exact gift transaction, scans its animated unsigned PSBT QR with Jade Plus, then returns a signed QR to the computer camera.</p>
+<h2>3. Jade Plus — offline signing research</h2><p>Retail funds time-locked gift addresses and separately signs release spends. The existing Jade Plus signed-QR diagnostic proves a disposable <strong>release-spend</strong> transaction, not a creator funding signature. We must establish whether the creation workflow requires any Jade signing before placing this step in the final Retail-equivalent wizard.</p>
 <p class="notice">The QR transport preview below is deliberately separate from gift authorization. Imported images are not proof that a transaction belongs to this gift. Funding remains locked until a gift-specific verifier is integrated.</p>
 <h3>Animated QR display — local test frames</h3><label for="qr-files">Select locally generated QR PNG/JPEG/WebP frames (test data only)</label><input id="qr-files" type="file" accept="image/png,image/jpeg,image/webp" multiple>
 <img id="qr" alt="Selected animated QR frame" hidden><p id="qr-count" class="status">No QR frames loaded.</p>
@@ -48,7 +48,7 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <video id="camera" playsinline muted aria-label="Jade Plus signed QR camera"></video><canvas id="signed-canvas" hidden></canvas>
 <button id="camera-start">Scan signed Jade QR</button><button id="camera-stop" disabled>Stop camera</button>
 <p id="camera-status" class="status">Camera inactive. No signature verified.</p>
-<p><strong>Signature verification:</strong> Diagnostic fixture only, not connected to this gift. <strong>Funding:</strong> Disabled.</p>
+<p><strong>Signature verification:</strong> Fixed release-spend diagnostic only, not connected to this gift. <strong>Funding:</strong> Disabled in this prototype; Retail's funding sequence remains the reference.</p>
 <button class="secondary" data-back="gift">Back</button><button disabled title="Requires independently verified gift-bound Jade signature">Proceed to funding (locked)</button>
 </section>
 <section class="panel stage" id="funding" hidden><h2>4. Funding</h2><p>Locked until verified gift-bound offline signing.</p></section>
