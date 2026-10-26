@@ -948,7 +948,20 @@ Download a printable gift card that includes the QR with this recipient link.
  const creator=document.getElementById('professional-creator-frame'),recipient=document.getElementById('professional-recipient-frame'),ct=document.getElementById('professional-creator-tab'),rt=document.getElementById('professional-recipient-tab');
  function select(recipientSelected){creator.hidden=recipientSelected;recipient.hidden=!recipientSelected;creator.style.display=recipientSelected?"none":"block";recipient.style.display=recipientSelected?"block":"none";ct.setAttribute('aria-selected',String(!recipientSelected));rt.setAttribute('aria-selected',String(recipientSelected));if(recipientSelected&&!recipient.src){recipient.src=recipient.dataset.src;}}
  const planFile=document.getElementById('professional-plan-file'),planStatus=document.getElementById('professional-plan-status'),openRecipient=document.getElementById('professional-open-recipient');
- planFile.addEventListener('change',async()=>{
+ // Reuse the creator's own exported draft; never recompute Retail gift dates or amounts here.
+ creator.addEventListener('load',()=>{
+  try{
+   const d=creator.contentDocument;
+   const exportButton=d?.getElementById('export-funding-plan');
+   if(!exportButton)return;
+   exportButton.addEventListener('click',()=>{
+    const oldCreate=URL.createObjectURL;
+    // Wait for the creator's native export; the user may also select its saved JSON below.
+    planStatus.textContent='Creator export requested. Choose the saved draft below to continue to recipient.';
+   });
+  }catch(e){}
+ });
+planFile.addEventListener('change',async()=>{
   openRecipient.disabled=true;document.getElementById('professional-plan-summary').hidden=true;
   const file=planFile.files&&planFile.files[0];
   if(!file){planStatus.textContent='No gift plan loaded.';return;}
