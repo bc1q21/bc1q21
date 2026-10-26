@@ -29,6 +29,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <p class="warn"><strong>Offline demonstration only.</strong> Fictional gift and wallet address. No real Bitcoin. No wallet connection, live blockchain queries, transaction construction, private-key signing, or broadcast. Imported disposable regtest PSBTs can be inspected and displayed as unsigned QR diagnostics.</p>
 <section><h2>Gift identification</h2><p>Recipient link context:</p><p class="mono" id="giftId"></p><p class="muted" id="linkStatus"></p><small>The retail recipient link is based on the funding address: /gift/&lt;address&gt; or ?a=&lt;address&gt;. This prototype never queries that address or assumes possession of it authorizes spending.</small></section>
 <section class="overview"><h2>Your total gift value</h2><div class="big" id="giftTotal">0.00066000 BTC</div><p id="giftTotalContext">66,000 disposable regtest satoshis in four example releases</p></section>
+<section><h2>Preview a Professional gift plan</h2><p class="muted">Open the unfunded planning file exported by the Professional creator wizard. This is a local <strong>recipient preview only</strong>, not an authenticated gift, funded balance, or release authorization.</p><label for="draftGiftFile">Open unfunded Professional plan (JSON)</label><input id="draftGiftFile" type="file" accept=".json,application/json"><p id="draftGiftStatus" role="status">No creator draft loaded.</p><div id="draftGiftDetails" hidden><h3 id="draftGiftHeading"></h3><p id="draftGiftOccasion"></p><p id="draftGiftTotal"></p><div style="overflow-x:auto"><table><thead><tr><th>Release</th><th>Planned date</th><th>Amount</th><th>Regtest unlock height</th></tr></thead><tbody id="draftGiftRows"></tbody></table></div><p class="warn">UNFUNDED DRAFT. The dates and block heights are supplied by the creator, not verified against the chain. These addresses must not be funded. Recipient signing and release remain disabled.</p></div></section>
 <section><h2>Security: your wallet stays offline</h2><p class="pledge">Do not type your 12 recovery words into this page. Your Jade or other hardware signer keeps the private signing keys offline. A gift link is a locator, never authorization to spend.</p><p>Instead of the retail recovery-word field, a real Professional page will exchange unsigned and signed transaction QR data with your offline signer. The isolated regtest prototype below supports diagnostic unsigned and signed PSBT QR exchange, but does not authorize real gifts or broadcast.</p></section>
 <section><h2>Gift release schedule</h2><div style="overflow-x:auto"><table><thead><tr><th>Release</th><th>Unlock height</th><th>Amount</th><th>Current status</th></tr></thead>
 <tbody id="giftScheduleRows"><tr><td>1</td><td>130</td><td>12,000 sats</td><td><span class="status">Tested</span></td></tr>
@@ -63,6 +64,32 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
   document.getElementById('message').textContent='The isolated prototype supports offline unsigned PSBT QR display and signed Jade QR verification for supplied regtest gift evidence. It does not yet authenticate the gift record, discover trusted live on-chain release state, construct a verified release PSBT from that state, authorize spending, or broadcast. No keys are requested.';
  });
 })();
+let draftImportGeneration=0;
+document.getElementById('draftGiftFile').addEventListener('change',async event=>{
+ const token=++draftImportGeneration,file=event.target.files?.[0],status=document.getElementById('draftGiftStatus'),details=document.getElementById('draftGiftDetails');
+ details.hidden=true;document.getElementById('draftGiftRows').replaceChildren();status.textContent='No creator draft loaded.';
+ if(!file)return;
+ try{
+  if(file.size>80000)throw Error('Draft exceeds 80 KB');
+  const data=JSON.parse(await file.text());
+  if(token!==draftImportGeneration)return;
+  if(!data||data.format!=='bc1q21-professional-unfunded-regtest-plan-v1'||data.network!=='regtest'||data.status!=='UNFUNDED_DRAFT_DO_NOT_SEND'||data.fundingConfirmed!==false||data.signingAuthorized!==false||data.broadcastAuthorized!==false||data.walletOriginAuthenticated!==false||data.chainVerified!==false)throw Error('Not a supported unfunded Professional draft');
+  if(!data.gift||typeof data.gift.recipient!=='string'||data.gift.recipient.length>100||typeof data.gift.occasion!=='string'||data.gift.occasion.length>100||typeof data.gift.practiceName!=='string'||data.gift.practiceName.length>100||!Array.isArray(data.releases)||data.releases.length<1||data.releases.length>24)throw Error('Invalid gift draft details');
+  let total=0n,previousHeight=0,previousDate='';
+  for(const [index,item] of data.releases.entries()){
+   if(item.releaseNumber!==index+1||typeof item.plannedDate!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(item.plannedDate)||item.plannedDate<=previousDate||!Number.isSafeInteger(item.unlockBlockHeight)||item.unlockBlockHeight<=previousHeight||item.unlockBlockHeight>499999999||typeof item.amountSats!=='string'||!/^[1-9][0-9]*$/.test(item.amountSats)||typeof item.regtestAddress!=='string'||item.regtestAddress.length>100||typeof item.redeemScriptHex!=='string'||item.redeemScriptHex.length>500||typeof item.signerPubkeyHex!=='string'||item.signerPubkeyHex.length!==66)throw Error('Invalid release '+(index+1));
+   total+=BigInt(item.amountSats);if(total>2100000000000000n)throw Error('Invalid gift amount');
+   previousHeight=item.unlockBlockHeight;previousDate=item.plannedDate;
+  }
+  if(total.toString()!==data.totalSats)throw Error('Draft total mismatch');
+  document.getElementById('draftGiftHeading').textContent='Planned gift for '+(data.gift.recipient||'recipient');
+  document.getElementById('draftGiftOccasion').textContent=data.gift.occasion+' · Prepared by '+data.gift.practiceName;
+  document.getElementById('draftGiftTotal').textContent=total.toLocaleString('en-US')+' sats planned · not funded';
+  const tbody=document.getElementById('draftGiftRows');
+  data.releases.forEach(item=>{const row=document.createElement('tr');for(const value of [item.releaseNumber,item.plannedDate,BigInt(item.amountSats).toLocaleString('en-US')+' sats',item.unlockBlockHeight]){const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);}tbody.append(row);});
+  details.hidden=false;status.textContent='Local creator draft preview loaded. NOT a verified gift; no recipient signing or release.';
+ }catch(error){if(token===draftImportGeneration)status.textContent='Cannot open draft: '+String(error.message||error);}
+});
 document.getElementById('selectedRelease').addEventListener('change',event=>{
  const n=Number(event.target.value),label=document.getElementById('selectedReleaseStatus');
  const evidence=document.getElementById('selectedReleaseEvidence');
