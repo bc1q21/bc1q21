@@ -57,7 +57,7 @@
     </div>
     <p style="color:#9b4b00;font-weight:700">Isolated regtest integration. Signing does not authorize spending; real funding and broadcast remain disabled.</p>
   </section>
-  <main class="container" x-data="giftWizard" inert aria-label="Retail design reference, disabled in isolated Professional development">
+  <main class="container" x-data="giftWizard" aria-label="Retail gift planning in Professional development; recovery and funding disabled">
     <header class="brand">
       <img src="static/img/bc1q21-logo.png" alt="bc1q21 logo"><br>
       <div>
@@ -932,6 +932,30 @@ Download a printable gift card that includes the QR with this recipient link.
   <script type="text/javascript" src="BtcBackendClient.js" integrity="sha384-VIWHhR63/7H1B5Mmqv15R8UPb8kBHtsuQAjXyE8EhQoiuqNs1TKmgYxkz0XqHKli" crossorigin="anonymous"></script>
   <script type="text/javascript" src="SchedulePlanner.js" integrity="sha384-sgmJgkw1CYjWeQpy3olepqjpaZPk7OQS/5B3cxDZW+grfGJ16jjj/LWk83rVTqKI" crossorigin="anonymous"></script>
   <script type="text/javascript" src="NavigationManager.js" integrity="sha384-ZMZjkZXyA3oJ3ceZlbExL+lrc7El/3c5xh0O7tFRlbDvNDFHZfNz8FZJkk4n+6HY" crossorigin="anonymous"></script>
+<script>
+/* Professional development: use Retail's genuine planning wizard, but never enter its recovery/funding flow. */
+(function(){
+ const original=NavigationManager.prototype.navigateToStep;
+ NavigationManager.prototype.navigateToStep=function(step){
+  if(['recovery_words','add_funds','finish_share'].includes(step)){
+   const target=document.getElementById('professional-jade-workflow');
+   if(target)target.scrollIntoView({behavior:'smooth'});
+   alert('Professional development: Retail recovery and funding are disabled. Continue with the Jade public-wallet panel above. Do not send Bitcoin.');
+   return false;
+  }
+  return original.call(this,step);
+ };
+ const originalForward=NavigationManager.prototype.navigateForward;
+ NavigationManager.prototype.navigateForward=function(context){
+  if(this.currentStep==='finish_schedule'){
+   document.getElementById('professional-jade-workflow')?.scrollIntoView({behavior:'smooth'});
+   alert('Retail gift planning complete. Professional Jade integration is next; this preview does not yet transfer the Retail schedule into Jade.');
+   return false;
+  }
+  return originalForward.call(this,context);
+ };
+})();
+</script>
   
   <script type="text/javascript" src="CryptoManager.js" integrity="sha384-NmUwxsKQb8gHlDRMQMmqDouQmV/pJI5eIaxmbDnR3jjfWRZIXGdVHMzCtrtcRdNT" crossorigin="anonymous"></script>
 <script type="text/javascript" src="UIRenderer.js" integrity="sha384-jQQpsCfLynqzPUOgCxZ9PlVMJGfpGFLqU3mMTt0a8xt+YJaGfCeuQnAp6G9yw6dI" crossorigin="anonymous"></script>
