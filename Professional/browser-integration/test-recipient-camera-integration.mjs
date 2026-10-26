@@ -53,7 +53,7 @@ try{
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/abababab/);
  const invalid={...giftFixture,fundingAddress:'bc1q21wronggiftlocator12345678901234567890'};
  await page.locator('#publicGiftFile').setInputFiles({name:'wrong.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});
- assert.match(await page.locator('#giftRecordStatus').innerText(),/Rejected public gift record/);
+ await page.waitForFunction(()=>document.querySelector('#giftRecordStatus').textContent.includes('Rejected public gift record'));
  assert.equal(await page.locator('#giftRecordSource').innerText(),'No record loaded');
  assert.equal(await page.locator('#selectedRelease option').count(),5);
  assert.match(await page.locator('#scheduleProvenance').innerText(),/synthetic regtest demonstration/);
