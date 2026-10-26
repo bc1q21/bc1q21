@@ -51,6 +51,16 @@ try{
  assert.equal(await page.locator('#startCamera').isEnabled(),true);
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalAttachCamera),'function','Recipient requires built Jade browser verifier');
  assert.equal(await page.evaluate(()=>typeof globalThis.bc1q21ProfessionalCheckUtxoSnapshot),'function','Recipient bundle requires read-only UTXO consistency gate');
+ const parsedCore=await page.evaluate(()=>{
+  const txid='ab'.repeat(32),vout=1;
+  const good={value:0.00015,confirmations:3,scriptPubKey:{hex:'a914'+'11'.repeat(20)+'87'}};
+  const parsed=globalThis.bc1q21ProfessionalParseCoreGettxout(txid,vout,good);
+  let spentRejected=false,unconfirmedRejected=false;
+  try{globalThis.bc1q21ProfessionalParseCoreGettxout(txid,vout,null)}catch{spentRejected=true}
+  try{globalThis.bc1q21ProfessionalParseCoreGettxout(txid,vout,{...good,confirmations:0})}catch{unconfirmedRejected=true}
+  return {amount:parsed.valueSats,confirmed:parsed.confirmed,spentRejected,unconfirmedRejected};
+ });
+ assert.deepEqual(parsedCore,{amount:15000,confirmed:true,spentRejected:true,unconfirmedRejected:true});
  const gateResult=await page.evaluate(()=>{
   const release={fundingTxid:'ab'.repeat(32),fundingVout:1,inputSats:15000,fundingScriptHex:'a914'+'11'.repeat(20)+'87'};
   const snapshot={txid:release.fundingTxid,vout:release.fundingVout,valueSats:15000,scriptPubKeyHex:release.fundingScriptHex,confirmed:true,spent:false};
