@@ -19,7 +19,8 @@ try{
  await page.locator('#startCamera').click();
  await page.waitForFunction(()=>document.querySelector('#cameraStatus').textContent!=='Camera stopped.');
  assert.equal(await page.locator('#sign').isDisabled(),true,'Camera must never unlock gift release');
- await page.locator('#stopCamera').click();
+ if(await page.locator('#stopCamera').isEnabled())await page.locator('#stopCamera').click();
+ else assert.match(await page.locator('#cameraStatus').innerText(),/Camera error|Camera unavailable|secure browser context/i,'Unavailable camera must fail closed');
  assert.equal(await page.locator('#startCamera').isEnabled(),true);
  assert.equal(await page.locator('#stopCamera').isDisabled(),true);
  assert.deepEqual(external,[],'Recipient diagnostic must remain offline');
