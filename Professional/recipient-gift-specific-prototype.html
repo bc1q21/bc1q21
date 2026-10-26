@@ -116,7 +116,15 @@ function renderPublicReleaseOptions(record){
  select.value='';
  select.dispatchEvent(new Event('change'));
 }
+let coreImportGeneration=0;
+function invalidateCoreEvidence(){
+ coreImportGeneration++;
+ document.getElementById('coreUtxoStatus').textContent='No Core response inspected for the current release. Imported JSON cannot establish trusted RPC provenance.';
+}
+document.getElementById('selectedRelease').addEventListener('change',invalidateCoreEvidence);
+document.getElementById('publicGiftFile').addEventListener('change',invalidateCoreEvidence);
 document.getElementById('coreUtxoFile').addEventListener('change',async event=>{
+ const importToken=++coreImportGeneration;
  const status=document.getElementById('coreUtxoStatus');
  status.textContent='No Core response inspected. Imported JSON cannot establish trusted RPC provenance.';
  const file=event.target.files?.[0];
@@ -129,11 +137,12 @@ document.getElementById('coreUtxoFile').addEventListener('change',async event=>{
   const locator=new URLSearchParams(location.search).get('a')||new URLSearchParams(location.search).get('address')||'';
   const release=globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift,recipientLocator:locator,releaseNumber:n});
   const response=JSON.parse(await file.text());
+  if(importToken!==coreImportGeneration)return;
   const parsed=globalThis.bc1q21ProfessionalParseCoreGettxout(release.fundingTxid,release.fundingVout,response);
   if(response?.bestblock!==undefined&&(!/^[0-9a-f]{64}$/i.test(response.bestblock)))throw Error('Invalid Core bestblock identifier');
   if(parsed.valueSats!==release.inputSats||parsed.scriptPubKeyHex!==release.fundingScriptHex)throw Error('Core response amount or script does not match selected release');
   status.textContent='PASS: supplied Core response matches selected release outpoint, amount and script. UNTRUSTED FILE — not independently chain-verified. Signing disabled.';
- }catch(error){status.textContent='Rejected Core response: '+String(error.message||error);}
+ }catch(error){if(importToken===coreImportGeneration)status.textContent='Rejected Core response: '+String(error.message||error);}
 });
 let publicGiftImportGeneration=0;
 document.getElementById('publicGiftFile').addEventListener('change',async event=>{
