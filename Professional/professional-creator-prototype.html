@@ -118,6 +118,18 @@ document.getElementById('review-release-plan').addEventListener('click',()=>{
 });
 const stages=['profile','gift','jade','funding','card'];
 const showStage=name=>{stages.forEach((id,i)=>{document.getElementById(id).hidden=id!==name;document.querySelectorAll('.steps span')[i].classList.toggle('active',id===name)});if(name!=='jade')stopCamera();};
+// Carry the practice identity forward from the Professional entry screen.
+try {
+ const saved = JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft') || 'null');
+ if (saved && saved.business && saved.practice) {
+  const practice = document.getElementById('practice');
+  if (Array.from(practice.options).some(o => o.value === saved.practice)) practice.value = saved.practice;
+  document.getElementById('business').value = String(saved.business).slice(0, 100);
+  document.getElementById('contact').value = String(saved.contact || '').slice(0, 100);
+  document.getElementById('profile-preview').textContent = String(saved.business) + ' · ' + String(saved.practice);
+  showStage('gift');
+ }
+} catch (e) {}
 document.getElementById('to-gift').onclick=()=>{
  const practice=document.getElementById('practice').value,business=document.getElementById('business').value.trim();
  if(!practice||!business){alert('Select a practice and enter a business name.');return;}
