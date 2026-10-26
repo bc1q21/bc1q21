@@ -955,8 +955,6 @@ Download a printable gift card that includes the QR with this recipient link.
    const exportButton=d?.getElementById('export-funding-plan');
    if(!exportButton)return;
    exportButton.addEventListener('click',()=>{
-    const oldCreate=URL.createObjectURL;
-    // Wait for the creator's native export; the user may also select its saved JSON below.
     planStatus.textContent='Creator export requested. Choose the saved draft below to continue to recipient.';
    });
   }catch(e){}
