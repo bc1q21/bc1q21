@@ -108,6 +108,9 @@ try{
  }))});
  assert.match(await page.locator('#giftCameraStatus').innerText(),/PSBT matches supplied public gift record/);
  assert.equal(await page.locator('#showUnsignedQr').isEnabled(),true);
+ assert.equal(await page.locator('#giftScheduleRows tr').count(),1);
+ assert.match(await page.locator('#giftTotalContext').innerText(),/12,000 sats across 1 releases.*untrusted gift record/);
+ assert.match(await page.locator('#giftScheduleRows').innerText(),/500/);
  await page.locator('#showUnsignedQr').click();
  assert.match(await page.locator('#unsignedQrStatus').innerText(),/Animating/);
  assert.equal(await page.locator('#unsignedQrImage').isVisible(),true);
