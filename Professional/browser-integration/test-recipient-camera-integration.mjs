@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 // Recipient page regression: Jade camera transport must be wired, and gift release stays locked.
 import assert from 'node:assert/strict';
 import {resolve} from 'node:path';
@@ -88,6 +89,32 @@ try{
   return {matched:matched.utxoSnapshotMatchesSelectedRelease,authorized:matched.signingAuthorized,chainVerified:matched.chainVerified,rejected};
  });
  assert.deepEqual(gateResult,{matched:true,authorized:false,chainVerified:false,rejected:true});
+ // End-to-end recipient page integration using the actual disposable funded gift PSBT.
+ const handoff=JSON.parse(readFileSync(resolve('../fixtures/same-gift-unsigned-handoff.json'),'utf8'));
+ const funded=JSON.parse(readFileSync(resolve('../fixtures/original-funded-24-public-evidence.json'),'utf8'));
+ const originalOutput=funded.releaseOutputs.find(x=>x.vout===handoff.vout);
+ assert.ok(originalOutput,'Original funded gift release output required');
+ const actualGift={fundingAddress:funded.giftLinkFundingAddress,releases:[{
+  releaseNumber:1,fundingTxid:handoff.fundingTxid,fundingVout:handoff.vout,
+  lockHeight:handoff.locktime,inputSats:handoff.inputSats,
+  fundingScriptHex:originalOutput.scriptPubKeyHex,
+  destinationScriptHex:handoff.destinationScriptHex,amountSats:handoff.payoutSats
+ }]};
+ await page.evaluate(locator=>history.replaceState(null,'','?a='+encodeURIComponent(locator)),actualGift.fundingAddress);
+ await page.locator('#publicGiftFile').setInputFiles({name:'actual-gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(actualGift))});
+ await page.locator('#selectedRelease').selectOption('1');
+ await page.locator('#giftPsbtFile').setInputFiles({name:'actual-psbt.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({
+  releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256
+ }))});
+ assert.match(await page.locator('#giftCameraStatus').innerText(),/PSBT matches supplied public gift record/);
+ assert.equal(await page.locator('#showUnsignedQr').isEnabled(),true);
+ await page.locator('#showUnsignedQr').click();
+ assert.match(await page.locator('#unsignedQrStatus').innerText(),/Animating/);
+ assert.equal(await page.locator('#unsignedQrImage').isVisible(),true);
+ assert.match(await page.locator('#unsignedQrImage').getAttribute('src'),/^data:image\\/png;base64,/);
+ await page.locator('#hideUnsignedQr').click();
+ assert.equal(await page.locator('#unsignedQrImage').isVisible(),false);
+ assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#startCamera').click();
  await page.waitForFunction(()=>document.querySelector('#cameraStatus').textContent!=='Camera stopped.');
  assert.equal(await page.locator('#sign').isDisabled(),true,'Camera must never unlock gift release');
