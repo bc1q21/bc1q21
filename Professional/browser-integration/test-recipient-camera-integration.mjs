@@ -22,6 +22,7 @@ try{
  await page.locator('#selectedRelease').selectOption('');
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/abababab/);
+ assert.match(await page.locator('#utxoEvidenceStatus').innerText(),/requires authenticated Bitcoin Core confirmation/);
  await page.locator('#selectedRelease').selectOption('2');
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/not chain verified/);
  assert.equal(await page.locator('#sign').isDisabled(),true);
@@ -39,6 +40,7 @@ try{
  assert.equal(await page.locator('#selectedRelease option').count(),5);
  assert.match(await page.locator('#scheduleProvenance').innerText(),/synthetic regtest demonstration/);
  assert.match(await page.locator('#selectedReleaseEvidence').innerText(),/No gift-specific transaction evidence loaded/);
+ assert.match(await page.locator('#utxoEvidenceStatus').innerText(),/No trusted Bitcoin Core UTXO evidence connected/);
  assert.equal(await page.evaluate(()=>globalThis.bc1q21ProfessionalPublicGiftRecord),null);
  assert.equal(await page.locator('#sign').isDisabled(),true);
  await page.locator('#publicGiftFile').setInputFiles({name:'gift.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(giftFixture))});
