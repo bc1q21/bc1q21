@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src blob: data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; img-src blob: data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>bc1q21 Professional — Creation Flow Prototype</title>
 <style>
 :root{font:16px system-ui,Segoe UI,sans-serif;color:#172c43;background:#f3f6fa}*{box-sizing:border-box}body{margin:0}
@@ -45,17 +45,18 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <h3>Animated QR display — local test frames</h3><label for="qr-files">Select locally generated QR PNG/JPEG/WebP frames (test data only)</label><input id="qr-files" type="file" accept="image/png,image/jpeg,image/webp" multiple>
 <img id="qr" alt="Selected animated QR frame" hidden><p id="qr-count" class="status">No QR frames loaded.</p>
 <button id="qr-toggle" disabled>Pause animation</button><button id="qr-slower" disabled>Slower</button><button id="qr-faster" disabled>Faster</button>
-<h3>Camera — Jade Plus return</h3><p>Camera preview only. The existing verified signed-QR decoder will be integrated with this exact gift's approval context; camera visibility alone never approves signing.</p>
-<video id="camera" playsinline muted aria-label="Jade Plus camera preview"></video>
-<button id="camera-start">Start camera preview</button><button id="camera-stop" disabled>Stop camera</button>
+<h3>Camera — Jade Plus return</h3><p>Physical Jade signed QR decoding and signature verification for the <strong>fixed disposable regtest diagnostic fixture</strong>. This proves the camera exchange but does <strong>not</strong> authorize this gift. The gift-specific approval check is still pending.</p>
+<video id="camera" playsinline muted aria-label="Jade Plus signed QR camera"></video><canvas id="signed-canvas" hidden></canvas>
+<button id="camera-start">Scan signed Jade QR</button><button id="camera-stop" disabled>Stop camera</button>
 <p id="camera-status" class="status">Camera inactive. No signature verified.</p>
-<p><strong>Signature verification:</strong> Not connected to this gift. <strong>Funding:</strong> Disabled.</p>
+<p><strong>Signature verification:</strong> Diagnostic fixture only, not connected to this gift. <strong>Funding:</strong> Disabled.</p>
 <button class="secondary" data-back="gift">Back</button><button disabled title="Requires independently verified gift-bound Jade signature">Proceed to funding (locked)</button>
 </section>
 <section class="panel stage" id="funding" hidden><h2>4. Funding</h2><p>Locked until verified gift-bound offline signing.</p></section>
 <section class="panel stage" id="card" hidden><h2>5. Gift card</h2><p>Locked until funding confirmation.</p></section>
 <p class="muted"><small>Development scope: Professional branch only. No wallet recovery words, private keys, network calls or broadcast. Refresh clears the entered details.</small></p>
 </main>
+<script src="./browser-integration/professional-verifier.bundle.js"></script>
 <script>
 'use strict';
 const stages=['profile','gift','jade','funding','card'];
@@ -89,17 +90,26 @@ document.getElementById('qr-files').onchange=e=>{
 controls[0].onclick=()=>{playing=!playing;controls[0].textContent=playing?'Pause animation':'Resume animation';restart();};
 controls[1].onclick=()=>{delay=Math.min(1500,delay+100);restart();};
 controls[2].onclick=()=>{delay=Math.max(150,delay-100);restart();};
-let stream=null,epoch=0;
+let camera=null,epoch=0;
 const video=document.getElementById('camera'),start=document.getElementById('camera-start'),stop=document.getElementById('camera-stop'),cameraStatus=document.getElementById('camera-status');
-function stopCamera(){epoch++;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}video.srcObject=null;start.disabled=false;stop.disabled=true;cameraStatus.textContent='Camera inactive. No signature verified.';}
+function stopCamera(){epoch++;camera?.stop();camera=null;video.srcObject=null;start.disabled=false;stop.disabled=true;cameraStatus.textContent='Camera inactive. No gift-specific signature verified.';}
 start.onclick=async()=>{
- const token=++epoch;start.disabled=true;stop.disabled=false;cameraStatus.textContent='Waiting for camera permission…';
- try{if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera requires HTTPS or localhost');
- const acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
- if(token!==epoch){acquired.getTracks().forEach(t=>t.stop());return;}
- stream=acquired;video.srcObject=stream;await video.play();if(token!==epoch)return;
- cameraStatus.textContent='Camera preview active — no QR decoding or signature approval on this page.';
- }catch(e){if(token===epoch){stopCamera();cameraStatus.textContent='Camera unavailable: '+String(e.message||e);}}
+ const token=++epoch;start.disabled=true;stop.disabled=false;cameraStatus.textContent='Waiting for signed QR camera…';
+ try{
+  if(typeof globalThis.bc1q21ProfessionalAttachCamera!=='function')throw Error('Diagnostic verifier bundle missing; build Professional/browser-integration first');
+  const receiver=globalThis.bc1q21ProfessionalAttachCamera({
+   video,canvas:document.getElementById('signed-canvas'),
+   onStatus:message=>{if(token===epoch)cameraStatus.textContent=message+' (fixed regtest diagnostic only)';},
+   onVerified:verified=>{
+    if(token!==epoch)return;
+    if(verified.signatureCryptographicallyVerified!==true||verified.transactionMatches!==true||verified.broadcast!==false)throw Error('Diagnostic signature validation failed');
+    cameraStatus.textContent='PASS: physical Jade QR signature matches fixed disposable regtest diagnostic. NOT verified for the gift being created. Funding remains locked.';
+    camera=null;start.disabled=false;stop.disabled=true;
+   }
+  });
+  camera=receiver;await receiver.start();
+  if(token!==epoch){receiver.stop();return;}
+ }catch(e){if(token===epoch){stopCamera();cameraStatus.textContent='Camera/verification unavailable: '+String(e.message||e);}}
 };
 stop.onclick=stopCamera;
 window.addEventListener('pagehide',()=>{stopCamera();clearFrames();if(logoUrl)URL.revokeObjectURL(logoUrl);});
