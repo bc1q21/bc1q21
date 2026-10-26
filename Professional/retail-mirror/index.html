@@ -966,15 +966,15 @@ planFile.addEventListener('change',async()=>{
   if(file.size>80000){planStatus.textContent='File too large (80 KB maximum).';return;}
   try{
    const plan=JSON.parse(await file.text());
-   if(!plan||plan.format!=='bc1q21-professional-unfunded-regtest-plan-v1'||plan.network!=='regtest'||plan.status!=='UNFUNDED_DRAFT_DO_NOT_SEND'||plan.fundingConfirmed!==false||plan.signingAuthorized!==false||plan.broadcastAuthorized!==false||!Array.isArray(plan.releases)||!plan.releases.length){throw Error('Not a supported unfunded Professional regtest plan.');}
+   if(!plan||plan.format!=='bc1q21-professional-unfunded-regtest-plan-v1'||plan.network!=='regtest'||plan.status!=='UNFUNDED_DRAFT_DO_NOT_SEND'||plan.walletOriginAuthenticated!==false||plan.chainVerified!==false||plan.fundingConfirmed!==false||plan.signingAuthorized!==false||plan.broadcastAuthorized!==false||!Array.isArray(plan.releases)||!plan.releases.length||plan.releases.length>60||plan.releases.some(x=>!x||typeof x.plannedDate!=='string'||!/^[0-9]+$/.test(String(x.amountSats))||!Number.isSafeInteger(x.unlockBlockHeight)||x.unlockBlockHeight<1)){throw Error('Not a supported unfunded Professional regtest plan.');}
    const summary=document.getElementById('professional-plan-summary'),list=document.getElementById('professional-plan-releases');
    list.replaceChildren();
    document.getElementById('professional-plan-recipient').textContent='Recipient: '+String(plan.gift?.recipient||'Not specified').slice(0,100);
    for(const release of plan.releases.slice(0,60)){
     const item=document.createElement('li');
     const sats=release.amountSats??release.sats??'Unspecified';
-    const date=release.releaseDate??release.date??release.unlockDate??'Date not specified';
-    item.textContent=String(date).slice(0,60)+' — '+String(sats).slice(0,30)+' sats';
+    const date=release.plannedDate??'Date not specified';
+    item.textContent=String(date).slice(0,60)+' — '+String(sats).slice(0,30)+' sats · regtest block '+String(release.unlockBlockHeight??'unknown').slice(0,20);
     list.appendChild(item);
    }
    summary.hidden=false;
