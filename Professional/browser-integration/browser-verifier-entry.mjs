@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import bitcoin from 'bitcoinjs-lib';
 import {secp256k1} from '@noble/curves/secp256k1';
-import {createHmac} from '@noble/hashes/hmac';
+import {hmac} from '@noble/hashes/hmac';
 import {sha512} from '@noble/hashes/sha512';
 import {sha256} from '@noble/hashes/sha256';
 import {makeCryptoPsbtFrames} from '../crypto-psbt-frames.mjs';
@@ -30,7 +30,7 @@ globalThis.bc1q21ProfessionalDerivePublicReleasePlan=function({accountXpub,relea
  if(data.readUInt32BE(0)!==0x0488b21e||data[4]!==3||data.readUInt32BE(9)!==0x80000000)throw Error('Expected account xpub depth 3, account 0');
  const derive=(node,index)=>{
   const indexBytes=Buffer.alloc(4);indexBytes.writeUInt32BE(index);
-  const h=Buffer.from(createHmac(sha512,node.chain,Buffer.concat([node.pub,indexBytes])));
+  const h=Buffer.from(hmac(sha512,node.chain,Buffer.concat([node.pub,indexBytes])));
   const k=BigInt('0x'+h.subarray(0,32).toString('hex'));
   if(k===0n||k>=secp256k1.CURVE.n)throw Error('Invalid child derivation scalar');
   const point=secp256k1.ProjectivePoint.BASE.multiply(k).add(secp256k1.ProjectivePoint.fromHex(node.pub));
