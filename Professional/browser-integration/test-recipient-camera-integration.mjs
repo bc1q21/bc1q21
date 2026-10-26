@@ -106,7 +106,7 @@ try{
  await page.locator('#giftPsbtFile').setInputFiles({name:'actual-psbt.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({
   releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256
  }))});
- assert.match(await page.locator('#giftCameraStatus').innerText(),/PSBT matches supplied public gift record/);
+ await page.waitForFunction(()=>document.querySelector('#giftCameraStatus').textContent.includes('PSBT matches supplied public gift record'));
  // A malicious JSON evidence file must not override the selected gift/release.
  await page.locator('#giftPsbtFile').setInputFiles({name:'override.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({
   releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256,
