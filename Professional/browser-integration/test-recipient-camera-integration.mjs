@@ -197,6 +197,33 @@ try{
   releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256
  }))});
  await page.waitForFunction(()=>document.querySelector('#showUnsignedQr').disabled===false);
+ // A camera startup that resolves after switching releases must be stopped again.
+ await page.locator('#selectedRelease').selectOption('1');
+ await page.locator('#giftPsbtFile').setInputFiles({name:'startup-psbt.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({
+  releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256
+ }))});
+ await page.waitForFunction(()=>document.querySelector('#giftCameraStart').disabled===false);
+ await page.evaluate(()=>{
+  const original=globalThis.bc1q21ProfessionalAttachGiftCamera;
+  window.__resolveCameraStartup=null;
+  window.__cameraStopCount=0;
+  globalThis.bc1q21ProfessionalAttachGiftCamera=()=>({
+   start:()=>new Promise(resolve=>{window.__resolveCameraStartup=resolve;}),
+   stop:()=>{window.__cameraStopCount++;}
+  });
+  window.__restoreCameraStartup=()=>{globalThis.bc1q21ProfessionalAttachGiftCamera=original;};
+ });
+ await page.locator('#giftCameraStart').click();
+ await page.waitForFunction(()=>typeof window.__resolveCameraStartup==='function');
+ await page.locator('#selectedRelease').selectOption('');
+ await page.evaluate(()=>{window.__resolveCameraStartup();window.__restoreCameraStartup();});
+ await page.waitForFunction(()=>window.__cameraStopCount>=2);
+ assert.equal(await page.locator('#giftCameraStart').isDisabled(),true);
+ await page.locator('#selectedRelease').selectOption('1');
+ await page.locator('#giftPsbtFile').setInputFiles({name:'qr-after-camera-startup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({
+  releaseNumber:1,approvedUnsignedBase64:handoff.unsignedPsbtBase64,expectedApprovedSha256:handoff.psbtSha256
+ }))});
+ await page.waitForFunction(()=>document.querySelector('#showUnsignedQr').disabled===false);
  // A slow QR renderer must not display an old release after selection changes.
  await page.evaluate(()=>{
   const original=globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr;
