@@ -211,7 +211,7 @@
                     <span
                       :class="['status-dot', o.checkedSpent && o.spent ? 'dot-spent' : (o.checkedSpent && o.ready ? 'dot-ready' : 'dot-pending')]"></span>
                     <span
-                      x-text="o.releaseDate && new Date(o.releaseDate + 'T00:00:00Z') > new Date() ? 'Locked' : (!o.checkedSpent ? 'Status unavailable' : (o.spent ? 'Claimed' : (o.pending ? 'Pending confirmation' : (o.ready ? 'Ready' : 'Locked'))))"></span>
+                      x-text="statusLabel(o)"></span>
                   </td>
                   <td x-text="o.releaseDate"></td>
                   <td class="mono" x-text="o.btc.toFixed(8)"></td>
@@ -274,7 +274,7 @@
   <script src="../CryptoManager.js" integrity="sha384-NmUwxsKQb8gHlDRMQMmqDouQmV/pJI5eIaxmbDnR3jjfWRZIXGdVHMzCtrtcRdNT" crossorigin="anonymous"></script>
   <script src="../BtcBackendClient.js" integrity="sha384-VIWHhR63/7H1B5Mmqv15R8UPb8kBHtsuQAjXyE8EhQoiuqNs1TKmgYxkz0XqHKli" crossorigin="anonymous"></script>
 
-  <script src="gift-h08.js" integrity="sha384-RNhEoIQyqwRQLMCPbtd/4Fzcp8BzNH4j7eWdMLHD/KC2iLNP5xlh08qjpGOBTygp" crossorigin="anonymous"></script>
+  <script src="gift-h08.js" integrity="sha384-oxCMTwyFMaCharLjT+Aht7wY+eUA8x2B+PPSgoznYf9dE9zGqY0e0Pa+j2UF3NL1" crossorigin="anonymous"></script>
 </body>
 
 </html>
