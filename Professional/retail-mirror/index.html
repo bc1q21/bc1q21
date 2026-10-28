@@ -31,7 +31,7 @@
 <h2>Continue to Jade Plus</h2><p id="professional-retail-handoff-status" role="status"></p>
 <p>Development preview only: the Retail schedule is passed to the Jade public-wallet creator below. Signing, funding and broadcast remain disabled.</p></section>
 <section id="professional-jade-workflow" hidden style="max-width:1100px;margin:20px auto;padding:18px;background:white;border:2px solid #09518b;border-radius:12px">
-    <h2 style="color:#09518b">Professional · Jade Plus workflow</h2><p role="note" style="padding:12px;border-left:4px solid #09518b;background:#edf5fc"><strong>Editing cutoff:</strong> You may return to gift planning until the actual gift-specific Jade signatures are received and verified. After verification, amounts, recipients, and release dates are permanently locked for that gift. This prototype does not yet complete gift-specific signing or enable funding.</p>
+    <h2 style="color:#09518b">Professional · Jade Plus workflow</h2><button type="button" id="professional-edit-gift" style="padding:9px 16px;margin:8px 0;background:#eef5fc;color:#09518b;border:1px solid #09518b;border-radius:6px">← Back to edit gift details</button><p id="professional-edit-gift-status" role="status" aria-live="polite"></p><p role="note" style="padding:12px;border-left:4px solid #09518b;background:#edf5fc"><strong>Editing cutoff:</strong> You may return to gift planning until the actual gift-specific Jade signatures are received and verified. After verification, amounts, recipients, and release dates are permanently locked for that gift. This prototype does not yet complete gift-specific signing or enable funding.</p>
     <p>Use the integrated creator and recipient panels below. The existing camera, animated QR, and public wallet tools run inside the Professional page; no separate browser tab is required.</p>
     <div role="tablist" aria-label="Professional Jade workflow" style="display:flex;gap:12px;flex-wrap:wrap">
       <button type="button" id="professional-creator-tab" aria-selected="true" aria-controls="professional-creator-frame">Creator · Public wallet and QR</button>
@@ -963,7 +963,19 @@ Download a printable gift card that includes the QR with this recipient link.
   
 <script type="module">
 import {snapshotRetailGiftPlan} from '../Professional/retail-plan-bridge.mjs';
+import {createProfessionalGiftEditGate} from '../Professional/gift-edit-gate.mjs';
+const professionalEditGate=createProfessionalGiftEditGate();
+document.getElementById('professional-edit-gift').addEventListener('click',()=>{
+ const status=document.getElementById('professional-edit-gift-status');
+ if(!professionalEditGate.canEdit){status.textContent='Gift editing is unavailable during signing or after verification. Cancel an incomplete signing attempt before editing.';return;}
+ document.getElementById('professional-jade-workflow').hidden=true;
+ document.getElementById('professional-retail-handoff').hidden=true;
+ document.querySelector('main[x-data="giftWizard"]').scrollIntoView({behavior:'smooth',block:'start'});
+ status.textContent='Returned to Retail gift planning. Reconfirm the schedule before signing.';
+});
 window.addEventListener('bc1q21:professional-plan-ready',event=>{
+ if(!professionalEditGate.canEdit){document.getElementById('professional-retail-handoff-status').textContent='Cannot modify a gift after signing begins. Cancel an incomplete signing attempt before editing.';return;}
+
  const panel=document.getElementById('professional-retail-handoff');
  const status=document.getElementById('professional-retail-handoff-status');
  panel.hidden=false;
