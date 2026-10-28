@@ -251,8 +251,8 @@ window.addEventListener('pagehide',()=>{stopCamera();clearFrames();if(logoUrl)UR
   summary.append(tr);
  }
  document.getElementById('release-plan-total').textContent=total.toLocaleString('en-US')+' sats';
- document.getElementById('plan-preview').hidden=false;
- document.getElementById('plan-status').textContent='Imported validated Retail plan. Public-wallet derivation remains separate; no signing or funding authorized.';
+ document.getElementById('release-plan-preview').hidden=false;
+ document.getElementById('release-plan-status').textContent='Imported validated Retail plan. Public-wallet derivation remains separate; no signing or funding authorized.';
  showStage('jade');
  return true;
 };
