@@ -49,3 +49,13 @@ test('Duplicate dates are rejected', () => {
  wizard.scheduleRows[1].date=wizard.scheduleRows[0].date;
  assert.throws(() => snapshotRetailGiftPlan(wizard));
 });
+
+test('Creator inline JavaScript parses and import is complete', async () => {
+ const { Script } = await import('node:vm');
+ const creator=readFileSync(new URL('./professional-creator-prototype.html',import.meta.url),'utf8');
+ const inline=[...creator.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x=>x[1]);
+ assert.ok(inline.length>0);
+ for(const source of inline) assert.doesNotThrow(()=>new Script(source));
+ assert.match(creator,/window\.bc1q21ProfessionalAcceptRetailPlan\s*=\s*function/);
+ assert.match(creator,/showStage\('jade'\)/);
+});
