@@ -958,6 +958,18 @@ PriceManager.prototype.loadPrice=async function(){
   }
   return moved;
  };
+ const retailCanGoBack=NavigationManager.prototype.canGoBack;
+ NavigationManager.prototype.canGoBack=function(){
+  return this.currentStep==='welcome' || retailCanGoBack.call(this);
+ };
+ const retailNavigateBack=NavigationManager.prototype.navigateBack;
+ NavigationManager.prototype.navigateBack=function(){
+  if(this.currentStep==='welcome'){
+   window.location.assign('../Professional/index.html');
+   return true;
+  }
+  return retailNavigateBack.call(this);
+ };
  const originalForward=NavigationManager.prototype.navigateForward;
  NavigationManager.prototype.navigateForward=function(context){
   if(this.currentStep==='finish_schedule'){
