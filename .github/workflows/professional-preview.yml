@@ -1,0 +1,49 @@
+name: Professional browser preview package (development only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - 'Professional/**'
+      - '.github/workflows/professional-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out isolated Professional branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Prepare self-contained preview folder
+        run: |
+          mkdir -p preview
+          cp -R Professional Frontend preview/
+          cat > preview/START-HERE.txt <<'EOF'
+          bc1q21 Professional — DEVELOPMENT PREVIEW ONLY
+
+          This package is NOT a live website and must NEVER be used with real Bitcoin.
+          Retail recovery/funding/broadcast remain blocked in the Professional mirror.
+          Do not use real seed words or private keys.
+
+          1. Extract the archive.
+          2. Open a terminal in the extracted preview folder.
+          3. Run: python -m http.server 8765 --bind 127.0.0.1
+          4. Open http://127.0.0.1:8765/Professional/index.html in your browser.
+          5. Stop the server with Ctrl+C when finished.
+
+          You need Python installed for this local preview.
+          EOF
+      - name: Upload offline browser preview (no deployment)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bc1q21-professional-browser-preview
+          path: preview/
+          if-no-files-found: error
+          retention-days: 7
