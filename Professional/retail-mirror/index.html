@@ -972,7 +972,9 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
   const receiver=frame?.contentWindow?.bc1q21ProfessionalAcceptRetailPlan;
   if(typeof receiver!=='function')throw Error('Jade creator panel is not ready. Reload the isolated Professional preview.');
   receiver(plan);
-  document.getElementById('professional-jade-workflow').hidden=false;
+  const jadeSection=document.getElementById('professional-jade-workflow');
+  jadeSection.hidden=false;
+  jadeSection.scrollIntoView({behavior:'smooth',block:'start'});
   status.textContent+=' Schedule passed to existing Jade public-wallet creator; signing and funding remain disabled.';
  }catch(error){status.textContent='Cannot continue: '+String(error.message||error);}
  panel.scrollIntoView({behavior:'smooth'});
