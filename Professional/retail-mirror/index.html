@@ -944,7 +944,10 @@ Download a printable gift card that includes the QR with this recipient link.
  };
  const originalForward=NavigationManager.prototype.navigateForward;
  NavigationManager.prototype.navigateForward=function(context){
-  if(this.currentStep==='finish_schedule' && this.getStepConfig().finish_schedule.validate(context)){
+  if(this.currentStep==='finish_schedule'){
+   document.getElementById('professional-jade-workflow').hidden=true;
+   document.getElementById('professional-retail-handoff').hidden=true;
+   if(!this.getStepConfig().finish_schedule.validate(context))return false;
    window.dispatchEvent(new CustomEvent('bc1q21:professional-plan-ready',{detail:{wizard:context}}));
    return false;
   }
