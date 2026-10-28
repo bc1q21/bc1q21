@@ -976,8 +976,10 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
   jadeSection.hidden=false;
   jadeSection.scrollIntoView({behavior:'smooth',block:'start'});
   status.textContent+=' Schedule passed to existing Jade public-wallet creator; signing and funding remain disabled.';
- }catch(error){status.textContent='Cannot continue: '+String(error.message||error);}
- panel.scrollIntoView({behavior:'smooth'});
+ }catch(error){
+  status.textContent='Cannot continue: '+String(error.message||error);
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+ }
 });
 </script>
   <script type="text/javascript" src="CryptoManager.js" integrity="sha384-NmUwxsKQb8gHlDRMQMmqDouQmV/pJI5eIaxmbDnR3jjfWRZIXGdVHMzCtrtcRdNT" crossorigin="anonymous"></script>
