@@ -21,7 +21,7 @@ export function snapshotRetailGiftPlan(wizard) {
     return Object.freeze({ date, amountSats: sats });
   });
   for (let i = 1; i < releases.length; i++) {
-    if (releases[i].date < releases[i - 1].date) {
+    if (releases[i].date <= releases[i - 1].date) {
       throw new Error('Retail release dates must be ordered.');
     }
   }
