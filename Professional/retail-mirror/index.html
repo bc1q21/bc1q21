@@ -971,6 +971,11 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
   const plan=snapshotRetailGiftPlan(event.detail.wizard);
   for(const release of plan.releases){const li=document.createElement('li');li.textContent=release.date+' — '+release.amountSats+' sats';list.appendChild(li);}
   status.textContent='Validated '+plan.releases.length+' Retail releases totaling '+plan.totalSats+' sats.';
+  const frame=document.getElementById('professional-creator-frame');
+  const receiver=frame?.contentWindow?.bc1q21ProfessionalAcceptRetailPlan;
+  if(typeof receiver!=='function')throw Error('Jade creator panel is not ready. Reload the isolated Professional preview.');
+  receiver(plan);
+  status.textContent+=' Schedule passed to existing Jade public-wallet creator; signing and funding remain disabled.';
  }catch(error){status.textContent='Cannot continue: '+String(error.message||error);}
  panel.scrollIntoView({behavior:'smooth'});
 });
