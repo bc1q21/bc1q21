@@ -56,7 +56,7 @@
   </section>
   <main class="container" x-data="giftWizard" aria-label="Retail gift planning in Professional development; recovery and funding disabled">
     <header class="brand">
-      <img src="static/img/bc1q21-logo.png" alt="bc1q21 logo"><br>
+      <img id="professional-wizard-brand-logo" src="static/img/bc1q21-logo.png" alt="bc1q21 logo"><br>
       <div>
         <h1>Gifting Wizard</h1>
         <!-- <small class="muted">Simple, time-locked Bitcoin gifts</small> -->
@@ -987,7 +987,7 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
 <script src="alpine-csp-adapter.js" integrity="sha384-g80uvNzwbOLdPrXjhlPGYR0r6GUMDaUXHWRX8YmxpuYxamN1rzCaJsmSdJTaIJuS" crossorigin="anonymous" defer></script>
 <script src="static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
 <script>
-(function(){try{const data=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');if(!data||!data.business)return;document.getElementById('professional-practice-name').textContent=data.business+' · '+data.practice;document.getElementById('professional-practice-contact').textContent=[data.contact,data.address,data.email,data.phone].filter(Boolean).join(' · ');if(data.logoData&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(data.logoData)){const img=document.getElementById('professional-logo-preview');img.src=data.logoData;img.hidden=false;}}catch(e){}})();
+(function(){try{const data=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');if(!data||!data.business)return;document.getElementById('professional-practice-name').textContent=data.business+' · '+data.practice;document.getElementById('professional-practice-contact').textContent=[data.contact,data.address,data.email,data.phone].filter(Boolean).join(' · ');if(data.logoData&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(data.logoData)){const img=document.getElementById('professional-logo-preview');img.src=data.logoData;img.hidden=false;const wizardLogo=document.getElementById('professional-wizard-brand-logo');wizardLogo.src=data.logoData;wizardLogo.alt=data.business+' logo';}}catch(e){}})();
 </script>
 <script>
 (function(){
