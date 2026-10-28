@@ -940,7 +940,12 @@ Download a printable gift card that includes the QR with this recipient link.
    alert('Professional development: Retail recovery and funding are disabled. Continue with the Jade public-wallet panel above. Do not send Bitcoin.');
    return false;
   }
-  return original.call(this,step);
+  const moved=original.call(this,step);
+  if(moved && this.stepGroup===1){
+   document.getElementById('professional-jade-workflow').hidden=true;
+   document.getElementById('professional-retail-handoff').hidden=true;
+  }
+  return moved;
  };
  const originalForward=NavigationManager.prototype.navigateForward;
  NavigationManager.prototype.navigateForward=function(context){
