@@ -64,6 +64,199 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <script>
 'use strict';
 let reviewedPlan=null;
+// Receive a validated, read-only Retail schedule from the same-origin Professional mirror.
+// This does not produce a PSBT or authorize signing, funding or broadcasting.
+window.bc1q21ProfessionalAcceptRetailPlan=function(plan){
+ if(!plan||plan.format!=='bc1q21-professional-retail-plan-preview-v1'||
+    plan.status!=='UNFUNDED_PREVIEW_NOT_SIGNABLE'||plan.signingAuthorized!==false||
+    plan.fundingAuthorized!==false||plan.broadcastAuthorized!==false||
+    !Array.isArray(plan.releases)||plan.releases.length<1||plan.releases.length>60)throw Error('Unsupported Retail plan');
+ let total=0n,prior='',items=[];
+ for(const release of plan.releases){
+  const date=release?.date,sats=release?.amountSats;
+  if(typeof date!=='string'||!new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}
+let verifiedPublicHandoff=null;
+let derivedReleasePlan=null;
+let derivationAccountXpub=null;
+function renderCreatorHeights(){
+ const holder=document.getElementById('creator-heights');holder.replaceChildren();derivedReleasePlan=null;derivationAccountXpub=null;document.getElementById('creator-derived-addresses').replaceChildren();
+ if(!reviewedPlan)return;
+ reviewedPlan.items.forEach((item,index)=>{const label=document.createElement('label');label.textContent='Release '+(index+1)+' ('+item.date+') — regtest unlock block height';const input=document.createElement('input');input.type='number';input.min='17';input.max='499999999';input.step='1';input.dataset.heightIndex=String(index);label.append(input);holder.append(label);});
+}
+document.getElementById('derive-creator-addresses').onclick=()=>{
+ const status=document.getElementById('creator-derivation-status'),holder=document.getElementById('creator-derived-addresses');holder.replaceChildren();derivedReleasePlan=null;derivationAccountXpub=null;
+ try{
+  if(!reviewedPlan)throw Error('Review a valid release plan first');
+  if(typeof globalThis.bc1q21ProfessionalDerivePublicReleasePlan!=='function')throw Error('Public derivation engine unavailable');
+  const heights=Array.from(document.querySelectorAll('[data-height-index]'),input=>Number(input.value));
+  if(heights.length!==reviewedPlan.items.length||heights.some((h,i)=>!Number.isSafeInteger(h)||h<17||h>499999999||(i>0&&h<=heights[i-1])))throw Error('Enter strictly increasing valid regtest block heights');
+  const addresses=globalThis.bc1q21ProfessionalDerivePublicReleasePlan({accountXpub:document.getElementById('creator-account-xpub').value.trim(),releaseHeights:heights});
+  addresses.forEach((entry,index)=>{const p=document.createElement('p');p.textContent='Release '+(index+1)+' · block '+entry.lockHeight+' · '+entry.fundingAddress+' · '+reviewedPlan.items[index].sats+' sats planned';p.style.overflowWrap='anywhere';holder.append(p);});
+  derivedReleasePlan=addresses;derivationAccountXpub=document.getElementById('creator-account-xpub').value.trim();status.textContent='Derived '+addresses.length+' public-only regtest CLTV addresses. Not authenticated to Jade, not funded, do not send Bitcoin.';
+ }catch(error){status.textContent='Cannot derive: '+String(error.message||error);}
+};
+
+const releaseCount=document.getElementById('release-count'),releaseInputs=document.getElementById('release-plan-inputs'),planPreview=document.getElementById('release-plan-preview'),planStatus=document.getElementById('release-plan-status');
+function renderReleaseInputs(){
+ const previous=[...releaseInputs.querySelectorAll('.draft-release')].map(row=>({date:row.querySelector('input[type=date]').value,sats:row.querySelector('input[type=number]').value}));
+ releaseInputs.replaceChildren();reviewedPlan=null;derivedReleasePlan=null;derivationAccountXpub=null;planPreview.hidden=true;planStatus.textContent='Review the updated release plan.';
+ for(let i=0;i<Number(releaseCount.value);i++){
+  const row=document.createElement('div');row.className='draft-release';
+  const title=document.createElement('h4');title.textContent='Release '+(i+1);row.append(title);
+  const dateLabel=document.createElement('label');dateLabel.textContent='Unlock date';const date=document.createElement('input');date.type='date';date.required=true;date.value=previous[i]?.date||'';dateLabel.append(date);
+  const satsLabel=document.createElement('label');satsLabel.textContent='Amount (satoshis)';const sats=document.createElement('input');sats.type='number';sats.min='1';sats.max='2100000000000000';sats.step='1';sats.required=true;sats.value=previous[i]?.sats||'';satsLabel.append(sats);
+  row.append(dateLabel,satsLabel);releaseInputs.append(row);
+ }
+}
+releaseCount.addEventListener('change',renderReleaseInputs);renderReleaseInputs();
+releaseInputs.addEventListener('input',()=>{reviewedPlan=null;derivedReleasePlan=null;derivationAccountXpub=null;planPreview.hidden=true;planStatus.textContent='Draft changed — review again before continuing.';});
+document.getElementById('review-release-plan').addEventListener('click',()=>{
+ const rows=[...releaseInputs.querySelectorAll('.draft-release')],today=new Date().toISOString().slice(0,10);
+ let total=0n,prior='',items=[];
+ for(const [index,row] of rows.entries()){
+  const date=row.querySelector('input[type=date]').value,raw=row.querySelector('input[type=number]').value;
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||date<=today||date<=prior){planPreview.hidden=true;planStatus.textContent='Release '+(index+1)+': choose a future unlock date later than the previous release.';return;}
+  if(!/^[1-9]\\d*$/.test(raw)){planPreview.hidden=true;planStatus.textContent='Release '+(index+1)+': enter a positive whole-satoshi amount.';return;}
+  const sats=BigInt(raw);if(sats>2100000000000000n){planPreview.hidden=true;planStatus.textContent='Release '+(index+1)+': amount exceeds Bitcoin supply.';return;}
+  total+=sats;if(total>2100000000000000n){planPreview.hidden=true;planStatus.textContent='Planned total exceeds Bitcoin supply.';return;}
+  prior=date;items.push({date,sats});
+ }
+ const body=document.getElementById('release-plan-rows');body.replaceChildren();
+ items.forEach((item,i)=>{const tr=document.createElement('tr');for(const v of [i+1,item.date,item.sats.toLocaleString('en-US')]){const td=document.createElement('td');td.textContent=String(v);td.style.padding='8px';tr.append(td);}body.append(tr);});
+ document.getElementById('release-plan-total').textContent=total.toLocaleString('en-US')+' sats';
+ reviewedPlan=Object.freeze({items:items.map(item=>Object.freeze({...item})),totalSats:total.toString(),recipient:document.getElementById('recipient').value.trim(),purpose:document.getElementById('purpose').value});
+ planPreview.hidden=false;planStatus.textContent='Local draft reviewed. No funding addresses or Bitcoin transactions created.';
+});
+const stages=['profile','gift','jade','funding','card'];
+const showStage=name=>{stages.forEach((id,i)=>{document.getElementById(id).hidden=id!==name;document.querySelectorAll('.steps span')[i].classList.toggle('active',id===name)});if(name!=='jade')stopCamera();};
+// Carry the practice identity forward from the Professional entry screen.
+try {
+ const saved = JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft') || 'null');
+ if (saved && saved.business && saved.practice) {
+  const practice = document.getElementById('practice');
+  if (Array.from(practice.options).some(o => o.value === saved.practice)) practice.value = saved.practice;
+  document.getElementById('business').value = String(saved.business).slice(0, 100);
+  document.getElementById('contact').value = String(saved.contact || '').slice(0, 100);
+  document.getElementById('profile-preview').textContent = String(saved.business) + ' · ' + String(saved.practice);
+  showStage('gift');
+ }
+} catch (e) {}
+document.getElementById('to-gift').onclick=()=>{
+ const practice=document.getElementById('practice').value,business=document.getElementById('business').value.trim();
+ if(!practice||!business){alert('Select a practice and enter a business name.');return;}
+ document.getElementById('profile-preview').textContent=business+' · '+practice;showStage('gift');
+};
+document.getElementById('to-jade').onclick=()=>{if(!reviewedPlan){planStatus.textContent='Review a valid release schedule before continuing.';return;}renderCreatorHeights();showStage('jade');};
+document.getElementById('to-jade').addEventListener('click',()=>{document.getElementById('creator-public-status').textContent=verifiedPublicHandoff?'Verified public CLTV handoff loaded. This is not a complete gift funding schedule.':'Import public-only Jade wallet information to inspect its CLTV script and test address.';});
+document.getElementById('to-funding-preview').onclick=()=>{if(!reviewedPlan){showStage('gift');return;}document.getElementById('funding-preview-summary').textContent=reviewedPlan.items.length+' planned releases · '+BigInt(reviewedPlan.totalSats).toLocaleString('en-US')+' sats total · funding disabled.';
+const rows=document.getElementById('funding-release-rows');rows.replaceChildren();document.getElementById('export-funding-plan').disabled=true;
+const warning=document.getElementById('funding-address-warning');
+if(derivedReleasePlan&&derivationAccountXpub===document.getElementById('creator-account-xpub').value.trim()&&derivedReleasePlan.length===reviewedPlan.items.length){
+ derivedReleasePlan.forEach((entry,index)=>{const row=document.createElement('p');row.style.overflowWrap='anywhere';row.textContent='Release '+(index+1)+' · '+reviewedPlan.items[index].date+' · '+reviewedPlan.items[index].sats+' sats · regtest block '+entry.lockHeight+' · '+entry.fundingAddress;rows.append(row);});
+ document.getElementById('export-funding-plan').disabled=false;
+ warning.textContent='These are derived regtest preview addresses. Jade ownership, calendar/block-height mapping, and funding have NOT been authenticated. Do not send Bitcoin.';
+}else warning.textContent='No complete public-derived release addresses. Return to the Jade stage to derive the regtest preview. Do not fund.';
+showStage('funding');};
+document.getElementById('export-funding-plan').onclick=()=>{
+ const status=document.getElementById('funding-export-status');
+ try{
+  if(!reviewedPlan||!derivedReleasePlan||derivedReleasePlan.length!==reviewedPlan.items.length||derivationAccountXpub!==document.getElementById('creator-account-xpub').value.trim())throw Error('Derive a current release plan before exporting');
+  const data={format:'bc1q21-professional-unfunded-regtest-plan-v1',network:'regtest',status:'UNFUNDED_DRAFT_DO_NOT_SEND',gift:{recipient:reviewedPlan.recipient,occasion:reviewedPlan.purpose,practice:document.getElementById('practice').value,practiceName:document.getElementById('business').value.trim()},totalSats:reviewedPlan.totalSats,releases:derivedReleasePlan.map((entry,index)=>({releaseNumber:index+1,plannedDate:reviewedPlan.items[index].date,amountSats:reviewedPlan.items[index].sats.toString(),unlockBlockHeight:entry.lockHeight,signerPubkeyHex:entry.signerPubkeyHex,redeemScriptHex:entry.redeemScriptHex,fundingScriptPubKeyHex:entry.fundingScriptPubKeyHex,regtestAddress:entry.fundingAddress})),walletOriginAuthenticated:false,chainVerified:false,fundingConfirmed:false,signingAuthorized:false,broadcastAuthorized:false};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)+'\\n'],{type:'application/json'}));
+  const link=document.createElement('a');link.href=url;link.download='bc1q21-professional-unfunded-regtest-plan.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  status.textContent='Local unfunded plan saved. This is not a funded gift, gift card, or recipient release record.';
+ }catch(error){status.textContent='Export unavailable: '+String(error.message||error);}
+};
+document.getElementById('to-card-preview').onclick=()=>{if(!reviewedPlan){showStage('gift');return;}document.getElementById('card-preview-title').textContent='Planned gift for '+(reviewedPlan.recipient||'recipient');document.getElementById('card-preview-purpose').textContent='Occasion: '+reviewedPlan.purpose;document.getElementById('card-preview-schedule').textContent=reviewedPlan.items.length+' releases · '+BigInt(reviewedPlan.totalSats).toLocaleString('en-US')+' sats planned';document.getElementById('card-preview-practice').textContent='Prepared by: '+document.getElementById('business').value.trim();showStage('card');};
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>showStage(b.dataset.back));
+let publicHandoffImportGeneration=0;
+document.getElementById('creator-public-handoff').addEventListener('change',async event=>{
+ const token=++publicHandoffImportGeneration,file=event.target.files?.[0],status=document.getElementById('creator-public-status'),summary=document.getElementById('creator-public-summary');
+ summary.hidden=true;verifiedPublicHandoff=null;status.textContent='No public wallet handoff imported.';
+ if(!file)return;
+ try{
+  if(file.size>8192)throw Error('Public handoff exceeds 8 KB');
+  const payload=JSON.parse(await file.text());
+  if(token!==publicHandoffImportGeneration)return;
+  if(typeof globalThis.bc1q21ProfessionalVerifyPublicHandoff!=='function')throw Error('Public handoff verifier unavailable');
+  const verified=globalThis.bc1q21ProfessionalVerifyPublicHandoff(payload);
+  verifiedPublicHandoff=verified;
+  document.getElementById('creator-public-signer').textContent=verified.signerPubkeyHex;
+  document.getElementById('creator-public-lock').textContent=String(verified.locktime);
+  document.getElementById('creator-public-address').textContent=verified.fundingAddress;
+  summary.hidden=false;status.textContent='PASS: regtest CLTV script and address cryptographically reconstructed from supplied public key and locktime. Wallet origin and gift schedule NOT authenticated; funding disabled.';
+ }catch(error){if(token===publicHandoffImportGeneration)status.textContent='Rejected handoff: '+String(error.message||error);}
+});
+let logoUrl=null;
+document.getElementById('logo').onchange=e=>{
+ const f=e.target.files?.[0],img=document.getElementById('logo-preview');if(logoUrl)URL.revokeObjectURL(logoUrl);logoUrl=null;img.hidden=true;
+ if(!f)return;
+ if(f.size>1024*1024||!['image/png','image/jpeg','image/webp'].includes(f.type)){alert('Logo must be PNG, JPEG or WebP and under 1 MB.');e.target.value='';return;}
+ logoUrl=URL.createObjectURL(f);img.src=logoUrl;img.hidden=false;
+};
+let urls=[],index=0,delay=400,playing=false,timer=null;
+const qr=document.getElementById('qr'),counter=document.getElementById('qr-count');
+const controls=['qr-toggle','qr-slower','qr-faster'].map(id=>document.getElementById(id));
+function clearFrames(){playing=false;clearTimeout(timer);urls.forEach(u=>URL.revokeObjectURL(u));urls=[];index=0;qr.hidden=true;controls.forEach(b=>b.disabled=true);controls[0].textContent='Pause animation';}
+function tick(){if(!playing||!urls.length)return;qr.src=urls[index];qr.hidden=false;counter.textContent='Local test QR frame '+(index+1)+' of '+urls.length+' — NOT gift-verified';index=(index+1)%urls.length;timer=setTimeout(tick,delay);}
+function restart(){clearTimeout(timer);if(playing)tick();}
+document.getElementById('qr-files').onchange=e=>{
+ clearFrames();const files=Array.from(e.target.files||[]);
+ if(!files.length){counter.textContent='No QR frames loaded.';return;}
+ if(files.length>256||files.some(f=>f.size>500000||!['image/png','image/jpeg','image/webp'].includes(f.type))){counter.textContent='Rejected: up to 256 PNG/JPEG/WebP frames, each under 500 KB.';e.target.value='';return;}
+ urls=files.map(f=>URL.createObjectURL(f));controls.forEach(b=>b.disabled=false);playing=true;tick();
+};
+controls[0].onclick=()=>{playing=!playing;controls[0].textContent=playing?'Pause animation':'Resume animation';restart();};
+controls[1].onclick=()=>{delay=Math.min(1500,delay+100);restart();};
+controls[2].onclick=()=>{delay=Math.max(150,delay-100);restart();};
+let camera=null,epoch=0;
+const video=document.getElementById('camera'),start=document.getElementById('camera-start'),stop=document.getElementById('camera-stop'),cameraStatus=document.getElementById('camera-status');
+function stopCamera(){epoch++;camera?.stop();camera=null;video.srcObject=null;start.disabled=false;stop.disabled=true;cameraStatus.textContent='Camera inactive. No gift-specific signature verified.';}
+start.onclick=async()=>{
+ const token=++epoch;start.disabled=true;stop.disabled=false;cameraStatus.textContent='Waiting for signed QR camera…';
+ try{
+  if(typeof globalThis.bc1q21ProfessionalAttachCamera!=='function')throw Error('Diagnostic verifier bundle missing; build Professional/browser-integration first');
+  const receiver=globalThis.bc1q21ProfessionalAttachCamera({
+   video,canvas:document.getElementById('signed-canvas'),
+   onStatus:message=>{if(token===epoch)cameraStatus.textContent=message+' (fixed regtest diagnostic only)';},
+   onVerified:verified=>{
+    if(token!==epoch)return;
+    if(verified.signatureCryptographicallyVerified!==true||verified.transactionMatches!==true||verified.broadcast!==false)throw Error('Diagnostic signature validation failed');
+    cameraStatus.textContent='PASS: physical Jade QR signature matches fixed disposable regtest diagnostic. NOT verified for the gift being created. Funding remains locked.';
+    // Release the camera after a successful diagnostic; do not imply gift authorization.
+    receiver.stop();camera=null;start.disabled=false;stop.disabled=true;
+   }
+  });
+  camera=receiver;await receiver.start();
+  if(token!==epoch){receiver.stop();return;}
+  if(!camera){stop.disabled=true;start.disabled=false;}
+ }catch(e){if(token===epoch){stopCamera();cameraStatus.textContent='Camera/verification unavailable: '+String(e.message||e);}}
+};
+stop.onclick=stopCamera;
+window.addEventListener('pagehide',()=>{stopCamera();clearFrames();if(logoUrl)URL.revokeObjectURL(logoUrl);});
+</script></body></html>).test(date)||
+     date<=prior||!Number.isSafeInteger(sats)||sats<=0)throw Error('Invalid Retail release');
+  total+=BigInt(sats);prior=date;items.push(Object.freeze({date,sats:BigInt(sats)}));
+ }
+ if(total.toString()!==String(plan.totalSats))throw Error('Retail plan total mismatch');
+ reviewedPlan=Object.freeze({items:Object.freeze(items),totalSats:total.toString(),recipient:'',purpose:''});
+ derivedReleasePlan=null;derivationAccountXpub=null;
+ renderCreatorHeights();
+ const summary=document.getElementById('release-plan-rows');summary.replaceChildren();
+ for(const [index,item] of items.entries()){
+  const tr=document.createElement('tr');
+  for(const value of [index+1,item.date,item.sats.toLocaleString('en-US')]){
+   const td=document.createElement('td');td.textContent=String(value);tr.append(td);
+  }
+  summary.append(tr);
+ }
+ document.getElementById('release-plan-total').textContent=total.toLocaleString('en-US')+' sats';
+ document.getElementById('plan-preview').hidden=false;
+ document.getElementById('plan-status').textContent='Imported validated Retail plan. Public-wallet derivation remains separate; no signing or funding authorized.';
+ showStage('jade');
+ return true;
+};
+
 let verifiedPublicHandoff=null;
 let derivedReleasePlan=null;
 let derivationAccountXpub=null;
