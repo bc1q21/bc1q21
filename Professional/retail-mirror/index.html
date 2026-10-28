@@ -33,6 +33,9 @@
 <img id="professional-card-logo" alt="Practice logo" hidden style="max-width:130px;max-height:100px;object-fit:contain">
 <div><strong id="professional-card-business" style="font-size:1.3rem">Your professional practice</strong><p id="professional-card-details" style="margin:5px 0"></p><p style="margin:5px 0"><strong>bc1q21 · Bitcoin time-locked gift</strong></p><small>Illustrative card only. No recipient, wallet, or funded gift has been generated.</small></div>
 </div></section>
+<section id="professional-retail-handoff" hidden style="max-width:1100px;margin:18px auto;padding:18px;background:#eaf4ed;border:2px solid #39744d;border-radius:10px">
+<h2>Retail gift plan ready for Jade Plus</h2><p id="professional-retail-handoff-status" role="status"></p><ol id="professional-retail-handoff-releases"></ol>
+<p>Development preview only: no signing, funding or broadcast is authorized. Jade is not yet connected to this schedule.</p></section>
 <section id="professional-jade-workflow" style="max-width:1100px;margin:20px auto;padding:18px;background:white;border:2px solid #09518b;border-radius:12px">
     <h2 style="color:#09518b">Professional · Jade Plus workflow</h2>
     <p>Use the integrated creator and recipient panels below. The existing camera, animated QR, and public wallet tools run inside the Professional page; no separate browser tab is required.</p>
@@ -949,7 +952,7 @@ Download a printable gift card that includes the QR with this recipient link.
  NavigationManager.prototype.navigateForward=function(context){
   if(this.currentStep==='finish_schedule'){
    document.getElementById('professional-jade-workflow')?.scrollIntoView({behavior:'smooth'});
-   alert('Retail gift planning complete. Professional Jade integration is next; this preview does not yet transfer the Retail schedule into Jade.');
+   window.dispatchEvent(new CustomEvent('bc1q21:professional-plan-ready',{detail:{wizard:context}}));
    return false;
   }
   return originalForward.call(this,context);
@@ -957,6 +960,21 @@ Download a printable gift card that includes the QR with this recipient link.
 })();
 </script>
   
+<script type="module">
+import {snapshotRetailGiftPlan} from '../../Professional/retail-plan-bridge.mjs';
+window.addEventListener('bc1q21:professional-plan-ready',event=>{
+ const panel=document.getElementById('professional-retail-handoff');
+ const status=document.getElementById('professional-retail-handoff-status');
+ const list=document.getElementById('professional-retail-handoff-releases');
+ panel.hidden=false;list.replaceChildren();
+ try {
+  const plan=snapshotRetailGiftPlan(event.detail.wizard);
+  for(const release of plan.releases){const li=document.createElement('li');li.textContent=release.date+' — '+release.amountSats+' sats';list.appendChild(li);}
+  status.textContent='Validated '+plan.releases.length+' Retail releases totaling '+plan.totalSats+' sats.';
+ }catch(error){status.textContent='Cannot continue: '+String(error.message||error);}
+ panel.scrollIntoView({behavior:'smooth'});
+});
+</script>
   <script type="text/javascript" src="CryptoManager.js" integrity="sha384-NmUwxsKQb8gHlDRMQMmqDouQmV/pJI5eIaxmbDnR3jjfWRZIXGdVHMzCtrtcRdNT" crossorigin="anonymous"></script>
 <script type="text/javascript" src="UIRenderer.js" integrity="sha384-jQQpsCfLynqzPUOgCxZ9PlVMJGfpGFLqU3mMTt0a8xt+YJaGfCeuQnAp6G9yw6dI" crossorigin="anonymous"></script>
 <script type="text/javascript" src="service-fee-address.js" integrity="sha384-+2E/fnypPfu4lNidhO89DxXrmkDB/C8T+MNPRMGmPt1SLOO6rp8Evy0b7oToGmOS" crossorigin="anonymous"></script>
