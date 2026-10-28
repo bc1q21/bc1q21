@@ -50,7 +50,7 @@ jobs:
           test -s preview/Professional/gift-edit-gate.mjs
           test -s preview/Frontend/NavigationManager.js
           test -s preview/Frontend/static/style.css
-          grep -q 'connect-src .none.' preview/Professional/retail-mirror/index.html
+          grep -q "connect-src 'self'; form-action 'none'" preview/Professional/retail-mirror/index.html
           grep -q 'LOCAL DEVELOPMENT PREVIEW' preview/Professional/retail-mirror/index.html
       - name: Upload offline browser preview (no deployment)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
