@@ -59,3 +59,25 @@ test('Creator inline JavaScript parses and import is complete', async () => {
  assert.match(creator,/window\.bc1q21ProfessionalAcceptRetailPlan\s*=\s*function/);
  assert.match(creator,/showStage\('jade'\)/);
 });
+
+test('Creator receives the Retail plan and displays its total', () => {
+ const html=readFileSync(new URL('./professional-creator-prototype.html',import.meta.url),'utf8');
+ const start=html.indexOf('window.bc1q21ProfessionalAcceptRetailPlan = function(plan)');
+ const end=html.indexOf('let verifiedPublicHandoff=null;',start);
+ assert.ok(start>0 && end>start);
+ const elements={};
+ const doc={
+  getElementById(id){return elements[id]??(elements[id]={hidden:true,textContent:'',replaceChildren(){this.children=[]},append(child){this.children??=[];this.children.push(child)}})},
+  createElement(tag){return {tag,textContent:'',append(child){this.children??=[];this.children.push(child)}}}
+ };
+ const win={};let stage='';
+ const initialize=new Function('window','document','renderCreatorHeights','showStage',
+  'let reviewedPlan=null,derivedReleasePlan=null,derivationAccountXpub=null;'+html.slice(start,end)+';return ()=>reviewedPlan;');
+ const getPlan=initialize(win,doc,()=>{},value=>{stage=value});
+ const plan=snapshotRetailGiftPlan(valid());
+ assert.equal(win.bc1q21ProfessionalAcceptRetailPlan(plan),true);
+ assert.equal(stage,'jade');
+ assert.equal(getPlan().totalSats,'25000');
+ assert.equal(elements['release-plan-total'].textContent,'25,000 sats');
+ assert.throws(()=>win.bc1q21ProfessionalAcceptRetailPlan({...plan,signingAuthorized:true}));
+});
