@@ -12,7 +12,7 @@ export function snapshotRetailGiftPlan(wizard) {
     const date = row?.date;
     const btc = Number(row?.btc);
     const sats = Math.round(btc * 100000000);
-    if (typeof date !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||
+    if (typeof date !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date) ||
         !Number.isFinite(btc) || !Number.isSafeInteger(sats) || sats <= 0 ||
         Math.abs(btc * 100000000 - sats) > 0.00001 ||
         !wizard.schedulePlanner?.isValidReleaseDate(date)) {
