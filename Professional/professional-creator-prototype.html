@@ -64,17 +64,43 @@ small,.muted{color:#566a80}.preview{display:flex;align-items:center;gap:20px;mar
 <script>
 'use strict';
 let reviewedPlan=null;
-// Receive a validated, read-only Retail schedule from the same-origin Professional mirror.
-// This does not produce a PSBT or authorize signing, funding or broadcasting.
-window.bc1q21ProfessionalAcceptRetailPlan=function(plan){
- if(!plan||plan.format!=='bc1q21-professional-retail-plan-preview-v1'||
-    plan.status!=='UNFUNDED_PREVIEW_NOT_SIGNABLE'||plan.signingAuthorized!==false||
-    plan.fundingAuthorized!==false||plan.broadcastAuthorized!==false||
-    !Array.isArray(plan.releases)||plan.releases.length<1||plan.releases.length>60)throw Error('Unsupported Retail plan');
- let total=0n,prior='',items=[];
- for(const release of plan.releases){
-  const date=release?.date,sats=release?.amountSats;
-  if(typeof date!=='string'||!new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}
+// Import a validated Retail schedule for the existing public-only Jade workflow.
+window.bc1q21ProfessionalAcceptRetailPlan = function(plan) {
+ if (!plan || plan.format !== 'bc1q21-professional-retail-plan-preview-v1' ||
+     plan.status !== 'UNFUNDED_PREVIEW_NOT_SIGNABLE' ||
+     plan.signingAuthorized !== false || plan.fundingAuthorized !== false ||
+     plan.broadcastAuthorized !== false || !Array.isArray(plan.releases) ||
+     plan.releases.length < 1 || plan.releases.length > 60) throw Error('Unsupported Retail plan');
+ let total = 0n, previous = '';
+ const items = [];
+ for (const release of plan.releases) {
+  const date = release?.date, sats = release?.amountSats;
+  if (typeof date !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date) ||
+      date <= previous || !Number.isSafeInteger(sats) || sats <= 0) throw Error('Invalid Retail release');
+  total += BigInt(sats);
+  previous = date;
+  items.push(Object.freeze({date, sats: BigInt(sats)}));
+ }
+ if (total.toString() !== String(plan.totalSats)) throw Error('Retail plan total mismatch');
+ reviewedPlan = Object.freeze({items:Object.freeze(items),totalSats:total.toString(),recipient:'',purpose:''});
+ derivedReleasePlan = null;
+ derivationAccountXpub = null;
+ renderCreatorHeights();
+ const body = document.getElementById('release-plan-rows');
+ body.replaceChildren();
+ items.forEach((item,index)=>{
+  const tr=document.createElement('tr');
+  [index+1,item.date,item.sats.toLocaleString('en-US')].forEach(value=>{
+   const td=document.createElement('td');td.textContent=String(value);tr.append(td);
+  });
+  body.append(tr);
+ });
+ document.getElementById('release-plan-total').textContent=total.toLocaleString('en-US')+' sats';
+ document.getElementById('release-plan-preview').hidden=false;
+ document.getElementById('release-plan-status').textContent='Validated Retail plan imported. No signing or funding authorized.';
+ showStage('jade');
+ return true;
+};
 let verifiedPublicHandoff=null;
 let derivedReleasePlan=null;
 let derivationAccountXpub=null;
