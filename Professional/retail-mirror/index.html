@@ -1055,7 +1055,7 @@ planFile.addEventListener('change',async()=>{
   planStatus.textContent='Unfunded draft delivered to the recipient panel for its own validation.';
  }
  recipient.addEventListener('load',handoffDraft);
- document.getElementById('professional-start-creator').addEventListener('click',()=>{select(false);document.getElementById('professional-jade-workflow').scrollIntoView({behavior:'smooth'});});ct.addEventListener('click',()=>select(false));rt.addEventListener('click',()=>select(true));select(false);
+ document.getElementById('professional-start-creator').addEventListener('click',()=>{document.querySelector('main[x-data="giftWizard"]').scrollIntoView({behavior:'smooth',block:'start'});});ct.addEventListener('click',()=>select(false));rt.addEventListener('click',()=>select(true));select(false);
 })();
 </script>
 </body>  
