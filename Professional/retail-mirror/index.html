@@ -36,7 +36,7 @@
 <section id="professional-retail-handoff" hidden style="max-width:1100px;margin:18px auto;padding:18px;background:#eaf4ed;border:2px solid #39744d;border-radius:10px">
 <h2>Continue to Jade Plus</h2><p id="professional-retail-handoff-status" role="status"></p>
 <p>Development preview only: the Retail schedule is passed to the Jade public-wallet creator below. Signing, funding and broadcast remain disabled.</p></section>
-<section id="professional-jade-workflow" style="max-width:1100px;margin:20px auto;padding:18px;background:white;border:2px solid #09518b;border-radius:12px">
+<section id="professional-jade-workflow" hidden style="max-width:1100px;margin:20px auto;padding:18px;background:white;border:2px solid #09518b;border-radius:12px">
     <h2 style="color:#09518b">Professional · Jade Plus workflow</h2>
     <p>Use the integrated creator and recipient panels below. The existing camera, animated QR, and public wallet tools run inside the Professional page; no separate browser tab is required.</p>
     <div role="tablist" aria-label="Professional Jade workflow" style="display:flex;gap:12px;flex-wrap:wrap">
@@ -951,7 +951,6 @@ Download a printable gift card that includes the QR with this recipient link.
  const originalForward=NavigationManager.prototype.navigateForward;
  NavigationManager.prototype.navigateForward=function(context){
   if(this.currentStep==='finish_schedule'){
-   document.getElementById('professional-jade-workflow')?.scrollIntoView({behavior:'smooth'});
    window.dispatchEvent(new CustomEvent('bc1q21:professional-plan-ready',{detail:{wizard:context}}));
    return false;
   }
@@ -973,6 +972,7 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
   const receiver=frame?.contentWindow?.bc1q21ProfessionalAcceptRetailPlan;
   if(typeof receiver!=='function')throw Error('Jade creator panel is not ready. Reload the isolated Professional preview.');
   receiver(plan);
+  document.getElementById('professional-jade-workflow').hidden=false;
   status.textContent+=' Schedule passed to existing Jade public-wallet creator; signing and funding remain disabled.';
  }catch(error){status.textContent='Cannot continue: '+String(error.message||error);}
  panel.scrollIntoView({behavior:'smooth'});
