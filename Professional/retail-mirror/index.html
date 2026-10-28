@@ -965,6 +965,7 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
  const panel=document.getElementById('professional-retail-handoff');
  const status=document.getElementById('professional-retail-handoff-status');
  panel.hidden=false;
+ document.getElementById('professional-jade-workflow').hidden=true;
  try {
   const plan=snapshotRetailGiftPlan(event.detail.wizard);
   status.textContent='Validated '+plan.releases.length+' Retail releases totaling '+plan.totalSats+' sats.';
