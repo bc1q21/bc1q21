@@ -42,3 +42,9 @@ test('Isolated Retail mirror and Jade creator have explicit handoff wiring', () 
   assert.match(creator,/renderCreatorHeights\(\)/);
   assert.match(mirror,/Retail recovery and funding are disabled/);
 });
+
+test('Duplicate dates are rejected', () => {
+ const wizard=valid();
+ wizard.scheduleRows[1].date=wizard.scheduleRows[0].date;
+ assert.throws(() => snapshotRetailGiftPlan(wizard));
+});
