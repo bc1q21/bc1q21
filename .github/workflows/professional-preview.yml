@@ -45,7 +45,7 @@ jobs:
           test -s preview/Professional/index.html
           test -s preview/Professional/retail-mirror/index.html
           test -s preview/Professional/professional-creator-prototype.html
-          test -s preview/Professional/professional-recipient-prototype.html
+          test -s preview/Professional/recipient-gift-specific-prototype.html
           test -s preview/Professional/retail-plan-bridge.mjs
           test -s preview/Professional/gift-edit-gate.mjs
           test -s preview/Frontend/NavigationManager.js
