@@ -24,9 +24,7 @@
 </head>
 
 <body>
-  <div style="background:#fff0d4;border:3px solid #a86200;padding:12px;text-align:center;font-weight:700">bc1q21 Professional — isolated Retail source mirror. DEVELOPMENT ONLY. Do not create or fund real gifts.</div>
-  <div style="background:#e7f0fa;padding:16px;text-align:center"><img id="professional-logo-preview" alt="Practice logo" hidden style="max-height:85px;max-width:220px;object-fit:contain;display:block;margin:0 auto 8px"><strong id="professional-practice-name">bc1q21</strong><br><span id="professional-practice-contact"></span><br><a href="../Professional/index.html">Edit professional identity</a></div>
-  <div style="max-width:1100px;margin:18px auto;background:#e8f2fb;border:1px solid #9ab7d3;padding:18px;border-radius:10px"><h2 style="margin-top:0;color:#09518b">Professional creation · Working sequence</h2><p><strong>1. Identity</strong> ✓ &nbsp; → &nbsp; <strong>2. Gift planning</strong> &nbsp; → &nbsp; <strong>3. Jade Plus public wallet</strong> &nbsp; → &nbsp; <strong>4. Add funds</strong> &nbsp; → &nbsp; <strong>5. Gift card</strong></p><p>Continue through the existing Retail gift planner and review. After confirming the schedule, the Jade Plus step opens. This development preview does not authorize funding or broadcasting.</p><button type="button" id="professional-start-creator" style="background:#09518b;color:white;padding:12px 18px;border:0;border-radius:7px;cursor:pointer">Continue to Professional gift creation ↓</button></div>
+  <div style="max-width:900px;margin:8px auto 0;padding:5px 12px;font-size:12px;color:#8a5000;text-align:center" role="note">bc1q21 Professional · LOCAL DEVELOPMENT PREVIEW — No real Bitcoin, signing, or funding</div>
 <section id="professional-retail-handoff" hidden style="max-width:1100px;margin:18px auto;padding:18px;background:#eaf4ed;border:2px solid #39744d;border-radius:10px">
 <h2>Continue to Jade Plus</h2><p id="professional-retail-handoff-status" role="status"></p>
 <p>Development preview only: the Retail schedule is passed to the Jade public-wallet creator below. Signing, funding and broadcast remain disabled.</p></section>
@@ -926,6 +924,19 @@ Download a printable gift card that includes the QR with this recipient link.
   <script type="text/javascript" src="CryptoUtils.js" integrity="sha384-YUYheuy/ab3QloRf3DEbs8/N7qGlHZCJSZLMTb4nLhnnGN0tGiXMhyDYtn4mtryB" crossorigin="anonymous"></script>
   <script type="text/javascript" src="TransactionManager.js" integrity="sha384-RZ4IWbDnKp0h5HGSO+0ZF+WP0B3zyDRdHyfJstx4q/hrI40MxLR6FfOtIyJlKmFz" crossorigin="anonymous"></script>
   <script type="text/javascript" src="PriceManager.js" integrity="sha384-wdAsXEYp19MRmaDxnFZ+EV/8/YeCae70vvV7TUUwTVHp9NVxlz3xY/AJpHi7ncs4" crossorigin="anonymous"></script>
+<script>
+/* Professional LOCAL PREVIEW ONLY: retain Retail calculations with a fixed dummy price.
+   Never use this fixture for production, real gift amounts, or funding. */
+PriceManager.prototype.loadPrice=async function(){
+ this.currentPrice=80000;
+ this.priceAsOf=null;
+ this.priceCached=false;
+ this.priceStale=true;
+ this.priceSource='LOCAL_PREVIEW_FIXED_PRICE_NOT_LIVE';
+ this.loadingPrice=false;
+ return {success:true,price:80000,stale:true};
+};
+</script>
   <script type="text/javascript" src="BtcBackendClient.js" integrity="sha384-VIWHhR63/7H1B5Mmqv15R8UPb8kBHtsuQAjXyE8EhQoiuqNs1TKmgYxkz0XqHKli" crossorigin="anonymous"></script>
   <script type="text/javascript" src="SchedulePlanner.js" integrity="sha384-sgmJgkw1CYjWeQpy3olepqjpaZPk7OQS/5B3cxDZW+grfGJ16jjj/LWk83rVTqKI" crossorigin="anonymous"></script>
   <script type="text/javascript" src="NavigationManager.js" integrity="sha384-ZMZjkZXyA3oJ3ceZlbExL+lrc7El/3c5xh0O7tFRlbDvNDFHZfNz8FZJkk4n+6HY" crossorigin="anonymous"></script>
@@ -1005,7 +1016,7 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
 <script src="alpine-csp-adapter.js" integrity="sha384-g80uvNzwbOLdPrXjhlPGYR0r6GUMDaUXHWRX8YmxpuYxamN1rzCaJsmSdJTaIJuS" crossorigin="anonymous" defer></script>
 <script src="static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
 <script>
-(function(){try{const data=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');if(!data||!data.business)return;document.getElementById('professional-practice-name').textContent=data.business+' · '+data.practice;document.getElementById('professional-practice-contact').textContent=[data.contact,data.address,data.email,data.phone].filter(Boolean).join(' · ');if(data.logoData&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(data.logoData)){const img=document.getElementById('professional-logo-preview');img.src=data.logoData;img.hidden=false;const wizardLogo=document.getElementById('professional-wizard-brand-logo');wizardLogo.src=data.logoData;wizardLogo.alt=data.business+' logo';}}catch(e){}})();
+(function(){try{const data=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');if(!data||!data.business)return;if(data.logoData&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(data.logoData)){const wizardLogo=document.getElementById('professional-wizard-brand-logo');wizardLogo.src=data.logoData;wizardLogo.alt=data.business+' logo';}}catch(e){}})();
 </script>
 <script>
 (function(){
@@ -1076,7 +1087,7 @@ planFile.addEventListener('change',async()=>{
   planStatus.textContent='Unfunded draft delivered to the recipient panel for its own validation.';
  }
  recipient.addEventListener('load',handoffDraft);
- document.getElementById('professional-start-creator').addEventListener('click',()=>{document.querySelector('main[x-data="giftWizard"]').scrollIntoView({behavior:'smooth',block:'start'});});ct.addEventListener('click',()=>select(false));rt.addEventListener('click',()=>select(true));select(false);
+ct.addEventListener('click',()=>select(false));rt.addEventListener('click',()=>select(true));select(false);
 })();
 </script>
 </body>  
