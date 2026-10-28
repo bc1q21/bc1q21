@@ -970,6 +970,7 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
   const receiver=frame?.contentWindow?.bc1q21ProfessionalAcceptRetailPlan;
   if(typeof receiver!=='function')throw Error('Jade creator panel is not ready. Reload the isolated Professional preview.');
   receiver(plan);
+  document.getElementById('professional-creator-tab').click();
   const jadeSection=document.getElementById('professional-jade-workflow');
   jadeSection.hidden=false;
   jadeSection.scrollIntoView({behavior:'smooth',block:'start'});
