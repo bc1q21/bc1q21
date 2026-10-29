@@ -1,6 +1,6 @@
 import unittest
 from trusted_core_funding import (
-    verify_funding_with_core, make_local_core_rpc, FundingVerificationError
+    verify_funding_with_core, make_local_core_rpc, inspect_professional_funding_request, FundingVerificationError
 )
 TXID = "ab" * 32
 SCRIPT = "0014" + "11" * 20
@@ -61,6 +61,26 @@ class TrustedFundingTests(unittest.TestCase):
             with self.subTest(chain=chain):
                 with self.assertRaises(FundingVerificationError):
                     verify_funding_with_core(INTENT, mock_rpc(chain=chain))
+
+    def test_workspace_inspection_never_authorizes_signing(self):
+        result = inspect_professional_funding_request({"intent": INTENT}, mock_rpc())
+        self.assertTrue(result["fundingOutpointsVerified"])
+        self.assertTrue(result["coreNetworkVerified"])
+        self.assertFalse(result["walletOriginAuthenticated"])
+        self.assertFalse(result["signingAuthorized"])
+        self.assertFalse(result["canRequestPayment"])
+        self.assertFalse(result["canSign"])
+        self.assertFalse(result["canBroadcast"])
+
+    def test_workspace_rejects_caller_supplied_rpc_or_approval(self):
+        for extra in ({"chainVerified": True}, {"rpcSnapshot": RESPONSE},
+                      {"rpcPassword": "test"}, {"signingAuthorized": True}):
+            with self.subTest(extra=extra):
+                with self.assertRaises(FundingVerificationError):
+                    inspect_professional_funding_request({"intent": INTENT, **extra}, mock_rpc())
+        with self.assertRaises(FundingVerificationError):
+            inspect_professional_funding_request({"intent": INTENT},
+                                                  mock_rpc(chain={**CHAIN, "chain": "main"}))
 
     def test_no_remote_rpc_and_only_read_only_methods(self):
         with self.assertRaises(FundingVerificationError):
