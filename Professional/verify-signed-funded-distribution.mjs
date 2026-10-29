@@ -80,3 +80,37 @@ export function verifySignedFundedDistributionPsbt(unsigned, signedBase64) {
    transactionIntentBound:true,signatureCryptographicallyVerified:true,
    signed:true,broadcast:false});
 }
+
+// Finalize only after the exact unsigned transaction and every Jade signature
+// have been independently verified. This produces raw regtest transaction bytes
+// for local inspection; it never sends them to a node or authorizes broadcast.
+export function finalizeVerifiedCreatorRegtestTransaction(unsigned,signedBase64){
+ const verified=verifySignedFundedDistributionPsbt(unsigned,signedBase64);
+ if(verified.signatureCryptographicallyVerified!==true||
+    verified.transactionIntentBound!==true||verified.broadcast!==false)
+   fail('Every Jade signature must pass verification before finalization');
+ const psbt=decode(signedBase64);
+ try{
+  psbt.finalizeAllInputs();
+ }catch{fail('Cannot finalize all signed funding inputs')}
+ let transaction;
+ try{transaction=psbt.extractTransaction(true)}
+ catch{fail('Cannot extract finalized regtest transaction')}
+ const raw=transaction.toBuffer();
+ const txid=transaction.getId();
+ if(raw.length<60||raw.length>100000||!/^[a-f0-9]{64}$/.test(txid))
+   fail('Invalid finalized Bitcoin transaction');
+ if(transaction.ins.length!==unsigned.fundingInputCount||
+    transaction.outs.length!==unsigned.totalOutputCount)
+   fail('Finalized transaction dimensions changed');
+ return Object.freeze({
+  format:'bc1q21-professional-finalized-creator-regtest-v1',
+  network:'regtest',txid,rawTransactionHex:raw.toString('hex'),
+  approvedPsbtSha256:verified.approvedPsbtSha256,
+  inputSignaturesVerified:verified.inputSignaturesVerified,
+  signatureCryptographicallyVerified:true,
+  transactionIntentBound:true,finalized:true,
+  signingAuthorized:false,broadcast:false,canBroadcast:false,
+  nextStep:'INDEPENDENT_CORE_MEMPOOL_AND_AUTHORIZATION_CHECKS_REQUIRED'
+ });
+}
