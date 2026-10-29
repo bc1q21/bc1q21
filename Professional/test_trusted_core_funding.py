@@ -11,15 +11,19 @@ INTENT = {
                 "scriptPubKeyHex": SCRIPT}]
 }
 RESPONSE = {"value": 0.001, "confirmations": 3, "scriptPubKey": {"hex": SCRIPT}}
+CHAIN = {"chain": "regtest", "initialblockdownload": False, "blocks": 101, "headers": 101}
+def mock_rpc(response=RESPONSE, chain=CHAIN):
+    return lambda method, params: chain if method == "getblockchaininfo" else response
 
 class TrustedFundingTests(unittest.TestCase):
     def test_matches_only_server_rpc_and_never_authorizes_signing(self):
         called = []
         def rpc(method, params):
             called.append((method, params))
-            return RESPONSE
+            return CHAIN if method == "getblockchaininfo" else RESPONSE
         result = verify_funding_with_core(INTENT, rpc)
-        self.assertEqual(called, [("gettxout", [TXID, 0, True])])
+        self.assertEqual(called, [("getblockchaininfo", []), ("gettxout", [TXID, 0, True])])
+        self.assertTrue(result["coreNetworkVerified"])
         self.assertTrue(result["chainSnapshotMatched"])
         self.assertFalse(result["canSign"])
         self.assertFalse(result["chainVerified"])
@@ -35,7 +39,7 @@ class TrustedFundingTests(unittest.TestCase):
         for response in bad:
             with self.subTest(response=response):
                 with self.assertRaises(FundingVerificationError):
-                    verify_funding_with_core(INTENT, lambda *_: response)
+                    verify_funding_with_core(INTENT, mock_rpc(response))
         with self.assertRaises(RuntimeError):
             verify_funding_with_core(INTENT, lambda *_: (_ for _ in ()).throw(RuntimeError("offline")))
 
@@ -43,7 +47,20 @@ class TrustedFundingTests(unittest.TestCase):
         with self.assertRaises(FundingVerificationError):
             verify_funding_with_core(INTENT, None)
         with self.assertRaises(FundingVerificationError):
-            verify_funding_with_core({**INTENT, "inputs": INTENT["inputs"] * 2}, lambda *_: RESPONSE)
+            verify_funding_with_core({**INTENT, "inputs": INTENT["inputs"] * 2}, mock_rpc())
+
+    def test_rejects_wrong_or_unsynced_chain(self):
+        invalid = [
+            {**CHAIN, "chain": "main"},
+            {**CHAIN, "chain": "test"},
+            {**CHAIN, "initialblockdownload": True},
+            {**CHAIN, "blocks": 100, "headers": 101},
+            None,
+        ]
+        for chain in invalid:
+            with self.subTest(chain=chain):
+                with self.assertRaises(FundingVerificationError):
+                    verify_funding_with_core(INTENT, mock_rpc(chain=chain))
 
     def test_no_remote_rpc_and_only_read_only_methods(self):
         with self.assertRaises(FundingVerificationError):
