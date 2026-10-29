@@ -2,7 +2,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none';script-src 'self' 'unsafe-inline';style-src 'unsafe-inline';img-src 'self' data:;connect-src 'none';base-uri 'none';form-action 'none'">
 <title>bc1q21 Professional — Jade Plus</title><style>
 :root{font:16px system-ui,Segoe UI,sans-serif;color:#172c43;background:#f3f6fa}body{margin:0}main{max-width:880px;margin:28px auto;padding:20px}header,section{background:white;border:1px solid #d9e2ed;border-radius:10px;padding:24px;margin-bottom:18px}header{display:flex;gap:20px;align-items:center}header img{width:110px}h1{margin:0;color:#09518b}.bar{background:#09518b;color:white;padding:15px;border-radius:8px;margin:18px 0}.warning{background:#fff1da;border-left:4px solid #bc7b17;padding:14px}.status{background:#eaf1f8;padding:14px;border-radius:6px}button,a.button{font:inherit;background:#09518b;color:white;border:0;border-radius:7px;padding:12px 18px;margin:8px 8px 8px 0;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#dce9f5!important;color:#164568!important}#qr{display:block;max-width:100%;width:360px;height:auto;margin:24px auto}#camera{display:block;max-width:100%;width:440px;background:#152536;margin:16px auto;min-height:240px}code{overflow-wrap:anywhere}
-</style></head><body><main><header><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21"><div><h1>Professional Gifting Wizard</h1><p>Jade Plus signing</p></div></header><div class="bar"><strong>Step 4 · Jade Plus</strong> &nbsp; Planning → Add Funds → Jade Plus → Finish</div>
+</style></head><body><main><header><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21"><div><h1>Professional Gifting Wizard</h1><p class="practice-identity" hidden style="margin:8px 0 0;font-weight:650;color:#235c87"></p><p>Jade Plus signing</p></div></header><div class="bar"><strong>Step 4 · Jade Plus</strong> &nbsp; Planning → Add Funds → Jade Plus → Finish</div>
 <section><p class="warning"><strong>Development preview — do not sign or fund.</strong> This page is not connected to authenticated Bitcoin Core funding or a verified wallet identity. No real transactions or broadcasts are enabled.</p>
 <h2>Sign your gift with Jade Plus</h2><p id="gift-summary" class="status" role="status">Checking the approved gift schedule…</p>
 <div id="schedule-panel" hidden><h3>Review the gift schedule</h3><p>These are the releases you selected. Check every date and amount before approving a transaction on Jade Plus.</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:10px">Release</th><th style="text-align:left;padding:10px">Unlock date</th><th style="text-align:right;padding:10px">Amount (sats)</th></tr></thead><tbody id="schedule-rows"></tbody></table></div></div><p>When your Bitcoin deposit has been verified, the exact gift transaction will appear here as an animated QR code. Review it on Jade Plus, sign offline, and scan the signed QR back into this page.</p>
@@ -17,7 +17,9 @@
 // server-side chain and wallet provenance verification. No file import, demo
 // PSBT, or browser-provided flags can unlock this production-facing screen.
 'use strict';
-let timer=null;
+let timer=null;const professionalIdentity=(()=>{try{const profile=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');return typeof profile?.business==='string'&&profile.business.trim().length>0&&profile.business.length<=100?profile.business.trim():null;}catch{return null}})();
+if(professionalIdentity){for(const element of document.querySelectorAll('.practice-identity')){element.textContent=professionalIdentity;element.hidden=false;}}
+
 const summary=document.getElementById('gift-summary');
 let reviewedPlan=null;
 try{
