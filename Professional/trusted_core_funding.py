@@ -39,6 +39,13 @@ def verify_funding_with_core(intent, rpc_call, minimum_confirmations=1):
     inputs = intent.get("inputs")
     if not isinstance(inputs, list) or not inputs or len(inputs) > 100:
         raise FundingVerificationError("Invalid funding inputs")
+    chain_info = rpc_call("getblockchaininfo", [])
+    if (not isinstance(chain_info, dict) or chain_info.get("chain") != "regtest" or
+            chain_info.get("initialblockdownload") is not False or
+            type(chain_info.get("blocks")) is not int or
+            type(chain_info.get("headers")) is not int or
+            chain_info["blocks"] != chain_info["headers"]):
+        raise FundingVerificationError("Bitcoin Core must be synced regtest")
     verified, seen = [], set()
     for item in inputs:
         if not isinstance(item, dict):
@@ -61,7 +68,10 @@ def verify_funding_with_core(intent, rpc_call, minimum_confirmations=1):
         script = response.get("scriptPubKey")
         if not isinstance(script, dict) or not isinstance(script.get("hex"), str):
             raise FundingVerificationError("Invalid Core funding script")
-        if script["hex"].lower() != item.get("scriptPubKeyHex", "").lower() or _sats(response.get("value")) != item.get("valueSats"):
+        expected_script = item.get("scriptPubKeyHex")
+        if (not isinstance(expected_script, str) or
+                script["hex"].lower() != expected_script.lower() or
+                _sats(response.get("value")) != item.get("valueSats")):
             raise FundingVerificationError("Funding script or value mismatch")
         verified.append({"txid": txid.lower(), "vout": vout, "valueSats": item["valueSats"]})
     return {
@@ -70,6 +80,8 @@ def verify_funding_with_core(intent, rpc_call, minimum_confirmations=1):
         "inputsChecked": verified,
         "authenticatedRpcRequired": True,
         "chainSnapshotMatched": True,
+        "coreNetworkVerified": True,
+        "coreSynchronizedAtInspection": True,
         "fundingOutpointsVerified": True,
         "giftSpecificVerified": False,
         "chainVerified": False,
@@ -87,8 +99,10 @@ def make_local_core_rpc(*, rpc_url, rpc_user, rpc_password, timeout_seconds=8):
         raise FundingVerificationError("Server-side Core credentials required")
     token = base64.b64encode(f"{rpc_user}:{rpc_password}".encode()).decode()
     def call(method, params):
-        if method != "gettxout" or not isinstance(params, list) or len(params) != 3 or params[2] is not True:
-            raise FundingVerificationError("Read-only gettxout RPC only")
+        if not ((method == "getblockchaininfo" and params == []) or
+                (method == "gettxout" and isinstance(params, list) and
+                 len(params) == 3 and params[2] is True)):
+            raise FundingVerificationError("Only read-only chain and UTXO RPC allowed")
         payload = json.dumps({"jsonrpc": "1.0", "id": "professional-read-only", "method": method, "params": params}).encode()
         request = urllib.request.Request(rpc_url, data=payload, headers={
             "Content-Type": "application/json", "Authorization": f"Basic {token}"})
