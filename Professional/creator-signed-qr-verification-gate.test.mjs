@@ -29,7 +29,15 @@ test('decoded Jade QR payload is cryptographically verified and cannot broadcast
  assert.equal(result.giftSpecificVerified,true);
  assert.equal(result.signatureCryptographicallyVerified,true);
  assert.equal(result.canBroadcast,false);
- assert.equal(result.diagnosticOnly,false);
+ assert.equal(result.diagnosticOnly,true);
+ assert.equal(result.finalizedTransaction,true);
+ assert.match(result.finalizedTxid,/^[a-f0-9]{64}$/);
+ assert.match(result.finalizedRawTransactionHex,/^[a-f0-9]+$/);
+ const tx=bitcoin.Transaction.fromHex(result.finalizedRawTransactionHex);
+ assert.equal(tx.getId(),result.finalizedTxid);
+ assert.equal(tx.ins.length,1);
+ assert.equal(tx.outs.length,2);
+ assert.ok(tx.ins[0].witness.length>0);
 });
 test('rejects unsigned, modified, malformed, and non-PSBT QR payloads',()=>{
  const {unsigned,signed}=sample();
