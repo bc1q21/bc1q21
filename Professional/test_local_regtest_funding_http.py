@@ -6,7 +6,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from local_regtest_funding_http import (
-    ProfessionalFundingHandler, handle_funding_inspection, observe_regtest_outpoint, ALLOWED_ORIGIN
+    ProfessionalFundingHandler, handle_funding_inspection, observe_regtest_outpoint, scan_regtest_funding_address, ALLOWED_ORIGIN
 )
 from test_trusted_core_funding import INTENT, mock_rpc, TXID, SCRIPT, CHAIN, RESPONSE
 
@@ -32,6 +32,26 @@ class ProfessionalLocalFundingHttpTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 observe_regtest_outpoint(
                     {"txid": TXID, "vout": 0, "scriptPubKeyHex": SCRIPT}, bad_rpc)
+
+    def test_auto_scan_checks_core_outpoints_and_never_grants_signing(self):
+        address = "bcrt1q" + "q" * 35
+        base = mock_rpc()
+        def rpc(method, params):
+            if method == "scantxoutset":
+                self.assertEqual(params, ["start", [f"addr({address})"]])
+                return {"success": True, "unspents": [
+                    {"txid": TXID, "vout": 0, "scriptPubKey": SCRIPT, "amount": 0.001}
+                ]}
+            return base(method, params)
+        result = scan_regtest_funding_address(
+            {"address": address, "scriptPubKeyHex": SCRIPT}, rpc)
+        self.assertEqual(result["totalConfirmedSats"], 100000)
+        self.assertEqual(len(result["confirmedUtxos"]), 1)
+        self.assertFalse(result["canSign"])
+        self.assertFalse(result["canBroadcast"])
+        with self.assertRaises(ValueError):
+            scan_regtest_funding_address(
+                {"address": address, "scriptPubKeyHex": SCRIPT, "signingAuthorized": True}, rpc)
 
     def test_http_rejects_wrong_origin_and_untrusted_approval(self):
         class Handler(ProfessionalFundingHandler):
