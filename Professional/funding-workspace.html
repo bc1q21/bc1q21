@@ -20,6 +20,11 @@
 </div>
 </div>
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
+<h3>Automatic regtest funding check (development only)</h3>
+<p>After importing the disposable Jade public wallet, check confirmed funding outputs without entering a transaction ID. No real deposits are permitted.</p>
+<button type="button" id="scan-funding" disabled>Check funding automatically</button>
+<p id="scan-status" class="status" role="status">Import the public wallet first. Signing remains locked.</p>
+<details><summary>Manual regtest outpoint lookup (developer fallback)</summary>
 <h3>Check a regtest deposit (development only)</h3>
 <p>Enter a disposable regtest transaction ID and output number. The app checks Bitcoin Core directly; you do not need to paste a transaction JSON document. Do not send real Bitcoin.</p>
 <label for="funding-txid">Regtest transaction ID</label>
@@ -27,7 +32,7 @@
 <label for="funding-vout" style="display:block;margin:12px 0 6px">Output number</label>
 <input id="funding-vout" type="number" min="0" max="4294967295" step="1" value="0" style="width:120px;padding:12px">
 <button type="button" id="inspect-funding" disabled>Check regtest funding</button>
-<p id="inspection-status" class="status" role="status">First import a disposable Jade public wallet. Signing remains locked.</p>
+<p id="inspection-status" class="status" role="status">First import a disposable Jade public wallet. Signing remains locked.</p></details>
 </div>
 <p><button disabled>Show funding QR</button><button disabled>Continue to Jade Plus →</button></p>
 <p><a class="button secondary" href="./jade-signing-workspace.html">Preview Jade Plus signing page (disabled) →</a></p>
@@ -39,6 +44,36 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
 (function(){
  const status=document.getElementById('status');
  let publicFundingScript=null;
+ let publicFundingAddress=null;
+ const scanButton=document.getElementById('scan-funding');
+ scanButton.addEventListener('click',async()=>{
+  const output=document.getElementById('scan-status');
+  scanButton.disabled=true;
+  output.textContent='Checking confirmed regtest outputs with Bitcoin Core…';
+  try{
+   if(!publicFundingAddress||!publicFundingScript)throw Error('Public wallet required');
+   const response=await fetch('http://127.0.0.1:18761/professional/regtest/scan-funding',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({address:publicFundingAddress,scriptPubKeyHex:publicFundingScript}),
+    cache:'no-store',credentials:'omit'
+   });
+   if(!response.ok)throw Error('Local regtest Core scan unavailable');
+   const result=await response.json();
+   if(result.format!=='bc1q21-professional-regtest-auto-funding-observation-v1'||
+      result.network!=='regtest'||!Array.isArray(result.confirmedUtxos)||
+      !Number.isSafeInteger(result.totalConfirmedSats)||result.totalConfirmedSats<0||
+      result.walletOriginAuthenticated!==false||result.canSign!==false||
+      result.canBroadcast!==false||result.signingAuthorized!==false)
+    throw Error('Invalid Core scan response');
+   output.textContent=result.confirmedUtxos.length+' confirmed regtest output(s), '+
+    result.totalConfirmedSats.toLocaleString()+
+    ' sats observed. Jade wallet identity and signing approval remain unverified.';
+  }catch(error){
+   output.textContent='Automatic funding check unavailable: '+String(error.message||error)+
+    '. Signing remains locked.';
+  }finally{scanButton.disabled=!publicFundingAddress;}
+ });
+
  const inspectButton=document.getElementById('inspect-funding');
  inspectButton.addEventListener('click',async()=>{
   const output=document.getElementById('inspection-status');
@@ -76,7 +111,7 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  document.getElementById('derive-funding-key').addEventListener('click',()=>{
   const status=document.getElementById('funding-key-status');
   document.getElementById('funding-key-result').hidden=true;
-  publicFundingScript=null;inspectButton.disabled=true;
+  publicFundingScript=null;publicFundingAddress=null;inspectButton.disabled=true;scanButton.disabled=true;
   try{
    const derive=globalThis.bc1q21ProfessionalPreviewFundingPublicKey;
    if(typeof derive!=='function')throw Error('Professional browser verifier is unavailable');
@@ -101,7 +136,8 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
     table.appendChild(row);
    }
    if(typeof result.scriptPubKeyHex!=='string'||!/^[0-9a-f]+$/i.test(result.scriptPubKeyHex))throw Error('Invalid funding script');
-   publicFundingScript=result.scriptPubKeyHex.toLowerCase();inspectButton.disabled=false;
+   publicFundingScript=result.scriptPubKeyHex.toLowerCase();
+   publicFundingAddress=result.address;inspectButton.disabled=false;scanButton.disabled=false;
    document.getElementById('inspection-status').textContent='Public funding script prepared. Enter a disposable regtest transaction ID to check Bitcoin Core.';
    document.getElementById('funding-test-address').textContent=result.address;
    document.getElementById('funding-key-result').hidden=false;
