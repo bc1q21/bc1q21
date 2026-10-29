@@ -9,7 +9,8 @@
 <p id="status" class="status" role="status">Waiting for a trusted, gift-specific unsigned transaction. Jade signing is locked.</p>
 <p id="diagnostic-label" class="warning" hidden><strong>Disposable regtest developer preview only.</strong> This transaction came from browser session storage, not an authenticated Jade wallet or trusted signing issuer. Never use real Bitcoin. No signing authorization or broadcast is granted.</p><div id="qr-panel" hidden><img id="qr" alt="Animated unsigned transaction QR"><p id="frame-count"></p><button type="button" id="pause">Pause QR</button></div>
 <h3>Scan signed QR from Jade Plus</h3><video id="camera" playsinline muted></video><canvas id="camera-canvas" hidden></canvas><button type="button" id="scan" disabled>Scan signed Jade QR</button><button type="button" id="stop" disabled>Stop camera</button>
-<p id="verification" class="status" role="status">No signed transaction verified.</p><a class="button secondary" href="./finish-workspace.html">Preview Finish page (gift not completed) →</a><button disabled>Finish gift →</button><a class="button secondary" href="./funding-workspace.html">← Back to Add Funds</a></section>
+<p id="verification" class="status" role="status">No signed transaction verified.</p>
+<div id="verified-next" hidden><p class="status">The returned Jade QR has passed cryptographic checks for this gift. This does not mean the transaction has been broadcast.</p><a class="button" href="./finish-workspace.html">View verified transaction summary →</a></div><a class="button secondary" href="./finish-workspace.html">Preview Finish page (gift not completed) →</a><button disabled>Finish gift →</button><a class="button secondary" href="./funding-workspace.html">← Back to Add Funds</a></section>
 </main><script src="./browser-integration/professional-verifier.bundle.js"></script>
 <script>
 // The trusted funding adapter will deliver a frozen unsigned PSBT only after
@@ -53,6 +54,8 @@ try{
 }catch(error){summary.textContent='Return to gift planning: '+error.message;}
 
 let approvedUnsigned=null;
+const verifiedSummaryKey='bc1q21-professional-verified-creator-preview';
+sessionStorage.removeItem(verifiedSummaryKey);
 let cameraController=null;
 const scanStatus=document.getElementById('verification');
 const attachCamera=window.bc1q21ProfessionalAttachCreatorCamera;
@@ -68,7 +71,24 @@ if(typeof attachCamera==='function'){
    if(verified.approvedPsbtSha256!==approvedUnsigned?.psbtSha256){
     scanStatus.textContent='Signed QR did not match the approved gift';return;
    }
-   scanStatus.textContent='Jade signature cryptographically verified for this gift. Broadcasting is disabled in the development preview.';
+   if(verified.signatureCryptographicallyVerified!==true||
+      verified.transactionIntentBound!==true||
+      verified.finalizedTransaction!==true||
+      verified.canBroadcast!==false||
+      typeof verified.finalizedTxid!=='string'||
+      !/^[0-9a-f]{64}$/.test(verified.finalizedTxid)){
+    scanStatus.textContent='Returned Jade transaction did not pass completion checks.';
+    return;
+   }
+   sessionStorage.setItem(verifiedSummaryKey,JSON.stringify({
+    format:'bc1q21-professional-verified-creator-preview-v1',
+    network:'regtest',diagnosticOnly:true,transactionVerified:true,
+    broadcast:false,canBroadcast:false,
+    psbtSha256:verified.approvedPsbtSha256,txid:verified.finalizedTxid,
+    releaseCount:reviewedPlan?.releases.length,totalSats:reviewedPlan?.totalSats
+   }));
+   document.getElementById('verified-next').hidden=false;
+   scanStatus.textContent='Jade signature verified for this gift. Transaction prepared, not broadcast.';
   }
  });
 }else{scanStatus.textContent='Jade camera verifier unavailable. Scanning disabled.';}
@@ -121,6 +141,8 @@ const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
 // Such booleans are forgeable and must never enable a signing QR.
 window.bc1q21ProfessionalShowTrustedCreatorPsbt=async function(){
  approvedUnsigned=null;
+ sessionStorage.removeItem(verifiedSummaryKey);
+ document.getElementById('verified-next').hidden=true;
  cameraController?.invalidate();
  if(timer){clearInterval(timer);timer=null;}
  document.getElementById('qr-panel').hidden=true;
