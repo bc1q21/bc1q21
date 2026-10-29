@@ -997,7 +997,7 @@ import {createProfessionalGiftEditGate} from '../Professional/gift-edit-gate.mjs
 const professionalEditGate=createProfessionalGiftEditGate();
 document.getElementById('professional-open-funding').addEventListener('click',()=>{
  if(!sessionStorage.getItem('bc1q21-professional-approved-plan-preview'))return;
- window.location.assign('../funding-workspace.html');
+ window.location.assign('../Professional/funding-workspace.html');
 });
 document.getElementById('professional-edit-gift').addEventListener('click',()=>{
  const status=document.getElementById('professional-edit-gift-status');
@@ -1017,17 +1017,9 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
  try {
   const plan=snapshotRetailGiftPlan(event.detail.wizard);
   sessionStorage.setItem('bc1q21-professional-approved-plan-preview',JSON.stringify(plan));
-  const fundingPanel=document.getElementById('professional-funding-handoff');
-  document.getElementById('professional-funding-summary').textContent=
-    plan.releases.length+' planned release(s), '+plan.totalSats.toLocaleString()+' sats total.';
-  fundingPanel.hidden=false;
-  status.textContent='Validated '+plan.releases.length+' Retail releases totaling '+plan.totalSats+' sats.';
-  // The approved Retail schedule now goes directly to the customer-facing
-  // Add Funds handoff, not the old diagnostic Jade iframe.
-  const jadeSection=document.getElementById('professional-jade-workflow');
-  jadeSection.hidden=true;
-  fundingPanel.scrollIntoView({behavior:'smooth',block:'start'});
-  status.textContent+=' Continue to Add Funds. No deposit or signing enabled.';
+  // The customer proceeds directly to the payment page; never display the
+  // temporary developer handoff or the duplicated Retail planner beneath it.
+  window.location.assign('../Professional/funding-workspace.html');
 
  }catch(error){
   status.textContent='Cannot continue: '+String(error.message||error);
@@ -1042,7 +1034,31 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
 <script src="alpine-csp-adapter.js" integrity="sha384-g80uvNzwbOLdPrXjhlPGYR0r6GUMDaUXHWRX8YmxpuYxamN1rzCaJsmSdJTaIJuS" crossorigin="anonymous" defer></script>
 <script src="static/alpine-csp-3.15.12.min.js" integrity="sha384-MKLWq9B+VC0W3U8kDIBEsSu8uCnQ1B0UQpRaB+F7uR5ocXFbymMUKuLRntu5LLdu" crossorigin="anonymous" defer></script>
 <script>
-(function(){try{const data=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');if(!data||!data.business)return;if(data.logoData&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(data.logoData)){const wizardLogo=document.getElementById('professional-wizard-brand-logo');wizardLogo.src=data.logoData;wizardLogo.alt=data.business+' logo';}}catch(e){}})();
+(function(){
+ try{
+  const p=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');
+  if(!p||typeof p.business!=='string'||!p.business.trim())return;
+  const name=p.business.trim().slice(0,100);
+  const logo=document.getElementById('professional-wizard-brand-logo');
+  const brand=logo?.closest('header');
+  if(!brand)return;
+  if(typeof p.logoData==='string'&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(p.logoData)){
+   logo.src=p.logoData;logo.alt=name+' logo';
+  }else{logo.remove();}
+  const info=document.createElement('div');
+  info.className='professional-brand-info';
+  const title=document.createElement('strong');title.textContent=name;info.append(title);
+  for(const key of ['contact','address','email','phone']){
+   if(typeof p[key]==='string'&&p[key].trim()){
+    const line=document.createElement('div');line.textContent=p[key].trim().slice(0,200);info.append(line);
+   }
+  }
+  brand.prepend(info);
+  const credit=document.createElement('footer');credit.textContent='Powered by bc1q21';
+  credit.style.cssText='text-align:center;color:#64748b;font-size:12px;margin:20px auto';
+  document.body.append(credit);
+ }catch(e){console.warn('Professional branding unavailable',e)}
+})();
 </script>
 <script>
 (function(){
