@@ -2,7 +2,8 @@
 // validated funded distribution intent and Jade-derived PUBLIC signer data.
 // No seed, WIF, signing, wallet communication, or broadcast.
 import bitcoin from 'bitcoinjs-lib';
-import { createHash } from 'node:crypto';
+import {sha256} from '@noble/hashes/sha256';
+import {Buffer} from 'buffer';
 
 const fail = message => { throw Error('Professional unsigned distribution: ' + message); };
 const bytes = hex => Buffer.from(hex, 'hex');
@@ -74,8 +75,8 @@ export function buildUnsignedFundedDistributionPsbt(intent, signer) {
   return Object.freeze({
     format:'bc1q21-professional-funded-distribution-unsigned-psbt-v1',
     network:'regtest', unsignedPsbtBase64:raw.toString('base64'),
-    psbtSha256:createHash('sha256').update(raw).digest('hex'),
-    unsignedTxSha256:createHash('sha256').update(unsignedTx).digest('hex'),
+    psbtSha256:Buffer.from(sha256(raw)).toString('hex'),
+    unsignedTxSha256:Buffer.from(sha256(unsignedTx)).toString('hex'),
     fundingInputCount:intent.inputs.length, giftOutputCount:intent.gifts.length,
     totalOutputCount:outputs.length, networkFeeSats:intent.networkFeeSats,
     nextEncoder:'ur:crypto-psbt', signed:false, broadcast:false,
