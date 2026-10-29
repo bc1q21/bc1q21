@@ -69,6 +69,53 @@ def observe_regtest_outpoint(request, rpc_call):
     }
 
 
+def scan_regtest_funding_address(request, rpc_call):
+    """Regtest-only automatic confirmed UTXO discovery; no wallet or signing grant.
+
+    Uses scantxoutset on the *local disposable regtest chain*; Bitcoin Core's
+    confirmed UTXO set is not a mempool/deposit-notification service.
+    """
+    if not isinstance(request, dict) or set(request) != {"address", "scriptPubKeyHex"}:
+        raise FundingVerificationError("Public address and script required")
+    address, script = request["address"], request["scriptPubKeyHex"]
+    if (not isinstance(address, str) or not address.startswith("bcrt1") or
+            not 12 <= len(address) <= 90 or
+            not isinstance(script, str) or not 4 <= len(script) <= 200 or
+            len(script) % 2 or any(c not in "0123456789abcdefABCDEF" for c in script)):
+        raise FundingVerificationError("Invalid regtest address or funding script")
+    chain = rpc_call("getblockchaininfo", [])
+    if (not isinstance(chain, dict) or chain.get("chain") != "regtest" or
+            chain.get("initialblockdownload") is not False or
+            type(chain.get("blocks")) is not int or
+            type(chain.get("headers")) is not int or
+            chain["blocks"] != chain["headers"]):
+        raise FundingVerificationError("Synchronized regtest Core required")
+    scanned = rpc_call("scantxoutset", ["start", [f"addr({address})"]])
+    if not isinstance(scanned, dict) or scanned.get("success") is not True:
+        raise FundingVerificationError("Regtest UTXO scan failed")
+    entries = scanned.get("unspents")
+    if not isinstance(entries, list) or len(entries) > 20:
+        raise FundingVerificationError("Unexpected regtest UTXO scan size")
+    confirmed = []
+    for item in entries:
+        if not isinstance(item, dict) or item.get("scriptPubKey", "").lower() != script.lower():
+            raise FundingVerificationError("Funding script mismatch")
+        verified = observe_regtest_outpoint({
+            "txid": item.get("txid"), "vout": item.get("vout"),
+            "scriptPubKeyHex": script
+        }, rpc_call)
+        if _sats(item.get("amount")) != verified["valueSats"]:
+            raise FundingVerificationError("Core UTXO scan value mismatch")
+        confirmed.append(verified)
+    return {
+        "format": "bc1q21-professional-regtest-auto-funding-observation-v1",
+        "network": "regtest", "confirmedUtxos": confirmed,
+        "totalConfirmedSats": sum(item["valueSats"] for item in confirmed),
+        "walletOriginAuthenticated": False, "signingAuthorized": False,
+        "canRequestPayment": False, "canSign": False, "canBroadcast": False
+    }
+
+
 class ProfessionalFundingHandler(BaseHTTPRequestHandler):
     rpc_call = None
 
@@ -85,7 +132,7 @@ class ProfessionalFundingHandler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_POST(self):
-        if self.path not in ("/professional/regtest/inspect-funding", "/professional/regtest/observe-utxo"):
+        if self.path not in ("/professional/regtest/inspect-funding", "/professional/regtest/observe-utxo", "/professional/regtest/scan-funding"):
             self._reply(404, {"error": "Unknown route"})
             return
         if (self.headers.get("Origin") != ALLOWED_ORIGIN or
@@ -97,7 +144,9 @@ class ProfessionalFundingHandler(BaseHTTPRequestHandler):
             if not 0 < length <= MAX_BODY:
                 raise FundingVerificationError("Invalid request size")
             payload = json.loads(self.rfile.read(length))
-            result = (observe_regtest_outpoint(payload, self.rpc_call)
+            result = (scan_regtest_funding_address(payload, self.rpc_call)
+                      if self.path == "/professional/regtest/scan-funding"
+                      else observe_regtest_outpoint(payload, self.rpc_call)
                       if self.path == "/professional/regtest/observe-utxo"
                       else handle_funding_inspection(payload, self.rpc_call))
         except (ValueError, TypeError, FundingVerificationError, json.JSONDecodeError):
