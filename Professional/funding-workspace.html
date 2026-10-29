@@ -14,7 +14,10 @@
 <input id="funding-xpub" type="text" autocomplete="off" spellcheck="false" placeholder="xpub…" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px">
 <button type="button" id="derive-funding-key">Preview public funding key</button>
 <p id="funding-key-status" class="status" role="status">No Jade public wallet imported.</p>
-<div id="funding-key-result" hidden><p><strong>Derived test address (NOT FOR DEPOSITS):</strong><br><code id="funding-test-address"></code></p><p><strong>Derivation:</strong> <code>m/84'/0'/0'/0/0</code></p><p class="notice">This address is mathematically derived from the supplied xpub, but wallet ownership has not been authenticated. No payment QR or deposit request is issued.</p></div>
+<div id="funding-key-result" hidden><p><strong>Derived test address (NOT FOR DEPOSITS):</strong><br><code id="funding-test-address"></code></p><p><strong>Derivation:</strong> <code>m/84'/0'/0'/0/0</code></p><p class="notice">This address is mathematically derived from the supplied xpub, but wallet ownership has not been authenticated. No payment QR or deposit request is issued.</p>
+<h3>Time-locked gift outputs</h3><p>These recipient addresses and unlock dates are computed from the approved gift schedule and public wallet keys. They are not deposit instructions.</p>
+<div style="overflow-x:auto"><table><thead><tr><th>Unlock date</th><th>Amount</th><th>Recipient output (preview)</th></tr></thead><tbody id="gift-output-preview"></tbody></table></div>
+</div>
 </div>
 <p><button disabled>Show funding QR</button><button disabled>Continue to Jade Plus →</button></p>
 <a class="button secondary" href="./retail-mirror/index.html">← Back to gift planning</a></section></main>
@@ -32,9 +35,27 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    if(typeof derive!=='function')throw Error('Professional browser verifier is unavailable');
    const result=derive({accountXpub:document.getElementById('funding-xpub').value.trim()});
    if(result.paymentAuthorized!==false||result.canSign!==false)throw Error('Unsafe funding preview');
+   const plan=JSON.parse(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')||'null');
+   if(!plan||plan.format!=='bc1q21-professional-retail-plan-preview-v1')
+    throw Error('Reviewed gift plan required');
+   const outputs=globalThis.bc1q21ProfessionalPreviewGiftOutputs({
+     accountXpub:document.getElementById('funding-xpub').value.trim(),releases:plan.releases
+   });
+   if(outputs.canRequestPayment!==false||outputs.canSign!==false||
+      outputs.outputs.length!==plan.releases.length)
+    throw Error('Unsafe gift output preview');
+   const table=document.getElementById('gift-output-preview');
+   table.replaceChildren();
+   for(const output of outputs.outputs){
+    const row=document.createElement('tr');
+    for(const value of [output.date,output.valueSats.toLocaleString()+' sats',output.giftAddress]){
+     const cell=document.createElement('td');cell.textContent=value;row.appendChild(cell);
+    }
+    table.appendChild(row);
+   }
    document.getElementById('funding-test-address').textContent=result.address;
    document.getElementById('funding-key-result').hidden=false;
-   status.textContent='Public funding key derived. No funding or payment request is enabled.';
+   status.textContent='Public funding key and '+outputs.outputs.length+' gift-specific time-locked output(s) derived. No deposit request is enabled.';
   }catch(e){status.textContent='Unable to derive public funding key: '+String(e.message||e);}
  });
 
