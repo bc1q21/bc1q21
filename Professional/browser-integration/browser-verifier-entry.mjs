@@ -216,6 +216,35 @@ globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr=async function({
   signingAuthorized:false,broadcast:false});
 };
 
+// Creator transaction QR transport. Requires a separately constructed funded
+// unsigned PSBT; rendering does NOT authorize the user to sign or broadcast.
+globalThis.bc1q21ProfessionalRenderCreatorUnsignedQr=async function(unsigned){
+ if(unsigned?.format!=='bc1q21-professional-funded-distribution-unsigned-psbt-v1'||
+    unsigned.network!=='regtest'||unsigned.signed!==false||
+    unsigned.broadcast!==false||unsigned.hardwareSignatureVerified!==false||
+    typeof unsigned.unsignedPsbtBase64!=='string'||unsigned.unsignedPsbtBase64.length>150000||
+    !/^[a-f0-9]{64}$/i.test(unsigned.psbtSha256))
+  throw Error('Unsigned Professional regtest creator transaction required');
+ const bytes=Buffer.from(unsigned.unsignedPsbtBase64,'base64');
+ if(bytes.length<10||bytes.length>100000||
+    bytes.subarray(0,5).toString('hex')!=='70736274ff'||
+    Buffer.from(sha256(bytes)).toString('hex')!==unsigned.psbtSha256.toLowerCase())
+  throw Error('Unsigned PSBT bytes or checksum mismatch');
+ const psbt=bitcoin.Psbt.fromBuffer(bytes,{network:bitcoin.networks.regtest});
+ if(psbt.data.inputs.some(input=>input.partialSig?.length||input.finalScriptSig||
+    input.finalScriptWitness||input.tapKeySig))
+  throw Error('PSBT already contains signatures');
+ if(psbt.inputCount!==unsigned.fundingInputCount||
+    psbt.txOutputs.length!==unsigned.totalOutputCount)
+  throw Error('Unsigned transaction dimensions mismatch');
+ const frames=makeCryptoPsbtFrames(bytes);
+ const images=await Promise.all(frames.map(frame=>QRCode.toDataURL(frame,{
+  errorCorrectionLevel:'L',margin:2,width:360
+ })));
+ return Object.freeze({images:Object.freeze(images),frameCount:images.length,
+  approvedPsbtSha256:unsigned.psbtSha256.toLowerCase(),
+  signingAuthorized:false,canBroadcast:false,network:'regtest'});
+};
 // Creator-side gift-specific Jade signed QR controller (isolated regtest).
 // Only an already approved unsigned PSBT may be supplied by the caller.
 // This diagnostic entry does not authenticate a file or approve a broadcast.
