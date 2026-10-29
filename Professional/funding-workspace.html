@@ -24,6 +24,13 @@
 <p>After importing the disposable Jade public wallet, check confirmed funding outputs without entering a transaction ID. No real deposits are permitted.</p>
 <button type="button" id="scan-funding" disabled>Check funding automatically</button>
 <p id="scan-status" class="status" role="status">Import the public wallet first. Signing remains locked.</p>
+<details><summary>Developer: construct unsigned regtest gift transaction (not for signing)</summary>
+<p>Uses the confirmed UTXOs from the latest local Core scan. Requires disposable Jade master fingerprint. The difference between confirmed inputs and the approved gift total is treated as the network fee only for this isolated no-change test; excessive fees are rejected.</p>
+<label for="jade-fingerprint">Disposable Jade master fingerprint (8 hex characters)</label>
+<input id="jade-fingerprint" maxlength="8" autocomplete="off" spellcheck="false" placeholder="a1b2c3d4">
+<button type="button" id="construct-unsigned" disabled>Construct unsigned transaction (locked)</button>
+<p id="unsigned-status" class="status" role="status">No verified funding UTXOs available. Signing remains locked.</p>
+</details>
 <details><summary>Manual regtest outpoint lookup (developer fallback)</summary>
 <h3>Check a regtest deposit (development only)</h3>
 <p>Enter a disposable regtest transaction ID and output number. The app checks Bitcoin Core directly; you do not need to paste a transaction JSON document. Do not send real Bitcoin.</p>
@@ -45,10 +52,14 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  const status=document.getElementById('status');
  let publicFundingScript=null;
  let publicFundingAddress=null;
+ let scannedUtxos=null;
+ const constructButton=document.getElementById("construct-unsigned");
+ const unsignedStatus=document.getElementById("unsigned-status");
  const scanButton=document.getElementById('scan-funding');
  scanButton.addEventListener('click',async()=>{
   const output=document.getElementById('scan-status');
   scanButton.disabled=true;
+  scannedUtxos=null;constructButton.disabled=true;
   output.textContent='Checking confirmed regtest outputs with Bitcoin Core…';
   try{
    if(!publicFundingAddress||!publicFundingScript)throw Error('Public wallet required');
@@ -65,6 +76,28 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
       result.walletOriginAuthenticated!==false||result.canSign!==false||
       result.canBroadcast!==false||result.signingAuthorized!==false)
     throw Error('Invalid Core scan response');
+   if(result.confirmedUtxos.length>0){
+    const outpoints=new Set();
+    let total=0;
+    for(const item of result.confirmedUtxos){
+     if(!/^[a-f0-9]{64}$/.test(item.txid)||!Number.isSafeInteger(item.vout)||
+        !Number.isSafeInteger(item.valueSats)||item.valueSats<=0||
+        item.scriptPubKeyHex!==publicFundingScript||item.confirmations<1||
+        item.canSign!==false||item.canBroadcast!==false)
+      throw Error('Untrusted funding scan entry');
+     const key=item.txid+':'+item.vout;
+     if(outpoints.has(key))throw Error('Duplicate Core outpoint');
+     outpoints.add(key);total+=item.valueSats;
+    }
+    if(!Number.isSafeInteger(total)||total!==result.totalConfirmedSats)
+     throw Error('Core funding total mismatch');
+    scannedUtxos=result.confirmedUtxos.map(item=>({
+     txid:item.txid,vout:item.vout,valueSats:item.valueSats,
+     scriptPubKeyHex:item.scriptPubKeyHex
+    }));
+    constructButton.disabled=false;
+    unsignedStatus.textContent='Confirmed inputs ready for unsigned regtest construction. No signing approval.';
+   }
    output.textContent=result.confirmedUtxos.length+' confirmed regtest output(s), '+
     result.totalConfirmedSats.toLocaleString()+
     ' sats observed. Jade wallet identity and signing approval remain unverified.';
@@ -74,6 +107,39 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
   }finally{scanButton.disabled=!publicFundingAddress;}
  });
 
+ constructButton.addEventListener('click',()=>{
+  constructButton.disabled=true;
+  try{
+   if(!scannedUtxos?.length)throw Error('Confirmed regtest inputs required');
+   const plan=JSON.parse(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')||'null');
+   if(!plan||plan.format!=='bc1q21-professional-retail-plan-preview-v1'||
+      plan.status!=='UNFUNDED_PREVIEW_NOT_SIGNABLE'||plan.signingAuthorized!==false)
+    throw Error('Approved gift schedule required');
+   const inputTotal=scannedUtxos.reduce((n,u)=>n+u.valueSats,0);
+   const fee=inputTotal-plan.totalSats;
+   if(!Number.isSafeInteger(fee)||fee<100||fee>10000)
+    throw Error('No-change test requires 100–10,000 sats remaining for network fee; no transaction prepared');
+   const builder=globalThis.bc1q21ProfessionalConstructUntrustedCreatorPsbt;
+   if(typeof builder!=='function')throw Error('Browser PSBT builder unavailable');
+   const built=builder({
+    plan,accountXpub:document.getElementById('funding-xpub').value.trim(),
+    masterFingerprintHex:document.getElementById('jade-fingerprint').value.trim(),
+    utxos:scannedUtxos,networkFeeSats:fee
+   });
+   if(built.format!=='bc1q21-professional-untrusted-creator-construction-v1'||
+      built.giftScriptsChecked!==true||built.chainVerified!==false||
+      built.signingAuthorized!==false||built.canSign!==false||
+      built.canBroadcast!==false||built.unsigned?.signed!==false)
+    throw Error('Unsafe unsigned PSBT construction');
+   unsignedStatus.textContent='Unsigned regtest gift transaction constructed: '+
+    built.unsigned.fundingInputCount+' input(s), '+
+    built.unsigned.giftOutputCount+' locked gift output(s), '+
+    fee.toLocaleString()+' sats network fee. NOT authorized for Jade signing or broadcast.';
+  }catch(error){
+   unsignedStatus.textContent='Unsigned construction unavailable: '+String(error.message||error)+
+    '. Signing remains locked.';
+  }finally{constructButton.disabled=!scannedUtxos?.length;}
+ });
  const inspectButton=document.getElementById('inspect-funding');
  inspectButton.addEventListener('click',async()=>{
   const output=document.getElementById('inspection-status');
@@ -111,7 +177,7 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  document.getElementById('derive-funding-key').addEventListener('click',()=>{
   const status=document.getElementById('funding-key-status');
   document.getElementById('funding-key-result').hidden=true;
-  publicFundingScript=null;publicFundingAddress=null;inspectButton.disabled=true;scanButton.disabled=true;
+  publicFundingScript=null;publicFundingAddress=null;scannedUtxos=null;constructButton.disabled=true;inspectButton.disabled=true;scanButton.disabled=true;
   try{
    const derive=globalThis.bc1q21ProfessionalPreviewFundingPublicKey;
    if(typeof derive!=='function')throw Error('Professional browser verifier is unavailable');
