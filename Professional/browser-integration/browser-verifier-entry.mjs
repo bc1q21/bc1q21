@@ -216,6 +216,42 @@ globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr=async function({
   signingAuthorized:false,broadcast:false});
 };
 
+// Actual regtest PSBT construction from public-only data, deliberately NOT
+// a funding authorization. Inputs must later be independently confirmed by
+// trusted Bitcoin Core before this transaction can be shown for signing.
+import {snapshotFundedDistributionIntent} from '../funded-distribution-intent.mjs';
+import {buildUnsignedFundedDistributionPsbt} from '../unsigned-funded-distribution-psbt.mjs';
+import {verifyGiftCltvOutputs} from '../verify-gift-cltv-outputs.mjs';
+globalThis.bc1q21ProfessionalConstructUntrustedCreatorPsbt=function({
+ plan,accountXpub,masterFingerprintHex,utxos,networkFeeSats,
+ serviceFeeOutput=null,changeOutput=null
+}){
+ if(typeof masterFingerprintHex!=='string'||!/^[a-f0-9]{8}$/i.test(masterFingerprintHex))
+  throw Error('Jade master fingerprint required');
+ const funding=globalThis.bc1q21ProfessionalPreviewFundingPublicKey({accountXpub});
+ const preview=globalThis.bc1q21ProfessionalPreviewGiftOutputs({accountXpub,releases:plan?.releases});
+ if(!Array.isArray(utxos)||!utxos.length||utxos.length>100)
+  throw Error('Funding outpoints required');
+ const intent=snapshotFundedDistributionIntent({
+  network:'regtest',plan,utxos,
+  giftOutputs:preview.outputs.map(o=>({
+   date:o.date,valueSats:o.valueSats,locktime:o.locktime,scriptPubKeyHex:o.scriptPubKeyHex
+  })),networkFeeSats,serviceFeeOutput,changeOutput
+ });
+ const locks=verifyGiftCltvOutputs({intent,plan,
+  recipientPublicKeys:preview.outputs.map(o=>o.publicKeyHex)});
+ if(locks.scriptsMatchSuppliedPublicKeysAndPlan!==true)
+  throw Error('Gift output consistency check failed');
+ const unsigned=buildUnsignedFundedDistributionPsbt(intent,{
+  masterFingerprintHex,publicKeyHex:funding.publicKeyHex,path:funding.derivationPath
+ });
+ return Object.freeze({format:'bc1q21-professional-untrusted-creator-construction-v1',
+  network:'regtest',intent,unsigned,recipientPublicKeys:Object.freeze(
+   preview.outputs.map(o=>o.publicKeyHex)),
+  giftScriptsChecked:true,chainVerified:false,recipientKeyOriginAuthenticated:false,
+  independentGiftApproval:false,signingAuthorized:false,canSign:false,canBroadcast:false,
+  nextStep:'TRUSTED_BITCOIN_CORE_AND_WALLET_IDENTITY_VERIFICATION_REQUIRED'});
+};
 // Creator transaction QR transport. Requires a separately constructed funded
 // unsigned PSBT; rendering does NOT authorize the user to sign or broadcast.
 globalThis.bc1q21ProfessionalRenderCreatorUnsignedQr=async function(unsigned){
