@@ -15,12 +15,21 @@ permissions:
 jobs:
   package:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check out isolated Professional branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
+      - name: Set up Node for isolated Professional signing-gate tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install isolated test-only PSBT dependency
+        run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7
+      - name: Test funded intent and unsigned Jade PSBT construction
+        run: |
+          node --test Professional/funded-distribution-intent.test.mjs Professional/unsigned-funded-distribution-psbt.test.mjs
       - name: Prepare self-contained preview folder
         run: |
           mkdir -p preview
