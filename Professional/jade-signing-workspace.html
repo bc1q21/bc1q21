@@ -7,7 +7,7 @@
 <h2>Sign your gift with Jade Plus</h2><p id="gift-summary" class="status" role="status">Checking the approved gift schedule…</p>
 <div id="schedule-panel" hidden><h3>Review the gift schedule</h3><p>These are the releases you selected. Check every date and amount before approving a transaction on Jade Plus.</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:10px">Release</th><th style="text-align:left;padding:10px">Unlock date</th><th style="text-align:right;padding:10px">Amount (sats)</th></tr></thead><tbody id="schedule-rows"></tbody></table></div></div><p>When your Bitcoin deposit has been verified, the exact gift transaction will appear here as an animated QR code. Review it on Jade Plus, sign offline, and scan the signed QR back into this page.</p>
 <p id="status" class="status" role="status">Waiting for a trusted, gift-specific unsigned transaction. Jade signing is locked.</p>
-<div id="qr-panel" hidden><img id="qr" alt="Animated unsigned transaction QR"><p id="frame-count"></p><button type="button" id="pause">Pause QR</button></div>
+<p id="diagnostic-label" class="warning" hidden><strong>Disposable regtest developer preview only.</strong> This transaction came from browser session storage, not an authenticated Jade wallet or trusted signing issuer. Never use real Bitcoin. No signing authorization or broadcast is granted.</p><div id="qr-panel" hidden><img id="qr" alt="Animated unsigned transaction QR"><p id="frame-count"></p><button type="button" id="pause">Pause QR</button></div>
 <h3>Scan signed QR from Jade Plus</h3><video id="camera" playsinline muted></video><canvas id="camera-canvas" hidden></canvas><button type="button" id="scan" disabled>Scan signed Jade QR</button><button type="button" id="stop" disabled>Stop camera</button>
 <p id="verification" class="status" role="status">No signed transaction verified.</p><a class="button secondary" href="./finish-workspace.html">Preview Finish page (gift not completed) →</a><button disabled>Finish gift →</button><a class="button secondary" href="./funding-workspace.html">← Back to Add Funds</a></section>
 </main><script src="./browser-integration/professional-verifier.bundle.js"></script>
@@ -72,6 +72,49 @@ if(typeof attachCamera==='function'){
   }
  });
 }else{scanStatus.textContent='Jade camera verifier unavailable. Scanning disabled.';}
+
+// Development-only browser-session handoff: never grants signing authorization.
+const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
+(async()=>{
+ try{
+  const handoff=JSON.parse(sessionStorage.getItem(diagnosticHandoffKey)||'null');
+  sessionStorage.removeItem(diagnosticHandoffKey);
+  if(!reviewedPlan||handoff?.format!=='bc1q21-professional-diagnostic-jade-handoff-v1'||
+     handoff.diagnosticOnly!==true||handoff.signingAuthorized!==false||
+     handoff.canBroadcast!==false) return;
+  const unsigned=handoff.unsigned;
+  if(unsigned?.format!=='bc1q21-professional-funded-distribution-unsigned-psbt-v1'||
+     unsigned.network!=='regtest'||unsigned.signed!==false||
+     unsigned.broadcast!==false||unsigned.hardwareSignatureVerified!==false||
+     typeof unsigned.psbtSha256!=='string'||!/^[0-9a-f]{64}$/.test(unsigned.psbtSha256))
+   throw Error('Invalid disposable regtest transaction');
+  const render=window.bc1q21ProfessionalRenderCreatorUnsignedQr;
+  if(typeof render!=='function')throw Error('QR renderer unavailable');
+  const qr=await render(unsigned);
+  if(qr.approvedPsbtSha256!==unsigned.psbtSha256||
+     qr.signingAuthorized!==false||qr.canBroadcast!==false||
+     !Array.isArray(qr.images)||!qr.images.length)
+   throw Error('Unsigned transaction QR does not match');
+  approvedUnsigned=unsigned;
+  document.getElementById('diagnostic-label').hidden=false;
+  document.getElementById('qr-panel').hidden=false;
+  const image=document.getElementById('qr');
+  const pause=document.getElementById('pause');
+  let frame=0;
+  const advance=()=>{frame=(frame+1)%qr.images.length;image.src=qr.images[frame];};
+  image.src=qr.images[0];
+  document.getElementById('frame-count').textContent=qr.images.length+' animated frame(s) · regtest preview';
+  timer=setInterval(advance,280);
+  pause.onclick=()=>{if(timer){clearInterval(timer);timer=null;pause.textContent='Resume QR';}
+    else{timer=setInterval(advance,280);pause.textContent='Pause QR';}};
+  cameraController?.refresh();
+  document.getElementById('status').textContent='Regtest developer preview loaded. Scan the QR only with a disposable Jade test wallet. No real signing authorization or broadcasting.';
+ }catch(error){
+  approvedUnsigned=null;
+  cameraController?.invalidate();
+  document.getElementById('status').textContent='Jade preview unavailable: '+error.message;
+ }
+})();
 
 // Fail closed until an actual trusted authorization issuer is implemented.
 // Previously this UI accepted caller-provided booleans masquerading as trust.
