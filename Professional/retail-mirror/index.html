@@ -29,6 +29,12 @@
 <section id="professional-retail-handoff" hidden style="max-width:1100px;margin:18px auto;padding:18px;background:#eaf4ed;border:2px solid #39744d;border-radius:10px">
 <h2>Continue to Jade Plus</h2><p id="professional-retail-handoff-status" role="status"></p>
 <p>Development preview only: the Retail schedule is passed to the Jade public-wallet creator below. Signing, funding and broadcast remain disabled.</p></section>
+<section id="professional-funding-handoff" hidden style="max-width:1100px;margin:18px auto;padding:20px;background:white;border:2px solid #09518b;border-radius:10px">
+<h2 style="color:#09518b">Your gift plan is ready</h2>
+<p id="professional-funding-summary" role="status">Review your gift before proceeding.</p>
+<p>Continue to the Professional Add Funds page. Funding and signing remain disabled in this development preview.</p>
+<button id="professional-open-funding" type="button" style="background:#09518b;color:white;border:0;border-radius:7px;padding:12px 18px;cursor:pointer">Continue to Add Funds →</button>
+</section>
 <section id="professional-jade-workflow" hidden style="max-width:1100px;margin:20px auto;padding:18px;background:white;border:2px solid #09518b;border-radius:12px">
     <h2 style="color:#09518b">Professional · Jade Plus workflow</h2><button type="button" id="professional-edit-gift" style="padding:9px 16px;margin:8px 0;background:#eef5fc;color:#09518b;border:1px solid #09518b;border-radius:6px">← Back to edit gift details</button><p id="professional-edit-gift-status" role="status" aria-live="polite"></p><p role="note" style="padding:12px;border-left:4px solid #09518b;background:#edf5fc"><strong>Editing cutoff:</strong> You may return to gift planning until the actual gift-specific Jade signatures are received and verified. After verification, amounts, recipients, and release dates are permanently locked for that gift. This prototype does not yet complete gift-specific signing or enable funding.</p>
     <p>Use the integrated creator and recipient panels below. The existing camera, animated QR, and public wallet tools run inside the Professional page; no separate browser tab is required.</p>
@@ -989,6 +995,10 @@ PriceManager.prototype.loadPrice=async function(){
 import {snapshotRetailGiftPlan} from '../Professional/retail-plan-bridge.mjs';
 import {createProfessionalGiftEditGate} from '../Professional/gift-edit-gate.mjs';
 const professionalEditGate=createProfessionalGiftEditGate();
+document.getElementById('professional-open-funding').addEventListener('click',()=>{
+ if(!sessionStorage.getItem('bc1q21-professional-approved-plan-preview'))return;
+ window.location.assign('../funding-workspace.html');
+});
 document.getElementById('professional-edit-gift').addEventListener('click',()=>{
  const status=document.getElementById('professional-edit-gift-status');
  if(!professionalEditGate.canEdit){status.textContent='Gift editing is unavailable during signing or after verification. Cancel an incomplete signing attempt before editing.';return;}
@@ -1006,6 +1016,11 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
  document.getElementById('professional-jade-workflow').hidden=true;
  try {
   const plan=snapshotRetailGiftPlan(event.detail.wizard);
+  sessionStorage.setItem('bc1q21-professional-approved-plan-preview',JSON.stringify(plan));
+  const fundingPanel=document.getElementById('professional-funding-handoff');
+  document.getElementById('professional-funding-summary').textContent=
+    plan.releases.length+' planned release(s), '+plan.totalSats.toLocaleString()+' sats total.';
+  fundingPanel.hidden=false;
   status.textContent='Validated '+plan.releases.length+' Retail releases totaling '+plan.totalSats+' sats.';
   const frame=document.getElementById('professional-creator-frame');
   const receiver=frame?.contentWindow?.bc1q21ProfessionalAcceptRetailPlan;
