@@ -51,7 +51,7 @@ export function snapshotFundedDistributionIntent({ network, plan, utxos, giftOut
     const release = plan.releases[index];
     if (output?.date !== release.date || output?.valueSats !== release.amountSats)
       fail('Gift output does not match approved date and amount at ' + index);
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(output.date))
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(output.date))
       fail('Invalid gift date');
     if (!Number.isSafeInteger(output.locktime) || output.locktime < 500000000)
       fail('Expected timestamp CLTV locktime');
