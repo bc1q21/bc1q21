@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>bc1q21 Professional — Add Funds</title><style>
+:root{font:16px system-ui,Segoe UI,sans-serif;color:#172c43;background:#f3f6fa}*{box-sizing:border-box}body{margin:0}main{max-width:920px;margin:24px auto;padding:20px}header,.panel{background:white;border:1px solid #d9e2ed;border-radius:10px;padding:24px;margin-bottom:18px}header{display:flex;align-items:center;gap:18px}header img{width:125px;max-height:100px;object-fit:contain}h1{color:#09518b;margin:0}.bar{background:#09518b;color:white;border-radius:8px;padding:14px;margin:18px 0}.notice{padding:14px;background:#fff1da;border-left:4px solid #bc7b17;border-radius:5px}.status{background:#eaf1f8;padding:14px;border-radius:6px}table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid #dce4ee;padding:12px}button,a.button{background:#09518b;color:white;border:0;border-radius:7px;padding:12px 18px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block;margin:8px 8px 8px 0}button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#dce9f5!important;color:#164568!important}code{overflow-wrap:anywhere}@media(max-width:600px){header{display:block}table{font-size:.88rem}}
+</style></head><body><main><header><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21"><div><h1>Professional Gifting Wizard</h1><p>Gift funding</p></div></header><div class="bar"><strong>Step 3 · Add Funds</strong> &nbsp; · &nbsp; Planning → Review → <strong>Add Funds</strong> → Jade Plus → Finish</div>
+<section class="panel"><p class="notice"><strong>Development preview — do not send Bitcoin.</strong> Funding and network access remain disabled until the actual regtest integration is connected. This page cannot create a deposit address or receive funds.</p>
+<h2>Approved gift plan</h2><p id="status" class="status" role="status">Loading your approved gift plan…</p><div id="details" hidden><p><strong>Total gift:</strong> <span id="total"></span> sats</p><table><thead><tr><th>Release</th><th>Unlock date</th><th>Amount</th></tr></thead><tbody id="releases"></tbody></table></div></section>
+<section class="panel"><h2>Deposit Bitcoin</h2><p>Once this stage is connected to the regtest funding engine, your deposit address and payment QR will appear here. We will wait for the required confirmations before preparing the exact transaction for Jade Plus.</p>
+<div class="status"><strong>Funding address:</strong> Not yet generated<br><strong>Received:</strong> Not checked<br><strong>Confirmations:</strong> Not checked<br><strong>Jade Plus signing:</strong> Locked until verified funding</div>
+<p><button disabled>Show funding QR</button><button disabled>Continue to Jade Plus →</button></p>
+<a class="button secondary" href="./retail-mirror/index.html">← Back to gift planning</a></section></main>
+<script>
+'use strict';
+(function(){
+ const status=document.getElementById('status');
+ try{
+  const raw=sessionStorage.getItem('bc1q21-professional-approved-plan-preview');
+  if(!raw)throw Error('No reviewed gift plan in this browser session. Return to planning.');
+  const plan=JSON.parse(raw);
+  if(plan?.format!=='bc1q21-professional-retail-plan-preview-v1'||
+    plan.status!=='UNFUNDED_PREVIEW_NOT_SIGNABLE'||
+    plan.signingAuthorized!==false||plan.fundingAuthorized!==false||
+    plan.broadcastAuthorized!==false||
+    !Array.isArray(plan.releases)||!plan.releases.length||plan.releases.length>60)
+    throw Error('The stored gift plan is not a valid Professional planning preview.');
+  let total=0;
+  for(const [i,r] of plan.releases.entries()){
+   if(typeof r?.date!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(r.date)||
+     !Number.isSafeInteger(r.amountSats)||r.amountSats<=0)
+    throw Error('Invalid release '+(i+1));
+   total+=r.amountSats;
+  }
+  if(!Number.isSafeInteger(total)||total!==plan.totalSats)throw Error('Gift total mismatch');
+  document.getElementById('total').textContent=total.toLocaleString();
+  const body=document.getElementById('releases');
+  plan.releases.forEach((r,i)=>{
+   const tr=document.createElement('tr');
+   for(const value of [String(i+1),r.date,r.amountSats.toLocaleString()+' sats']){
+    const td=document.createElement('td');td.textContent=value;tr.appendChild(td);
+   }
+   body.appendChild(tr);
+  });
+  document.getElementById('details').hidden=false;
+  status.textContent='Gift plan loaded: '+plan.releases.length+' release(s). No Bitcoin address or payment request has been issued.';
+ }catch(e){status.textContent=String(e.message||e);}
+})();
+</script></body></html>
