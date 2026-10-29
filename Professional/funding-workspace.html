@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; img-src 'self' data:; connect-src http://127.0.0.1:18761; form-action 'none'; base-uri 'none'">
 <title>bc1q21 Professional — Add Funds</title><style>
 :root{font:16px system-ui,Segoe UI,sans-serif;color:#172c43;background:#f3f6fa}*{box-sizing:border-box}body{margin:0}main{max-width:920px;margin:24px auto;padding:20px}header,.panel{background:white;border:1px solid #d9e2ed;border-radius:10px;padding:24px;margin-bottom:18px}header{display:flex;align-items:center;gap:18px}header img{width:125px;max-height:100px;object-fit:contain}h1{color:#09518b;margin:0}.bar{background:#09518b;color:white;border-radius:8px;padding:14px;margin:18px 0}.notice{padding:14px;background:#fff1da;border-left:4px solid #bc7b17;border-radius:5px}.status{background:#eaf1f8;padding:14px;border-radius:6px}table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid #dce4ee;padding:12px}button,a.button{background:#09518b;color:white;border:0;border-radius:7px;padding:12px 18px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block;margin:8px 8px 8px 0}button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#dce9f5!important;color:#164568!important}code{overflow-wrap:anywhere}@media(max-width:600px){header{display:block}table{font-size:.88rem}}
 </style></head><body><main><header><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21"><div><h1>Professional Gifting Wizard</h1><p>Gift funding</p></div></header><div class="bar"><strong>Step 3 · Add Funds</strong> &nbsp; · &nbsp; Planning → Review → <strong>Add Funds</strong> → Jade Plus → Finish</div>
@@ -19,6 +19,14 @@
 <div style="overflow-x:auto"><table><thead><tr><th>Unlock date</th><th>Amount</th><th>Recipient output (preview)</th></tr></thead><tbody id="gift-output-preview"></tbody></table></div>
 </div>
 </div>
+<div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
+<h3>Inspect regtest funding (development only)</h3>
+<p>Once a disposable regtest funding transaction exists, the local inspection service can check its unspent outputs against Bitcoin Core. This is a read-only inspection, <strong>not</strong> permission to deposit, sign or broadcast.</p>
+<label for="funding-intent" style="display:block;margin:12px 0 6px">Prepared public funding intent (JSON; no private keys)</label>
+<textarea id="funding-intent" rows="5" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px" spellcheck="false" placeholder="Development-only public intent; no seeds, passwords or wallet secrets"></textarea>
+<button type="button" id="inspect-funding">Inspect with local regtest Bitcoin Core</button>
+<p id="inspection-status" class="status" role="status">No verified funding inspection yet. Signing remains locked.</p>
+</div>
 <p><button disabled>Show funding QR</button><button disabled>Continue to Jade Plus →</button></p>
 <p><a class="button secondary" href="./jade-signing-workspace.html">Preview Jade Plus signing page (disabled) →</a></p>
 <a class="button secondary" href="./retail-mirror/index.html">← Back to gift planning</a></section></main>
@@ -28,6 +36,37 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
 'use strict';
 (function(){
  const status=document.getElementById('status');
+ const inspectButton=document.getElementById('inspect-funding');
+ inspectButton.addEventListener('click',async()=>{
+  const output=document.getElementById('inspection-status');
+  inspectButton.disabled=true;
+  output.textContent='Checking funding outputs against local regtest Bitcoin Core…';
+  try{
+   const raw=document.getElementById('funding-intent').value;
+   if(raw.length>80000)throw Error('Funding intent exceeds maximum size');
+   const intent=JSON.parse(raw);
+   if(!intent||typeof intent!=='object'||Array.isArray(intent))
+    throw Error('Funding intent must be a JSON object');
+   const response=await fetch('http://127.0.0.1:18761/professional/regtest/inspect-funding',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({intent}),cache:'no-store',credentials:'omit'
+   });
+   if(!response.ok)throw Error('Funding inspection rejected or local Core service unavailable');
+   const result=await response.json();
+   if(result.format!=='bc1q21-professional-funding-workspace-inspection-v1'||
+      result.network!=='regtest'||result.fundingOutpointsVerified!==true||
+      result.coreNetworkVerified!==true||result.inspectionOnly!==true||
+      result.walletOriginAuthenticated!==false||result.signingAuthorized!==false||
+      result.canSign!==false||result.canBroadcast!==false)
+    throw Error('Unexpected funding inspection response');
+   output.textContent='Regtest funding inputs inspected ('+
+     result.inputsChecked.length+' UTXO(s)). Wallet identity and gift approval remain pending; signing and broadcasting are locked.';
+  }catch(error){
+   output.textContent='Funding inspection not accepted: '+String(error.message||error)+
+     '. No signing or payment authorization issued.';
+  }finally{inspectButton.disabled=false;}
+ });
+
  document.getElementById('derive-funding-key').addEventListener('click',()=>{
   const status=document.getElementById('funding-key-status');
   document.getElementById('funding-key-result').hidden=true;
