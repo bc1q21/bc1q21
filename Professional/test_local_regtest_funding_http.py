@@ -6,9 +6,9 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from local_regtest_funding_http import (
-    ProfessionalFundingHandler, handle_funding_inspection, ALLOWED_ORIGIN
+    ProfessionalFundingHandler, handle_funding_inspection, observe_regtest_outpoint, ALLOWED_ORIGIN
 )
-from test_trusted_core_funding import INTENT, mock_rpc
+from test_trusted_core_funding import INTENT, mock_rpc, TXID, SCRIPT, CHAIN, RESPONSE
 
 
 class ProfessionalLocalFundingHttpTests(unittest.TestCase):
@@ -18,6 +18,20 @@ class ProfessionalLocalFundingHttpTests(unittest.TestCase):
         self.assertFalse(result["canSign"])
         self.assertFalse(result["canBroadcast"])
         self.assertFalse(result["walletOriginAuthenticated"])
+
+    def test_core_observation_never_authorizes_signing(self):
+        observed = observe_regtest_outpoint(
+            {"txid": TXID, "vout": 0, "scriptPubKeyHex": SCRIPT}, mock_rpc())
+        self.assertEqual(observed["valueSats"], 100000)
+        self.assertFalse(observed["walletOriginAuthenticated"])
+        self.assertFalse(observed["canSign"])
+        self.assertFalse(observed["canBroadcast"])
+        for bad_rpc in (mock_rpc(response=None),
+                        mock_rpc(response={**RESPONSE, "confirmations": 0}),
+                        mock_rpc(chain={**CHAIN, "chain": "main"})):
+            with self.assertRaises(ValueError):
+                observe_regtest_outpoint(
+                    {"txid": TXID, "vout": 0, "scriptPubKeyHex": SCRIPT}, bad_rpc)
 
     def test_http_rejects_wrong_origin_and_untrusted_approval(self):
         class Handler(ProfessionalFundingHandler):
@@ -47,6 +61,15 @@ class ProfessionalLocalFundingHttpTests(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertTrue(body["fundingOutpointsVerified"])
             self.assertFalse(body["canSign"])
+            observation_url = url.replace("inspect-funding", "observe-utxo")
+            raw = json.dumps({"txid": TXID, "vout": 0, "scriptPubKeyHex": SCRIPT}).encode()
+            request = Request(observation_url, data=raw, headers={
+                "Content-Type": "application/json", "Origin": ALLOWED_ORIGIN
+            }, method="POST")
+            with urlopen(request, timeout=2) as reply:
+                observed = json.load(reply)
+            self.assertEqual(observed["valueSats"], 100000)
+            self.assertFalse(observed["canSign"])
             status, _ = send({"intent": INTENT}, "https://bc1q21.com")
             self.assertEqual(status, 403)
             status, _ = send({"intent": INTENT, "signingAuthorized": True}, ALLOWED_ORIGIN)
