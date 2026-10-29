@@ -2,7 +2,7 @@
 // approved unsigned funded distribution. Offline, public-only, regtest only.
 // Requires all inputs signed by the expected Jade funding public key. No broadcast.
 import bitcoin from 'bitcoinjs-lib';
-import {createHash} from 'node:crypto';
+import {sha256} from '@noble/hashes/sha256';
 import {secp256k1} from '@noble/curves/secp256k1';
 const fail = m => {throw Error('Professional creator signed return: '+m)};
 const decode = b64 => {
@@ -20,7 +20,7 @@ export function verifySignedFundedDistributionPsbt(unsigned, signedBase64) {
     unsigned.broadcast!==false||unsigned.hardwareSignatureVerified!==false)
     fail('Expected original unsigned regtest creator PSBT');
  const before=decode(unsigned.unsignedPsbtBase64), after=decode(signedBase64);
- const digest=createHash('sha256').update(Buffer.from(unsigned.unsignedPsbtBase64,'base64')).digest('hex');
+ const digest=Buffer.from(sha256(Buffer.from(unsigned.unsignedPsbtBase64,'base64'))).toString('hex');
  if(digest!==unsigned.psbtSha256)fail('Approved PSBT fingerprint mismatch');
  if(!equal(before.data.globalMap.unsignedTx.toBuffer(),after.data.globalMap.unsignedTx.toBuffer()))
    fail('Signed transaction differs from approved transaction');
