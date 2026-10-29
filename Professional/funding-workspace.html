@@ -79,6 +79,12 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  const resetUnsigned=()=>{scannedUtxos=null;constructButton.disabled=true;unsignedReview.hidden=true;reviewAck.checked=false;};
  const constructButton=document.getElementById("construct-unsigned");
  const unsignedStatus=document.getElementById("unsigned-status");
+ for(const id of ['network-fee','jade-fingerprint']){
+  document.getElementById(id).addEventListener('input',()=>{
+   unsignedReview.hidden=true;reviewAck.checked=false;
+   unsignedStatus.textContent='Transaction parameters changed. Reconstruct and review the unsigned transaction.';
+  });
+ }
  const scanButton=document.getElementById('scan-funding');
  scanButton.addEventListener('click',async()=>{
   const output=document.getElementById('scan-status');
