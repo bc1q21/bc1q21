@@ -98,11 +98,15 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
   const status=document.getElementById('diagnostic-qr-status');
   try{
    if(!latestUnsigned||!scannedUtxos?.length)throw Error('Fresh unsigned regtest transaction required');
+   const renderingUnsigned=latestUnsigned;
    if(!derivedXpub||document.getElementById('funding-xpub').value.trim()!==derivedXpub)
     throw Error('Wallet information changed');
    const render=globalThis.bc1q21ProfessionalRenderCreatorUnsignedQr;
    if(typeof render!=='function')throw Error('Jade QR renderer unavailable');
    const qr=await render(latestUnsigned);
+   if(latestUnsigned!==renderingUnsigned||!scannedUtxos?.length||!derivedXpub||
+      document.getElementById('funding-xpub').value.trim()!==derivedXpub)
+    throw Error('Transaction or wallet changed while rendering QR');
    if(qr.approvedPsbtSha256!==latestUnsigned.psbtSha256||
       qr.signingAuthorized!==false||qr.canBroadcast!==false||
       !Array.isArray(qr.images)||!qr.images.length)
