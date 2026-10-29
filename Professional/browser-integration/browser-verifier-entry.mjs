@@ -47,6 +47,37 @@ globalThis.bc1q21ProfessionalDerivePublicReleasePlan=function({accountXpub,relea
   return Object.freeze({index,lockHeight:height,signerPubkeyHex:signer.toString('hex'),redeemScriptHex:redeem.toString('hex'),fundingAddress:payment.address,fundingScriptPubKeyHex:payment.output.toString('hex'),network:'regtest',originAuthenticated:false,fundingAuthorized:false});
  }));
 };
+// Development-only public funding address preview from account xpub at /0/0.
+// No wallet ownership authentication; never present as a payable address.
+globalThis.bc1q21ProfessionalPreviewFundingPublicKey=function({accountXpub}){
+ if(typeof accountXpub!=='string'||!/^xpub[1-9A-HJ-NP-Za-km-z]{100,120}$/.test(accountXpub))
+  throw Error('Public account xpub required');
+ const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+ let n=0n;for(const c of accountXpub){const i=alphabet.indexOf(c);if(i<0)throw Error('Invalid xpub');n=n*58n+BigInt(i);}
+ let hex=n.toString(16);if(hex.length%2)hex='0'+hex;
+ const raw=Buffer.concat([Buffer.alloc((accountXpub.match(/^1*/)||[''])[0].length),Buffer.from(hex,'hex')]);
+ const hash=b=>Buffer.from(sha256(sha256(b)));
+ if(raw.length!==82||!hash(raw.subarray(0,78)).subarray(0,4).equals(raw.subarray(78))||
+    raw.readUInt32BE(0)!==0x0488b21e||raw[4]!==3||raw.readUInt32BE(9)!==0x80000000)
+  throw Error('Invalid account xpub');
+ const derive=(node,index)=>{
+  const suffix=Buffer.alloc(4);suffix.writeUInt32BE(index);
+  const digest=Buffer.from(hmac(sha512,node.chain,Buffer.concat([node.pub,suffix])));
+  const scalar=BigInt('0x'+digest.subarray(0,32).toString('hex'));
+  if(scalar===0n||scalar>=secp256k1.CURVE.n)throw Error('Invalid public child derivation');
+  const point=secp256k1.ProjectivePoint.BASE.multiply(scalar).add(secp256k1.ProjectivePoint.fromHex(node.pub));
+  if(point.equals(secp256k1.ProjectivePoint.ZERO))throw Error('Invalid derived public key');
+  return {pub:Buffer.from(point.toRawBytes(true)),chain:digest.subarray(32)};
+ };
+ const account={pub:raw.subarray(45,78),chain:raw.subarray(13,45)};
+ const pubkey=derive(derive(account,0),0).pub;
+ const payment=bitcoin.payments.p2wpkh({pubkey,network:bitcoin.networks.regtest});
+ return Object.freeze({format:'bc1q21-professional-public-funding-key-preview-v1',
+  network:'regtest',derivationPath:"m/84'/0'/0'/0/0",
+  publicKeyHex:pubkey.toString('hex'),scriptPubKeyHex:payment.output.toString('hex'),
+  address:payment.address,accountXpubOriginAuthenticated:false,
+  paymentAuthorized:false,canSign:false,canBroadcast:false});
+};
 // Public-only CLTV script/address verification; does not attest wallet origin.
 globalThis.bc1q21ProfessionalVerifyPublicHandoff=function(payload){
  const fields=['version','network','signerPubkeyHex','locktime','redeemScriptHex','fundingAddress'];
