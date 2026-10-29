@@ -115,3 +115,31 @@ def make_local_core_rpc(*, rpc_url, rpc_user, rpc_password, timeout_seconds=8):
             raise FundingVerificationError("Trusted Core RPC returned an error")
         return result.get("result")
     return call
+
+def inspect_professional_funding_request(request, rpc_call, minimum_confirmations=1):
+    """Server-only integration entry for the Professional funding workspace.
+
+    Accepts the public intent and compares it with *server-obtained* Core data.
+    Does not accept user-supplied Core responses, credentials or authorizations.
+    Never returns an approval token, deposit instruction or signing permission.
+    """
+    if not isinstance(request, dict) or set(request) != {"intent"}:
+        raise FundingVerificationError("Only the unsigned public intent is accepted")
+    intent = request["intent"]
+    result = verify_funding_with_core(intent, rpc_call, minimum_confirmations)
+    return {
+        "format": "bc1q21-professional-funding-workspace-inspection-v1",
+        "network": "regtest",
+        "inputsChecked": result["inputsChecked"],
+        "coreNetworkVerified": result["coreNetworkVerified"],
+        "coreSynchronizedAtInspection": result["coreSynchronizedAtInspection"],
+        "fundingOutpointsVerified": result["fundingOutpointsVerified"],
+        "inspectionOnly": True,
+        "walletOriginAuthenticated": False,
+        "giftScriptsAuthenticated": False,
+        "signingAuthorized": False,
+        "canRequestPayment": False,
+        "canSign": False,
+        "canBroadcast": False,
+        "nextStep": "INDEPENDENT_WALLET_ORIGIN_AND_GIFT_APPROVAL",
+    }
