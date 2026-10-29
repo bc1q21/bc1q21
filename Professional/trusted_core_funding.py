@@ -99,10 +99,16 @@ def make_local_core_rpc(*, rpc_url, rpc_user, rpc_password, timeout_seconds=8):
         raise FundingVerificationError("Server-side Core credentials required")
     token = base64.b64encode(f"{rpc_user}:{rpc_password}".encode()).decode()
     def call(method, params):
-        if not ((method == "getblockchaininfo" and params == []) or
+        if not ((method == "scantxoutset" and isinstance(params, list) and
+                 len(params) == 2 and params[0] == "start" and
+                 isinstance(params[1], list) and len(params[1]) == 1 and
+                 isinstance(params[1][0], str) and
+                 params[1][0].startswith("addr(bcrt1") and
+                 params[1][0].endswith(")") and len(params[1][0]) <= 110) or
+                (method == "getblockchaininfo" and params == []) or
                 (method == "gettxout" and isinstance(params, list) and
                  len(params) == 3 and params[2] is True)):
-            raise FundingVerificationError("Only read-only chain and UTXO RPC allowed")
+            raise FundingVerificationError("Only bounded regtest chain and UTXO RPC allowed")
         payload = json.dumps({"jsonrpc": "1.0", "id": "professional-read-only", "method": method, "params": params}).encode()
         request = urllib.request.Request(rpc_url, data=payload, headers={
             "Content-Type": "application/json", "Authorization": f"Basic {token}"})
