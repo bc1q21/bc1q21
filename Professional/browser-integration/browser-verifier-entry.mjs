@@ -78,6 +78,51 @@ globalThis.bc1q21ProfessionalPreviewFundingPublicKey=function({accountXpub}){
   address:payment.address,accountXpubOriginAuthenticated:false,
   paymentAuthorized:false,canSign:false,canBroadcast:false});
 };
+// Gift-specific recipient output preview using Retail UTC calendar dates and
+// Jade account xpub's /1/index public child keys. Not an authorization to fund.
+globalThis.bc1q21ProfessionalPreviewGiftOutputs=function({accountXpub,releases}){
+ if(!Array.isArray(releases)||releases.length<1||releases.length>24)
+  throw Error('One to 24 releases required for current Jade creator workflow');
+ const publicFunding=globalThis.bc1q21ProfessionalPreviewFundingPublicKey({accountXpub});
+ const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+ let n=0n;for(const c of accountXpub){const i=alphabet.indexOf(c);if(i<0)throw Error('Invalid xpub');n=n*58n+BigInt(i);}
+ let hex=n.toString(16);if(hex.length%2)hex='0'+hex;
+ const raw=Buffer.concat([Buffer.alloc((accountXpub.match(/^1*/)||[''])[0].length),Buffer.from(hex,'hex')]);
+ const derive=(node,index)=>{
+  const suffix=Buffer.alloc(4);suffix.writeUInt32BE(index);
+  const digest=Buffer.from(hmac(sha512,node.chain,Buffer.concat([node.pub,suffix])));
+  const scalar=BigInt('0x'+digest.subarray(0,32).toString('hex'));
+  if(scalar===0n||scalar>=secp256k1.CURVE.n)throw Error('Invalid public child derivation');
+  const point=secp256k1.ProjectivePoint.BASE.multiply(scalar).add(secp256k1.ProjectivePoint.fromHex(node.pub));
+  if(point.equals(secp256k1.ProjectivePoint.ZERO))throw Error('Invalid public child point');
+  return {pub:Buffer.from(point.toRawBytes(true)),chain:digest.subarray(32)};
+ };
+ const branch=derive({pub:raw.subarray(45,78),chain:raw.subarray(13,45)},1);
+ const outputs=releases.map((release,index)=>{
+  if(typeof release?.date!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(release.date)||
+     !Number.isSafeInteger(release.amountSats)||release.amountSats<=0)
+   throw Error('Invalid gift release');
+  const ms=Date.parse(release.date+'T00:00:00.000Z');
+  if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==release.date)
+   throw Error('Invalid calendar date');
+  const locktime=ms/1000;
+  if(!Number.isSafeInteger(locktime)||locktime<500000000||locktime>0xffffffff)
+   throw Error('Invalid CLTV timestamp');
+  const pub=derive(branch,index).pub;
+  const redeem=bitcoin.script.compile([bitcoin.script.number.encode(locktime),
+    bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY,bitcoin.opcodes.OP_DROP,pub,bitcoin.opcodes.OP_CHECKSIG]);
+  const payment=bitcoin.payments.p2sh({redeem:{output:redeem},network:bitcoin.networks.regtest});
+  return Object.freeze({index,date:release.date,valueSats:release.amountSats,locktime,
+    publicKeyHex:pub.toString('hex'),redeemScriptHex:redeem.toString('hex'),
+    scriptPubKeyHex:payment.output.toString('hex'),giftAddress:payment.address,
+    derivationPath:`m/84'/0'/0'/1/${index}`});
+ });
+ return Object.freeze({format:'bc1q21-professional-public-gift-outputs-preview-v1',
+  network:'regtest',fundingPublicKeyHex:publicFunding.publicKeyHex,
+  fundingScriptPubKeyHex:publicFunding.scriptPubKeyHex,
+  outputs:Object.freeze(outputs),walletOriginAuthenticated:false,
+  chainVerified:false,canRequestPayment:false,canSign:false,canBroadcast:false});
+};
 // Public-only CLTV script/address verification; does not attest wallet origin.
 globalThis.bc1q21ProfessionalVerifyPublicHandoff=function(payload){
  const fields=['version','network','signerPubkeyHex','locktime','redeemScriptHex','fundingAddress'];
