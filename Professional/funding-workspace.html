@@ -46,6 +46,15 @@
 <button type="button" id="diagnostic-qr" disabled>Preview unsigned Jade QR (regtest developer only)</button>
 <p id="diagnostic-qr-status" class="status" role="status">This preview does not authorize signing or broadcasting.</p>
 <div id="diagnostic-qr-panel" hidden><img id="diagnostic-qr-image" alt="Developer-only unsigned regtest transaction QR" style="display:block;width:320px;max-width:100%;margin:15px auto"><p id="diagnostic-frame-count"></p><button type="button" id="diagnostic-pause">Pause QR</button></div>
+<div id="diagnostic-signed-panel" hidden>
+<h4>Verify returned Jade QR (developer-only regtest)</h4>
+<p>After the disposable Jade test signs the exact unsigned transaction, scan the signed QR here. A decoded QR is not proof of a valid signature.</p>
+<video id="diagnostic-camera" playsinline muted style="display:block;width:400px;max-width:100%;min-height:180px;background:#162638;margin:12px auto"></video>
+<canvas id="diagnostic-camera-canvas" hidden></canvas>
+<button type="button" id="diagnostic-scan" disabled>Scan signed Jade QR</button>
+<button type="button" id="diagnostic-stop" disabled>Stop camera</button>
+<p id="diagnostic-signed-status" class="status" role="status">No returned signature verified. Broadcasting disabled.</p>
+</div>
 </div>
 </details>
 <details><summary>Manual regtest outpoint lookup (developer fallback)</summary>
@@ -72,9 +81,15 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  let scannedUtxos=null;
  let latestUnsigned=null;
  let diagnosticTimer=null;
+ let diagnosticCamera=null;
  const diagnosticButton=document.getElementById("diagnostic-qr");
  const diagnosticPanel=document.getElementById("diagnostic-qr-panel");
- const stopDiagnostic=()=>{if(diagnosticTimer){clearInterval(diagnosticTimer);diagnosticTimer=null;}diagnosticPanel.hidden=true;diagnosticButton.disabled=true;latestUnsigned=null;};
+ const stopDiagnostic=()=>{
+  if(diagnosticTimer){clearInterval(diagnosticTimer);diagnosticTimer=null;}
+  diagnosticCamera?.invalidate();
+  document.getElementById('diagnostic-signed-panel').hidden=true;
+  diagnosticPanel.hidden=true;diagnosticButton.disabled=true;latestUnsigned=null;
+ };
  let derivedXpub=null;
  let latestScanId=0;
  const unsignedReview=document.getElementById("unsigned-review");
@@ -116,6 +131,8 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    const pause=document.getElementById('diagnostic-pause');
    let frame=0;
    img.src=qr.images[0];diagnosticPanel.hidden=false;
+   document.getElementById('diagnostic-signed-panel').hidden=false;
+   diagnosticCamera?.refresh();
    document.getElementById('diagnostic-frame-count').textContent=
     qr.frameCount+' QR frame(s) · diagnostic only';
    const tick=()=>{frame=(frame+1)%qr.images.length;img.src=qr.images[frame];};
@@ -131,6 +148,33 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    status.textContent='QR preview unavailable: '+String(error.message||error);
   }finally{diagnosticButton.disabled=!latestUnsigned;}
  });
+ const attach=globalThis.bc1q21ProfessionalAttachCreatorCamera;
+ if(typeof attach==='function'){
+  diagnosticCamera=attach({
+   video:document.getElementById('diagnostic-camera'),
+   canvas:document.getElementById('diagnostic-camera-canvas'),
+   startButton:document.getElementById('diagnostic-scan'),
+   stopButton:document.getElementById('diagnostic-stop'),
+   statusElement:document.getElementById('diagnostic-signed-status'),
+   getApprovedUnsigned:()=>diagnosticPanel.hidden?null:latestUnsigned,
+   onVerified:verified=>{
+    if(!latestUnsigned||verified.approvedPsbtSha256!==latestUnsigned.psbtSha256||
+       verified.signatureCryptographicallyVerified!==true||
+       verified.transactionIntentBound!==true||verified.canBroadcast!==false){
+     document.getElementById('diagnostic-signed-status').textContent=
+      'Returned signature rejected. No broadcast.';
+     return;
+    }
+    document.getElementById('diagnostic-signed-status').textContent=
+     'All '+verified.inputSignaturesVerified+
+     ' Jade signature(s) cryptographically verified for the exact unsigned gift transaction ('+
+     verified.approvedPsbtSha256+'). Broadcasting remains disabled.';
+   }
+  });
+ }else{
+  document.getElementById('diagnostic-signed-status').textContent=
+   'Camera verifier unavailable. No signing or broadcasting.';
+ }
  const scanButton=document.getElementById('scan-funding');
  scanButton.addEventListener('click',async()=>{
   const output=document.getElementById('scan-status');
