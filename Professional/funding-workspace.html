@@ -7,13 +7,37 @@
 <h2>Approved gift plan</h2><p id="status" class="status" role="status">Loading your approved gift plan…</p><div id="details" hidden><p><strong>Total gift:</strong> <span id="total"></span> sats</p><table><thead><tr><th>Release</th><th>Unlock date</th><th>Amount</th></tr></thead><tbody id="releases"></tbody></table></div></section>
 <section class="panel"><h2>Deposit Bitcoin</h2><p>Once this stage is connected to the regtest funding engine, your deposit address and payment QR will appear here. We will wait for the required confirmations before preparing the exact transaction for Jade Plus.</p>
 <div class="status"><strong>Funding address:</strong> Not yet generated<br><strong>Received:</strong> Not checked<br><strong>Confirmations:</strong> Not checked<br><strong>Jade Plus signing:</strong> Locked until verified funding</div>
+<div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
+<h3>Connect Jade Plus public wallet information</h3>
+<p>Import your <strong>public account xpub</strong> from a disposable Jade test wallet. This derives the public funding key at <code>m/84'/0'/0'/0/0</code> without handling recovery words or private keys.</p>
+<label for="funding-xpub" style="display:block;margin:12px 0 6px">Jade account xpub (public only)</label>
+<input id="funding-xpub" type="text" autocomplete="off" spellcheck="false" placeholder="xpub…" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px">
+<button type="button" id="derive-funding-key">Preview public funding key</button>
+<p id="funding-key-status" class="status" role="status">No Jade public wallet imported.</p>
+<div id="funding-key-result" hidden><p><strong>Derived test address (NOT FOR DEPOSITS):</strong><br><code id="funding-test-address"></code></p><p><strong>Derivation:</strong> <code>m/84'/0'/0'/0/0</code></p><p class="notice">This address is mathematically derived from the supplied xpub, but wallet ownership has not been authenticated. No payment QR or deposit request is issued.</p></div>
+</div>
 <p><button disabled>Show funding QR</button><button disabled>Continue to Jade Plus →</button></p>
 <a class="button secondary" href="./retail-mirror/index.html">← Back to gift planning</a></section></main>
+<script src="./browser-integration/professional-verifier.bundle.js"></script>
 <script type="module">
 import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
 'use strict';
 (function(){
  const status=document.getElementById('status');
+ document.getElementById('derive-funding-key').addEventListener('click',()=>{
+  const status=document.getElementById('funding-key-status');
+  document.getElementById('funding-key-result').hidden=true;
+  try{
+   const derive=globalThis.bc1q21ProfessionalPreviewFundingPublicKey;
+   if(typeof derive!=='function')throw Error('Professional browser verifier is unavailable');
+   const result=derive({accountXpub:document.getElementById('funding-xpub').value.trim()});
+   if(result.paymentAuthorized!==false||result.canSign!==false)throw Error('Unsafe funding preview');
+   document.getElementById('funding-test-address').textContent=result.address;
+   document.getElementById('funding-key-result').hidden=false;
+   status.textContent='Public funding key derived. No funding or payment request is enabled.';
+  }catch(e){status.textContent='Unable to derive public funding key: '+String(e.message||e);}
+ });
+
  try{
   const raw=sessionStorage.getItem('bc1q21-professional-approved-plan-preview');
   if(!raw)throw Error('No reviewed gift plan in this browser session. Return to planning.');
