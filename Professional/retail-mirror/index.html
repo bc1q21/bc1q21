@@ -1022,15 +1022,13 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
     plan.releases.length+' planned release(s), '+plan.totalSats.toLocaleString()+' sats total.';
   fundingPanel.hidden=false;
   status.textContent='Validated '+plan.releases.length+' Retail releases totaling '+plan.totalSats+' sats.';
-  const frame=document.getElementById('professional-creator-frame');
-  const receiver=frame?.contentWindow?.bc1q21ProfessionalAcceptRetailPlan;
-  if(typeof receiver!=='function')throw Error('Jade creator panel is not ready. Reload the isolated Professional preview.');
-  receiver(plan);
-  document.getElementById('professional-creator-tab').click();
+  // The approved Retail schedule now goes directly to the customer-facing
+  // Add Funds handoff, not the old diagnostic Jade iframe.
   const jadeSection=document.getElementById('professional-jade-workflow');
-  jadeSection.hidden=false;
-  jadeSection.scrollIntoView({behavior:'smooth',block:'start'});
-  status.textContent+=' Schedule passed to existing Jade public-wallet creator; signing and funding remain disabled.';
+  jadeSection.hidden=true;
+  fundingPanel.scrollIntoView({behavior:'smooth',block:'start'});
+  status.textContent+=' Continue to Add Funds. No deposit or signing enabled.';
+
  }catch(error){
   status.textContent='Cannot continue: '+String(error.message||error);
   panel.scrollIntoView({behavior:'smooth',block:'start'});
