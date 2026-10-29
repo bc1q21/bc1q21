@@ -30,6 +30,8 @@ jobs:
       - name: Test funded intent and unsigned Jade PSBT construction
         run: |
           node --test Professional/funded-distribution-intent.test.mjs Professional/unsigned-funded-distribution-psbt.test.mjs Professional/unsigned-distribution-jade-qr.test.mjs Professional/verify-signed-funded-distribution.test.mjs Professional/creator-signed-qr-verification-gate.test.mjs Professional/creator-signed-qr-camera.test.mjs Professional/gift-edit-gate.test.mjs Professional/inspect-funded-distribution-core.test.mjs
+      - name: Test isolated authenticated Bitcoin Core funding inspector
+        run: python3 -m unittest discover -s Professional -p 'test_trusted_core_funding.py' -v
       - name: Build isolated Professional browser verifier bundle
         run: |
           npm install --no-package-lock --ignore-scripts --prefix Professional/browser-integration
