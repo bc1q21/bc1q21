@@ -5,7 +5,13 @@
 </style></head><body><main><header><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21"><div><h1>Professional Gifting Wizard</h1><p class="practice-identity" hidden style="margin:8px 0 0;font-weight:650;color:#235c87"></p><p>Gift funding</p></div></header><div class="bar"><strong>Step 3 · Add Funds</strong> &nbsp; · &nbsp; Planning → Review → <strong>Add Funds</strong> → Jade Plus → Finish</div>
 <section class="panel"><p class="notice"><strong>Development preview — do not send Bitcoin.</strong> Real Bitcoin funding is disabled. Disposable local regtest funding tools are available in the developer section below, but no customer payment request or mainnet deposit address is issued.</p>
 <h2>Approved gift plan</h2><p id="status" class="status" role="status">Loading your approved gift plan…</p><div id="details" hidden><p><strong>Total gift:</strong> <span id="total"></span> sats</p><table><thead><tr><th>Release</th><th>Unlock date</th><th>Amount</th></tr></thead><tbody id="releases"></tbody></table></div></section>
-<section class="panel"><h2>Deposit Bitcoin</h2><p>Once this stage is connected to the regtest funding engine, your deposit address and payment QR will appear here. We will wait for the required confirmations before preparing the exact transaction for Jade Plus.</p>
+<section class="panel" id="customer-payment"><h2>Make Your Gift Payment</h2><p>Review the amount required for your gift. When payment integration is ready, scan the Bitcoin payment QR to fund your gift. The app will check the received amount before enabling Jade Plus signing.</p>
+<div class="status" style="font-size:1.12rem"><strong>Estimated payment:</strong> <span id="customer-payment-amount">Calculating…</span><br><small id="customer-payment-breakdown"></small></div>
+<div style="min-height:210px;border:2px dashed #a9bed2;border-radius:12px;display:grid;place-items:center;margin:20px auto;max-width:300px;text-align:center;padding:24px;background:#f7f9fc"><div><strong>Bitcoin payment QR</strong><p style="margin-bottom:0">Not available in this development preview.<br>Do not send Bitcoin.</p></div></div>
+<p class="status"><strong>Payment status:</strong> Awaiting a verified funding address. No Bitcoin has been requested or received.<br><strong>Next:</strong> Jade Plus signing becomes available only after sufficient funding is verified.</p>
+<details id="professional-developer-tools"><summary style="cursor:pointer;font-weight:700">Developer tools — disposable regtest testing only</summary>
+<p class="notice">Technical controls below are not part of the customer payment experience. They cannot authorize mainnet funding or signing.</p>
+<h3>Regtest funding diagnostics</h3><p>For isolated developer testing, inspect a disposable public wallet and regtest funding status below.</p>
 <div class="status"><strong>Funding address:</strong> Not yet generated<br><strong>Received:</strong> Not checked<br><strong>Confirmations:</strong> Not checked<br><strong>Jade Plus signing:</strong> Locked until verified funding</div>
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
 <h3>Connect Jade Plus public wallet information</h3>
@@ -79,14 +85,39 @@
 <li>Select <strong>Continue to Jade Plus preview</strong>. The animated QR and signed-QR camera are on the next page.</li>
 </ol>
 </div>
-<a class="button secondary" href="./retail-mirror/index.html">← Back to gift planning</a></section><nav style="max-width:920px;margin:0 auto 22px;padding:16px;text-align:center;background:#e2edf6;border-radius:8px"><a href="./customer-walkthrough.html" style="color:#09518b;font-weight:700">← Customer walkthrough &amp; all five stages</a></nav></main>
+</details><a class="button secondary" href="./retail-mirror/index.html">← Back to gift planning</a></section><nav style="max-width:920px;margin:0 auto 22px;padding:16px;text-align:center;background:#e2edf6;border-radius:8px"><a href="./customer-walkthrough.html" style="color:#09518b;font-weight:700">← Customer walkthrough &amp; all five stages</a></nav></main>
 <script src="./browser-integration/professional-verifier.bundle.js"></script>
 <script type="module">
 import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
 'use strict';
 (function(){const professionalIdentity=(()=>{try{const profile=JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null');return typeof profile?.business==='string'&&profile.business.trim().length>0&&profile.business.length<=100?profile.business.trim():null;}catch{return null}})();
+const professionalProfile=(()=>{try{return JSON.parse(sessionStorage.getItem('bc1q21-professional-profile-draft')||'null')}catch{return null}})();
+if(professionalProfile?.business){
+ const header=document.querySelector('main > header');
+ const img=header?.querySelector('img');
+ if(img){
+  if(typeof professionalProfile.logoData==='string'&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(professionalProfile.logoData)){img.src=professionalProfile.logoData;img.alt=professionalProfile.business+' logo';}
+  else img.remove();
+ }
+ const heading=header?.querySelector('h1');if(heading)heading.textContent='Gifting Wizard';
+ const brand=document.createElement('p');brand.style.cssText='font-weight:750;font-size:1.25rem;margin:0 0 8px';brand.textContent=professionalProfile.business.slice(0,100);
+ heading?.before(brand);
+ const info=document.createElement('p');info.style.cssText='font-size:.82rem;line-height:1.5;margin:4px 0';
+ info.textContent=['contact','address','email','phone'].map(k=>professionalProfile[k]).filter(x=>typeof x==='string'&&x.trim()).join(' · ').slice(0,400);
+ brand.after(info);
+ const credit=document.createElement('footer');credit.textContent='Powered by bc1q21';credit.style.cssText='text-align:center;color:#64748b;font-size:.85rem;margin:20px';document.querySelector('main').append(credit);
+}
 if(professionalIdentity){for(const element of document.querySelectorAll('.practice-identity')){element.textContent=professionalIdentity;element.hidden=false;}}
 
+ const storedPlan=(()=>{try{return JSON.parse(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')||'null')}catch{return null}})();
+ if(storedPlan&&Array.isArray(storedPlan.releases)&&Number.isSafeInteger(storedPlan.totalSats)&&storedPlan.totalSats>0){
+  const count=storedPlan.releases.length;
+  const service=1000+250*Math.max(0,count-1);
+  const estimatedNetwork=500+250*count;
+  const estimatedTotal=storedPlan.totalSats+service+estimatedNetwork;
+  document.getElementById('customer-payment-amount').textContent=estimatedTotal.toLocaleString()+' sats (estimate)';
+  document.getElementById('customer-payment-breakdown').textContent='Gift '+storedPlan.totalSats.toLocaleString()+' sats + service fee '+service.toLocaleString()+' sats + estimated mining fees '+estimatedNetwork.toLocaleString()+' sats. Final payment amount must be recalculated before funding.';
+ }else document.getElementById('customer-payment-amount').textContent='Gift plan unavailable';
  const status=document.getElementById('status');
  let publicFundingScript=null;
  let publicFundingAddress=null;
