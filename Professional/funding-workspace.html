@@ -30,6 +30,14 @@
 <input id="jade-fingerprint" maxlength="8" autocomplete="off" spellcheck="false" placeholder="a1b2c3d4">
 <button type="button" id="construct-unsigned" disabled>Construct unsigned transaction (locked)</button>
 <p id="unsigned-status" class="status" role="status">No verified funding UTXOs available. Signing remains locked.</p>
+<div id="unsigned-review" hidden>
+<h4>Unsigned gift transaction review (not for signing)</h4>
+<p><strong>Funding inputs:</strong> <span id="review-inputs"></span><br>
+<strong>Time-locked gifts:</strong> <span id="review-gifts"></span><br>
+<strong>Network fee:</strong> <span id="review-fee"></span> sats<br>
+<strong>Transaction commitment:</strong> <code id="review-hash"></code></p>
+<p class="notice">This is a consistency review only. Wallet origin, recipient recovery, fee policy, and independent gift approval are not yet authenticated. Jade signing remains disabled.</p>
+</div>
 </details>
 <details><summary>Manual regtest outpoint lookup (developer fallback)</summary>
 <h3>Check a regtest deposit (development only)</h3>
@@ -53,13 +61,19 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  let publicFundingScript=null;
  let publicFundingAddress=null;
  let scannedUtxos=null;
+ let derivedXpub=null;
+ let latestScanId=0;
+ const unsignedReview=document.getElementById("unsigned-review");
+ const resetUnsigned=()=>{scannedUtxos=null;constructButton.disabled=true;unsignedReview.hidden=true;};
  const constructButton=document.getElementById("construct-unsigned");
  const unsignedStatus=document.getElementById("unsigned-status");
  const scanButton=document.getElementById('scan-funding');
  scanButton.addEventListener('click',async()=>{
   const output=document.getElementById('scan-status');
   scanButton.disabled=true;
-  scannedUtxos=null;constructButton.disabled=true;
+  resetUnsigned();
+  const scanId=++latestScanId;
+  const scanXpub=derivedXpub;
   output.textContent='Checking confirmed regtest outputs with Bitcoin Core…';
   try{
    if(!publicFundingAddress||!publicFundingScript)throw Error('Public wallet required');
@@ -70,6 +84,7 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    });
    if(!response.ok)throw Error('Local regtest Core scan unavailable');
    const result=await response.json();
+   if(scanId!==latestScanId||scanXpub!==derivedXpub||document.getElementById('funding-xpub').value.trim()!==scanXpub)throw Error('Public wallet changed during funding check');
    if(result.format!=='bc1q21-professional-regtest-auto-funding-observation-v1'||
       result.network!=='regtest'||!Array.isArray(result.confirmedUtxos)||
       !Number.isSafeInteger(result.totalConfirmedSats)||result.totalConfirmedSats<0||
@@ -110,7 +125,9 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  constructButton.addEventListener('click',()=>{
   constructButton.disabled=true;
   try{
+   unsignedReview.hidden=true;
    if(!scannedUtxos?.length)throw Error('Confirmed regtest inputs required');
+   if(!derivedXpub||document.getElementById('funding-xpub').value.trim()!==derivedXpub)throw Error('Public wallet changed; reimport and rescan');
    const plan=JSON.parse(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')||'null');
    if(!plan||plan.format!=='bc1q21-professional-retail-plan-preview-v1'||
       plan.status!=='UNFUNDED_PREVIEW_NOT_SIGNABLE'||plan.signingAuthorized!==false)
@@ -131,6 +148,11 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
       built.signingAuthorized!==false||built.canSign!==false||
       built.canBroadcast!==false||built.unsigned?.signed!==false)
     throw Error('Unsafe unsigned PSBT construction');
+   document.getElementById('review-inputs').textContent=String(built.unsigned.fundingInputCount);
+   document.getElementById('review-gifts').textContent=String(built.unsigned.giftOutputCount);
+   document.getElementById('review-fee').textContent=fee.toLocaleString();
+   document.getElementById('review-hash').textContent=built.unsigned.psbtSha256;
+   unsignedReview.hidden=false;
    unsignedStatus.textContent='Unsigned regtest gift transaction constructed: '+
     built.unsigned.fundingInputCount+' input(s), '+
     built.unsigned.giftOutputCount+' locked gift output(s), '+
@@ -139,6 +161,12 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    unsignedStatus.textContent='Unsigned construction unavailable: '+String(error.message||error)+
     '. Signing remains locked.';
   }finally{constructButton.disabled=!scannedUtxos?.length;}
+ });
+ document.getElementById('funding-xpub').addEventListener('input',()=>{
+  ++latestScanId;publicFundingAddress=null;publicFundingScript=null;derivedXpub=null;
+  resetUnsigned();scanButton.disabled=true;
+  document.getElementById('funding-key-result').hidden=true;
+  document.getElementById('scan-status').textContent='Public wallet changed. Reimport the wallet and check funding again.';
  });
  const inspectButton=document.getElementById('inspect-funding');
  inspectButton.addEventListener('click',async()=>{
@@ -177,7 +205,7 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  document.getElementById('derive-funding-key').addEventListener('click',()=>{
   const status=document.getElementById('funding-key-status');
   document.getElementById('funding-key-result').hidden=true;
-  publicFundingScript=null;publicFundingAddress=null;scannedUtxos=null;constructButton.disabled=true;inspectButton.disabled=true;scanButton.disabled=true;
+  ++latestScanId;publicFundingScript=null;publicFundingAddress=null;derivedXpub=null;resetUnsigned();inspectButton.disabled=true;scanButton.disabled=true;
   try{
    const derive=globalThis.bc1q21ProfessionalPreviewFundingPublicKey;
    if(typeof derive!=='function')throw Error('Professional browser verifier is unavailable');
@@ -203,7 +231,7 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    }
    if(typeof result.scriptPubKeyHex!=='string'||!/^[0-9a-f]+$/i.test(result.scriptPubKeyHex))throw Error('Invalid funding script');
    publicFundingScript=result.scriptPubKeyHex.toLowerCase();
-   publicFundingAddress=result.address;inspectButton.disabled=false;scanButton.disabled=false;
+   publicFundingAddress=result.address;derivedXpub=document.getElementById('funding-xpub').value.trim();inspectButton.disabled=false;scanButton.disabled=false;
    document.getElementById('inspection-status').textContent='Public funding script prepared. Enter a disposable regtest transaction ID to check Bitcoin Core.';
    document.getElementById('funding-test-address').textContent=result.address;
    document.getElementById('funding-key-result').hidden=false;
