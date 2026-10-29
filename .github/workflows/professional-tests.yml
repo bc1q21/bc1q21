@@ -30,6 +30,8 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 qrcode@1.5.4 esbuild@0.25.12 jsqr@1.4.0 cbor@9.0.2 buffer@6.0.3 @noble/curves@1.9.7 playwright@1.58.2 bip32@5.0.0 tiny-secp256k1@2.2.4
       - name: Verify Professional trusted Core funding adapter (mock RPC, no network)
         run: python3 -m unittest discover -s Professional -p test_trusted_core_funding.py
+      - name: Verify isolated local funding HTTP boundary (mock Core, no credentials)
+        run: python3 -m unittest discover -s Professional -p test_local_regtest_funding_http.py
       - name: Verify recipient Jade release actually bundles for browser
         run: node --test Professional/recipient-browser-bundle.check.mjs
       - name: Run isolated tests
