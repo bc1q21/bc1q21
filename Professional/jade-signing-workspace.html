@@ -16,8 +16,32 @@
 // PSBT, or browser-provided flags can unlock this production-facing screen.
 'use strict';
 let timer=null;
+let approvedUnsigned=null;
+let cameraController=null;
+const scanStatus=document.getElementById('verification');
+const attachCamera=window.bc1q21ProfessionalAttachCreatorCamera;
+if(typeof attachCamera==='function'){
+ cameraController=attachCamera({
+  video:document.getElementById('camera'),
+  canvas:document.getElementById('camera-canvas'),
+  startButton:document.getElementById('scan'),
+  stopButton:document.getElementById('stop'),
+  statusElement:scanStatus,
+  getApprovedUnsigned:()=>approvedUnsigned,
+  onVerified:verified=>{
+   if(verified.approvedPsbtSha256!==approvedUnsigned?.psbtSha256){
+    scanStatus.textContent='Signed QR did not match the approved gift';return;
+   }
+   scanStatus.textContent='Jade signature cryptographically verified for this gift. Broadcasting is disabled in the development preview.';
+  }
+ });
+}else{scanStatus.textContent='Jade camera verifier unavailable. Scanning disabled.';}
+
 window.bc1q21ProfessionalShowTrustedCreatorPsbt=async function(unsigned,evidence){
  const status=document.getElementById('status');
+ approvedUnsigned=null;
+ cameraController?.invalidate();
+ if(timer){clearInterval(timer);timer=null;}
  document.getElementById('qr-panel').hidden=true;
  if(evidence?.format!=='bc1q21-professional-trusted-funding-authorization-v1'||
     evidence.network!=='regtest'||evidence.chainVerified!==true||
@@ -30,6 +54,10 @@ window.bc1q21ProfessionalShowTrustedCreatorPsbt=async function(unsigned,evidence
  const render=window.bc1q21ProfessionalRenderCreatorUnsignedQr;
  if(typeof render!=='function')throw Error('Jade QR renderer is not available');
  const qr=await render(unsigned);
+ if(qr.approvedPsbtSha256!==unsigned.psbtSha256.toLowerCase())
+  throw Error('Jade QR commitment mismatch');
+ approvedUnsigned=Object.freeze({...unsigned});
+ cameraController?.refresh();
  if(timer)clearInterval(timer);
  let index=0;
  const img=document.getElementById('qr');img.src=qr.images[0];
@@ -41,6 +69,6 @@ window.bc1q21ProfessionalShowTrustedCreatorPsbt=async function(unsigned,evidence
   if(timer){clearInterval(timer);timer=null;document.getElementById('pause').textContent='Resume QR';}
   else{timer=setInterval(()=>{index=(index+1)%qr.images.length;img.src=qr.images[index]},280);document.getElementById('pause').textContent='Pause QR';}
  };
- status.textContent='Gift-specific unsigned transaction ready for Jade Plus. Signature verification is not yet connected.';
+ status.textContent='Gift-specific unsigned transaction ready for Jade Plus. After signing, scan the returned QR to verify its signatures and exact transaction.';
 };
 </script></body></html>
