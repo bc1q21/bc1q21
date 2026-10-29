@@ -69,7 +69,7 @@
 </div>
 <p><button disabled>Show funding QR</button><button disabled>Continue to Jade Plus →</button></p>
 <p class="status"><strong>Next:</strong> After the funding and wallet-identity checks are integrated, this step will hand the exact unsigned gift transaction to the Jade Plus page. You will review the schedule, scan the animated QR with Jade, and scan the signed QR back. The separate development tools above do not authorize that handoff.</p>
-<p><button type="button" id="handoff-jade" disabled>Continue to Jade Plus test preview →</button><a class="button secondary" href="./jade-signing-workspace.html">Preview Jade Plus signing page (disabled) →</a></p>
+<p><button type="button" id="handoff-jade" disabled>Continue to Jade Plus preview →</button><a class="button secondary" href="./jade-signing-workspace.html">Preview Jade Plus signing page (disabled) →</a></p>
 <p id="handoff-jade-status" class="status" role="status">Construct the disposable regtest transaction before continuing. This preview is not signing authorization.</p>
 <a class="button secondary" href="./retail-mirror/index.html">← Back to gift planning</a></section></main>
 <script src="./browser-integration/professional-verifier.bundle.js"></script>
@@ -91,11 +91,16 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
  const handoffButton=document.getElementById('handoff-jade');
  const handoffKey='bc1q21-professional-diagnostic-jade-handoff';
  const clearHandoff=()=>{sessionStorage.removeItem(handoffKey);handoffButton.disabled=true;};
+ const refreshHandoff=()=>{
+  handoffButton.disabled=!(latestUnsigned&&scannedUtxos?.length&&reviewAck.checked&&derivedXpub&&
+   document.getElementById('funding-xpub').value.trim()===derivedXpub);
+ };
+
  handoffButton.addEventListener('click',()=>{
   try{
    if(!latestUnsigned||!scannedUtxos?.length||!derivedXpub||
       document.getElementById('funding-xpub').value.trim()!==derivedXpub||
-      latestUnsigned.network!=='regtest'||latestUnsigned.signed!==false||
+      !reviewAck.checked||latestUnsigned.network!=='regtest'||latestUnsigned.signed!==false||
       latestUnsigned.broadcast!==false||latestUnsigned.hardwareSignatureVerified!==false)
     throw Error('A fresh disposable regtest transaction is required');
    sessionStorage.setItem(handoffKey,JSON.stringify({
@@ -120,6 +125,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
  const unsignedReview=document.getElementById("unsigned-review");
  const reviewAck=document.getElementById("review-acknowledged");
  reviewAck.addEventListener("change",()=>{
+  refreshHandoff();
   document.getElementById("review-ack-status").textContent=reviewAck.checked?
    "Review acknowledged locally. Hardware wallet identity and signing authorization remain unverified.":
    "Review acknowledgement pending.";
@@ -263,11 +269,12 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    unsignedReview.hidden=true;reviewAck.checked=false;stopDiagnostic();
    if(!scannedUtxos?.length)throw Error('Confirmed regtest inputs required');
    if(!derivedXpub||document.getElementById('funding-xpub').value.trim()!==derivedXpub)throw Error('Public wallet changed; reimport and rescan');
-   if(plan.releases.length>24)throw Error('Jade Plus creator currently supports at most 24 gift releases');
    const plan=JSON.parse(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')||'null');
    if(!plan||plan.format!=='bc1q21-professional-retail-plan-preview-v1'||
       plan.status!=='UNFUNDED_PREVIEW_NOT_SIGNABLE'||plan.signingAuthorized!==false)
     throw Error('Approved gift schedule required');
+   if(!Array.isArray(plan.releases)||plan.releases.length>24)
+    throw Error('Jade Plus creator currently supports at most 24 gift releases');
    const inputTotal=scannedUtxos.reduce((n,u)=>n+u.valueSats,0);
    const fee=Number(document.getElementById('network-fee').value);
    if(!Number.isSafeInteger(fee)||fee<100||fee>10000)
@@ -304,6 +311,9 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    unsignedReview.hidden=false;
    latestUnsigned=built.unsigned;
    diagnosticButton.disabled=false;
+   refreshHandoff();
+   document.getElementById('handoff-jade-status').textContent=
+    'Review the schedule and fee, then check the review acknowledgement to open the Jade Plus regtest preview. No real signing approval.';
    unsignedStatus.textContent='Unsigned regtest gift transaction constructed: '+
     built.unsigned.fundingInputCount+' input(s), '+
     built.unsigned.giftOutputCount+' locked gift output(s), '+
