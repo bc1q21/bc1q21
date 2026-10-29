@@ -33,12 +33,15 @@ test('Bridge rejects dust and unsorted release dates', () => {
   const b=valid();b.scheduleRows.reverse();
   assert.throws(() => snapshotRetailGiftPlan(b));
 });
-test('Isolated Retail mirror and Jade creator have explicit handoff wiring', () => {
+test('Isolated Retail mirror routes approved schedule to Add Funds while retaining legacy creator diagnostics', () => {
   const mirror=readFileSync(new URL('./retail-mirror/index.html',import.meta.url),'utf8');
   const creator=readFileSync(new URL('./professional-creator-prototype.html',import.meta.url),'utf8');
   assert.match(mirror,/bc1q21:professional-plan-ready/);
   assert.ok(mirror.includes("from '../Professional/retail-plan-bridge.mjs'"));
-  assert.match(mirror,/bc1q21ProfessionalAcceptRetailPlan/);
+  assert.match(mirror,/bc1q21-professional-approved-plan-preview/);
+  assert.match(mirror,/professional-funding-handoff/);
+  assert.match(mirror,/fundingPanel\.scrollIntoView/);
+  assert.doesNotMatch(mirror,/receiver\(plan\)/);
   assert.match(creator,/window\.bc1q21ProfessionalAcceptRetailPlan/);
   assert.match(creator,/renderCreatorHeights\(\)/);
   assert.match(mirror,/Retail recovery and funding are disabled/);
