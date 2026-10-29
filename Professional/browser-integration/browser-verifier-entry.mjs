@@ -139,3 +139,11 @@ globalThis.bc1q21ProfessionalPrepareGiftUnsignedQr=async function({
  return Object.freeze({frames,images,network:'regtest',giftProvenanceVerified:false,
   signingAuthorized:false,broadcast:false});
 };
+
+// Creator-side gift-specific Jade signed QR controller (isolated regtest).
+// Only an already approved unsigned PSBT may be supplied by the caller.
+// This diagnostic entry does not authenticate a file or approve a broadcast.
+import {createCreatorSignedQrController} from '../creator-signed-qr-camera.browser.mjs';
+globalThis.bc1q21ProfessionalAttachCreatorCamera = function(options) {
+ return createCreatorSignedQrController(options);
+};
