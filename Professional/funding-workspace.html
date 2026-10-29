@@ -25,7 +25,10 @@
 <button type="button" id="scan-funding" disabled>Check funding automatically</button>
 <p id="scan-status" class="status" role="status">Import the public wallet first. Signing remains locked.</p>
 <details><summary>Developer: construct unsigned regtest gift transaction (not for signing)</summary>
-<p>Uses the confirmed UTXOs from the latest local Core scan. Requires disposable Jade master fingerprint. The difference between confirmed inputs and the approved gift total is treated as the network fee only for this isolated no-change test; excessive fees are rejected.</p>
+<p>Uses the confirmed UTXOs from the latest local Core scan. Requires disposable Jade master fingerprint. The unsigned transaction includes the approved gift outputs, a bounded development fee, and a public change output when funds remain. This is not a trusted fee quote or signing approval.</p>
+<label for="network-fee">Regtest network fee (sats; development estimate only)</label>
+<input id="network-fee" type="number" min="100" max="10000" step="1" value="1000" style="width:150px;padding:10px">
+<p>Any remaining balance of at least 546 sats is returned to the public change output derived at <code>m/84'/0'/0'/0/1</code>. No customer deposit address or signing approval is created.</p>
 <label for="jade-fingerprint">Disposable Jade master fingerprint (8 hex characters)</label>
 <input id="jade-fingerprint" maxlength="8" autocomplete="off" spellcheck="false" placeholder="a1b2c3d4">
 <button type="button" id="construct-unsigned" disabled>Construct unsigned transaction (locked)</button>
@@ -35,6 +38,7 @@
 <p><strong>Funding inputs:</strong> <span id="review-inputs"></span><br>
 <strong>Time-locked gifts:</strong> <span id="review-gifts"></span><br>
 <strong>Network fee:</strong> <span id="review-fee"></span> sats<br>
+<strong>Change:</strong> <span id="review-change"></span> sats<br>
 <strong>Transaction commitment:</strong> <code id="review-hash"></code></p>
 <p class="notice">This is a consistency review only. Wallet origin, recipient recovery, fee policy, and independent gift approval are not yet authenticated. Jade signing remains disabled.</p>
 <label style="display:block;margin:12px 0"><input type="checkbox" id="review-acknowledged"> I have checked the number of gifts, their release dates, and the network fee. This is a review acknowledgement, not authorization to sign.</label>
@@ -142,15 +146,26 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
       plan.status!=='UNFUNDED_PREVIEW_NOT_SIGNABLE'||plan.signingAuthorized!==false)
     throw Error('Approved gift schedule required');
    const inputTotal=scannedUtxos.reduce((n,u)=>n+u.valueSats,0);
-   const fee=inputTotal-plan.totalSats;
+   const fee=Number(document.getElementById('network-fee').value);
    if(!Number.isSafeInteger(fee)||fee<100||fee>10000)
-    throw Error('No-change test requires 100–10,000 sats remaining for network fee; no transaction prepared');
+    throw Error('Development fee must be 100–10,000 sats');
+   const remaining=inputTotal-plan.totalSats-fee;
+   if(!Number.isSafeInteger(remaining)||remaining<0||(remaining>0&&remaining<546))
+    throw Error('Insufficient funding or dust change; no transaction prepared');
+   const change=remaining>0?globalThis.bc1q21ProfessionalPreviewChangeOutput({
+    accountXpub:derivedXpub
+   }):null;
+   if(change&&(change.format!=='bc1q21-professional-public-change-preview-v1'||
+      change.walletOriginAuthenticated!==false||change.canSign!==false||
+      !/^[a-f0-9]+$/.test(change.scriptPubKeyHex)))
+    throw Error('Unsafe public change output');
    const builder=globalThis.bc1q21ProfessionalConstructUntrustedCreatorPsbt;
    if(typeof builder!=='function')throw Error('Browser PSBT builder unavailable');
    const built=builder({
     plan,accountXpub:document.getElementById('funding-xpub').value.trim(),
     masterFingerprintHex:document.getElementById('jade-fingerprint').value.trim(),
-    utxos:scannedUtxos,networkFeeSats:fee
+    utxos:scannedUtxos,networkFeeSats:fee,
+    changeOutput:change?{valueSats:remaining,scriptPubKeyHex:change.scriptPubKeyHex}:null
    });
    if(built.format!=='bc1q21-professional-untrusted-creator-construction-v1'||
       built.giftScriptsChecked!==true||built.chainVerified!==false||
@@ -160,13 +175,14 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    document.getElementById('review-inputs').textContent=String(built.unsigned.fundingInputCount);
    document.getElementById('review-gifts').textContent=String(built.unsigned.giftOutputCount);
    document.getElementById('review-fee').textContent=fee.toLocaleString();
+   document.getElementById('review-change').textContent=remaining.toLocaleString();
    document.getElementById('review-hash').textContent=built.unsigned.psbtSha256;
    document.getElementById('review-ack-status').textContent='Review acknowledgement pending.';
    unsignedReview.hidden=false;
    unsignedStatus.textContent='Unsigned regtest gift transaction constructed: '+
     built.unsigned.fundingInputCount+' input(s), '+
     built.unsigned.giftOutputCount+' locked gift output(s), '+
-    fee.toLocaleString()+' sats network fee. NOT authorized for Jade signing or broadcast.';
+    fee.toLocaleString()+' sats network fee, '+remaining.toLocaleString()+' sats change. NOT authorized for Jade signing or broadcast.';
   }catch(error){
    unsignedStatus.textContent='Unsigned construction unavailable: '+String(error.message||error)+
     '. Signing remains locked.';
