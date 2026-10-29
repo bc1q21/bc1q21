@@ -168,7 +168,8 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
     document.getElementById('diagnostic-signed-status').textContent=
      'All '+verified.inputSignaturesVerified+
      ' Jade signature(s) cryptographically verified for the exact unsigned gift transaction ('+
-     verified.approvedPsbtSha256+'). Broadcasting remains disabled.';
+     verified.approvedPsbtSha256+'). Finalized regtest TXID: '+
+     verified.finalizedTxid+'. Broadcasting remains disabled.';
    }
   });
  }else{
