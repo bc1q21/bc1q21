@@ -60,39 +60,17 @@ if(typeof attachCamera==='function'){
  });
 }else{scanStatus.textContent='Jade camera verifier unavailable. Scanning disabled.';}
 
-window.bc1q21ProfessionalShowTrustedCreatorPsbt=async function(unsigned,evidence){
- const status=document.getElementById('status');
- if(!reviewedPlan)throw Error('Reviewed gift plan required before signing');
+// Fail closed until an actual trusted authorization issuer is implemented.
+// Previously this UI accepted caller-provided booleans masquerading as trust.
+// Such booleans are forgeable and must never enable a signing QR.
+window.bc1q21ProfessionalShowTrustedCreatorPsbt=async function(){
  approvedUnsigned=null;
  cameraController?.invalidate();
  if(timer){clearInterval(timer);timer=null;}
  document.getElementById('qr-panel').hidden=true;
- if(evidence?.format!=='bc1q21-professional-trusted-funding-authorization-v1'||
-    evidence.network!=='regtest'||evidence.chainVerified!==true||
-    evidence.recipientKeyOriginAuthenticated!==true||
-    evidence.independentGiftApproval!==true||
-    evidence.approvedPsbtSha256!==unsigned?.psbtSha256)
-  throw Error('Authenticated funding and independent gift approval are required');
- // This isolated prototype intentionally has no trusted authorization issuer.
- // The function is a UI integration point, NOT a security boundary.
- const render=window.bc1q21ProfessionalRenderCreatorUnsignedQr;
- if(typeof render!=='function')throw Error('Jade QR renderer is not available');
- const qr=await render(unsigned);
- if(qr.approvedPsbtSha256!==unsigned.psbtSha256.toLowerCase())
-  throw Error('Jade QR commitment mismatch');
- approvedUnsigned=Object.freeze({...unsigned});
- cameraController?.refresh();
- if(timer)clearInterval(timer);
- let index=0;
- const img=document.getElementById('qr');img.src=qr.images[0];
- document.getElementById('frame-count').textContent=qr.frameCount+' animated QR frame(s)';
- document.getElementById('qr-panel').hidden=false;
- document.getElementById('pause').textContent='Pause QR';
- timer=setInterval(()=>{index=(index+1)%qr.images.length;img.src=qr.images[index]},280);
- document.getElementById('pause').onclick=()=>{
-  if(timer){clearInterval(timer);timer=null;document.getElementById('pause').textContent='Resume QR';}
-  else{timer=setInterval(()=>{index=(index+1)%qr.images.length;img.src=qr.images[index]},280);document.getElementById('pause').textContent='Pause QR';}
- };
- status.textContent='Gift-specific unsigned transaction ready for Jade Plus. After signing, scan the returned QR to verify its signatures and exact transaction.';
+ document.getElementById('status').textContent=
+  'Jade signing locked: trusted wallet-origin authentication and independent gift approval are not yet implemented.';
+ throw Error('No trusted Professional signing authorization issuer is installed');
 };
+
 </script></body></html>
