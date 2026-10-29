@@ -69,7 +69,8 @@
 </div>
 <p><button disabled>Show funding QR</button><button disabled>Continue to Jade Plus →</button></p>
 <p class="status"><strong>Next:</strong> After the funding and wallet-identity checks are integrated, this step will hand the exact unsigned gift transaction to the Jade Plus page. You will review the schedule, scan the animated QR with Jade, and scan the signed QR back. The separate development tools above do not authorize that handoff.</p>
-<p><a class="button secondary" href="./jade-signing-workspace.html">Preview Jade Plus signing page (disabled) →</a></p>
+<p><button type="button" id="handoff-jade" disabled>Continue to Jade Plus test preview →</button><a class="button secondary" href="./jade-signing-workspace.html">Preview Jade Plus signing page (disabled) →</a></p>
+<p id="handoff-jade-status" class="status" role="status">Construct the disposable regtest transaction before continuing. This preview is not signing authorization.</p>
 <a class="button secondary" href="./retail-mirror/index.html">← Back to gift planning</a></section></main>
 <script src="./browser-integration/professional-verifier.bundle.js"></script>
 <script type="module">
@@ -85,7 +86,28 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  let diagnosticCamera=null;
  const diagnosticButton=document.getElementById("diagnostic-qr");
  const diagnosticPanel=document.getElementById("diagnostic-qr-panel");
- const stopDiagnostic=()=>{
+ const handoffButton=document.getElementById('handoff-jade');
+ const handoffKey='bc1q21-professional-diagnostic-jade-handoff';
+ const clearHandoff=()=>{sessionStorage.removeItem(handoffKey);handoffButton.disabled=true;};
+ handoffButton.addEventListener('click',()=>{
+  try{
+   if(!latestUnsigned||!scannedUtxos?.length||!derivedXpub||
+      document.getElementById('funding-xpub').value.trim()!==derivedXpub||
+      latestUnsigned.network!=='regtest'||latestUnsigned.signed!==false||
+      latestUnsigned.broadcast!==false||latestUnsigned.hardwareSignatureVerified!==false)
+    throw Error('A fresh disposable regtest transaction is required');
+   sessionStorage.setItem(handoffKey,JSON.stringify({
+    format:'bc1q21-professional-diagnostic-jade-handoff-v1',
+    diagnosticOnly:true,signingAuthorized:false,canBroadcast:false,
+    unsigned:latestUnsigned
+   }));
+   window.location.assign('./jade-signing-workspace.html');
+  }catch(error){
+   clearHandoff();
+   document.getElementById('handoff-jade-status').textContent='Cannot open Jade preview: '+error.message;
+  }
+ });
+ const stopDiagnostic=()=>{clearHandoff();
   if(diagnosticTimer){clearInterval(diagnosticTimer);diagnosticTimer=null;}
   diagnosticCamera?.invalidate();
   document.getElementById('diagnostic-signed-panel').hidden=true;
@@ -132,6 +154,7 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    const pause=document.getElementById('diagnostic-pause');
    let frame=0;
    img.src=qr.images[0];diagnosticPanel.hidden=false;
+   handoffButton.disabled=false;
    document.getElementById('diagnostic-signed-panel').hidden=false;
    diagnosticCamera?.refresh();
    document.getElementById('diagnostic-frame-count').textContent=
