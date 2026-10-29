@@ -7,7 +7,7 @@
 <h2>Sign your gift with Jade Plus</h2><p id="gift-summary" class="status" role="status">Checking the approved gift schedule…</p>
 <div id="schedule-panel" hidden><h3>Review the gift schedule</h3><p>These are the releases you selected. Check every date and amount before approving a transaction on Jade Plus.</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:10px">Release</th><th style="text-align:left;padding:10px">Unlock date</th><th style="text-align:right;padding:10px">Amount (sats)</th></tr></thead><tbody id="schedule-rows"></tbody></table></div></div><p>When your Bitcoin deposit has been verified, the exact gift transaction will appear here as an animated QR code. Review it on Jade Plus, sign offline, and scan the signed QR back into this page.</p>
 <p id="status" class="status" role="status">Waiting for a trusted, gift-specific unsigned transaction. Jade signing is locked.</p>
-<p id="diagnostic-label" class="warning" hidden><strong>Disposable regtest developer preview only.</strong> This transaction came from browser session storage, not an authenticated Jade wallet or trusted signing issuer. Never use real Bitcoin. No signing authorization or broadcast is granted.</p><div id="qr-panel" hidden><img id="qr" alt="Animated unsigned transaction QR"><p id="frame-count"></p><button type="button" id="pause">Pause QR</button></div>
+<p id="diagnostic-label" class="warning" hidden><strong>Disposable regtest developer preview only.</strong> This transaction came from browser session storage, not an authenticated Jade wallet or trusted signing issuer. Never use real Bitcoin. No signing authorization or broadcast is granted.</p><div id="transaction-review" class="status" hidden><h3>Transaction details to check on Jade Plus</h3><p id="transaction-review-details"></p><p>Only approve a transaction if the amounts, gift releases and fee match what you intended. This developer preview does not authenticate the wallet or authorize signing.</p></div><div id="qr-panel" hidden><img id="qr" alt="Animated unsigned transaction QR"><p id="frame-count"></p><button type="button" id="pause">Pause QR</button></div>
 <h3>Scan signed QR from Jade Plus</h3><video id="camera" playsinline muted></video><canvas id="camera-canvas" hidden></canvas><button type="button" id="scan" disabled>Scan signed Jade QR</button><button type="button" id="stop" disabled>Stop camera</button>
 <p id="verification" class="status" role="status">No signed transaction verified.</p>
 <div id="verified-next" hidden><p class="status">The returned Jade QR has passed cryptographic checks for this gift. This does not mean the transaction has been broadcast.</p><a class="button" href="./finish-workspace.html">View verified transaction summary →</a></div><a class="button secondary" href="./finish-workspace.html">Preview Finish page (gift not completed) →</a><button disabled>Finish gift →</button><a class="button secondary" href="./funding-workspace.html">← Back to Add Funds</a></section>
@@ -117,7 +117,21 @@ const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
      qr.signingAuthorized!==false||qr.canBroadcast!==false||
      !Array.isArray(qr.images)||!qr.images.length)
    throw Error('Unsigned transaction QR does not match');
+  if(!Number.isSafeInteger(unsigned.networkFeeSats)||unsigned.networkFeeSats<0||
+     !Number.isSafeInteger(unsigned.giftOutputCount)||
+     unsigned.giftOutputCount!==reviewedPlan.releases.length||
+     !Number.isSafeInteger(unsigned.fundingInputCount)||unsigned.fundingInputCount<1||
+     !Number.isSafeInteger(unsigned.totalOutputCount)||
+     unsigned.totalOutputCount<unsigned.giftOutputCount)
+   throw Error('Unsigned transaction counts or network fee do not match gift review');
   approvedUnsigned=unsigned;
+  document.getElementById('transaction-review-details').textContent=
+   unsigned.giftOutputCount+' gift release(s) · '+
+   reviewedPlan.totalSats.toLocaleString()+' sats total gift · '+
+   unsigned.networkFeeSats.toLocaleString()+' sats network fee · '+
+   unsigned.fundingInputCount+' funding input(s) · '+
+   (unsigned.totalOutputCount-unsigned.giftOutputCount)+' additional output(s), including any change.';
+  document.getElementById('transaction-review').hidden=false;
   document.getElementById('diagnostic-label').hidden=false;
   document.getElementById('qr-panel').hidden=false;
   const image=document.getElementById('qr');
@@ -133,6 +147,7 @@ const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
   document.getElementById('status').textContent='Regtest developer preview loaded. Scan the QR only with a disposable Jade test wallet. No real signing authorization or broadcasting.';
  }catch(error){
   approvedUnsigned=null;
+  document.getElementById('transaction-review').hidden=true;
   cameraController?.invalidate();
   document.getElementById('status').textContent='Jade preview unavailable: '+error.message;
  }
@@ -148,6 +163,7 @@ window.bc1q21ProfessionalShowTrustedCreatorPsbt=async function(){
  cameraController?.invalidate();
  if(timer){clearInterval(timer);timer=null;}
  document.getElementById('qr-panel').hidden=true;
+ document.getElementById('transaction-review').hidden=true;
  document.getElementById('status').textContent=
   'Jade signing locked: trusted wallet-origin authentication and independent gift approval are not yet implemented.';
  throw Error('No trusted Professional signing authorization issuer is installed');
