@@ -78,6 +78,32 @@ globalThis.bc1q21ProfessionalPreviewFundingPublicKey=function({accountXpub}){
   address:payment.address,accountXpubOriginAuthenticated:false,
   paymentAuthorized:false,canSign:false,canBroadcast:false});
 };
+// Public-only change output at /0/1 for funded creator transactions.
+// Not a wallet identity attestation, not a payable address or signing grant.
+globalThis.bc1q21ProfessionalPreviewChangeOutput=function({accountXpub}){
+ const funding=globalThis.bc1q21ProfessionalPreviewFundingPublicKey({accountXpub});
+ // Derive /0/1 from the same depth-three account, without private keys.
+ const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+ let n=0n;for(const c of accountXpub){const i=alphabet.indexOf(c);if(i<0)throw Error('Invalid xpub');n=n*58n+BigInt(i);}
+ let hex=n.toString(16);if(hex.length%2)hex='0'+hex;
+ const raw=Buffer.concat([Buffer.alloc((accountXpub.match(/^1*/)||[''])[0].length),Buffer.from(hex,'hex')]);
+ const derive=(node,index)=>{
+  const suffix=Buffer.alloc(4);suffix.writeUInt32BE(index);
+  const digest=Buffer.from(hmac(sha512,node.chain,Buffer.concat([node.pub,suffix])));
+  const scalar=BigInt('0x'+digest.subarray(0,32).toString('hex'));
+  if(scalar===0n||scalar>=secp256k1.CURVE.n)throw Error('Invalid public child scalar');
+  const point=secp256k1.ProjectivePoint.BASE.multiply(scalar).add(secp256k1.ProjectivePoint.fromHex(node.pub));
+  if(point.equals(secp256k1.ProjectivePoint.ZERO))throw Error('Invalid public child point');
+  return {pub:Buffer.from(point.toRawBytes(true)),chain:digest.subarray(32)};
+ };
+ const account={pub:raw.subarray(45,78),chain:raw.subarray(13,45)};
+ const pub=derive(derive(account,0),1).pub;
+ const payment=bitcoin.payments.p2wpkh({pubkey:pub,network:bitcoin.networks.regtest});
+ return Object.freeze({format:'bc1q21-professional-public-change-preview-v1',
+  network:'regtest',address:payment.address,scriptPubKeyHex:payment.output.toString('hex'),
+  publicKeyHex:pub.toString('hex'),derivationPath:"m/84'/0'/0'/0/1",
+  walletOriginAuthenticated:false,canRequestPayment:false,canSign:false,canBroadcast:false});
+};
 // Gift-specific recipient output preview using Retail UTC calendar dates and
 // Jade account xpub's /1/index public child keys. Not an authorization to fund.
 globalThis.bc1q21ProfessionalPreviewGiftOutputs=function({accountXpub,releases}){
