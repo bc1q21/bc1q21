@@ -29,7 +29,7 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 @noble/curves@1.9.7 jsqr@1.4.0
       - name: Test funded intent and unsigned Jade PSBT construction
         run: |
-          node --test Professional/funded-distribution-intent.test.mjs Professional/unsigned-funded-distribution-psbt.test.mjs Professional/unsigned-distribution-jade-qr.test.mjs Professional/verify-signed-funded-distribution.test.mjs Professional/creator-signed-qr-verification-gate.test.mjs Professional/creator-signed-qr-camera.test.mjs Professional/gift-edit-gate.test.mjs Professional/inspect-funded-distribution-core.test.mjs Professional/verify-gift-cltv-outputs.test.mjs
+          node --test Professional/funded-distribution-intent.test.mjs Professional/unsigned-funded-distribution-psbt.test.mjs Professional/unsigned-distribution-jade-qr.test.mjs Professional/verify-signed-funded-distribution.test.mjs Professional/creator-signed-qr-verification-gate.test.mjs Professional/creator-signed-qr-camera.test.mjs Professional/gift-edit-gate.test.mjs Professional/inspect-funded-distribution-core.test.mjs Professional/verify-gift-cltv-outputs.test.mjs Professional/inspect-funded-gift-unsigned.test.mjs
       - name: Test isolated authenticated Bitcoin Core funding inspector
         run: python3 -m unittest discover -s Professional -p 'test_trusted_core_funding.py' -v
       - name: Build isolated Professional browser verifier bundle
