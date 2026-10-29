@@ -37,6 +37,8 @@
 <strong>Network fee:</strong> <span id="review-fee"></span> sats<br>
 <strong>Transaction commitment:</strong> <code id="review-hash"></code></p>
 <p class="notice">This is a consistency review only. Wallet origin, recipient recovery, fee policy, and independent gift approval are not yet authenticated. Jade signing remains disabled.</p>
+<label style="display:block;margin:12px 0"><input type="checkbox" id="review-acknowledged"> I have checked the number of gifts, their release dates, and the network fee. This is a review acknowledgement, not authorization to sign.</label>
+<p id="review-ack-status" role="status">Review acknowledgement pending.</p>
 </div>
 </details>
 <details><summary>Manual regtest outpoint lookup (developer fallback)</summary>
@@ -64,7 +66,13 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  let derivedXpub=null;
  let latestScanId=0;
  const unsignedReview=document.getElementById("unsigned-review");
- const resetUnsigned=()=>{scannedUtxos=null;constructButton.disabled=true;unsignedReview.hidden=true;};
+ const reviewAck=document.getElementById("review-acknowledged");
+ reviewAck.addEventListener("change",()=>{
+  document.getElementById("review-ack-status").textContent=reviewAck.checked?
+   "Review acknowledged locally. Hardware wallet identity and signing authorization remain unverified.":
+   "Review acknowledgement pending.";
+ });
+ const resetUnsigned=()=>{scannedUtxos=null;constructButton.disabled=true;unsignedReview.hidden=true;reviewAck.checked=false;};
  const constructButton=document.getElementById("construct-unsigned");
  const unsignedStatus=document.getElementById("unsigned-status");
  const scanButton=document.getElementById('scan-funding');
@@ -125,9 +133,10 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  constructButton.addEventListener('click',()=>{
   constructButton.disabled=true;
   try{
-   unsignedReview.hidden=true;
+   unsignedReview.hidden=true;reviewAck.checked=false;
    if(!scannedUtxos?.length)throw Error('Confirmed regtest inputs required');
    if(!derivedXpub||document.getElementById('funding-xpub').value.trim()!==derivedXpub)throw Error('Public wallet changed; reimport and rescan');
+   if(plan.releases.length>24)throw Error('Jade Plus creator currently supports at most 24 gift releases');
    const plan=JSON.parse(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')||'null');
    if(!plan||plan.format!=='bc1q21-professional-retail-plan-preview-v1'||
       plan.status!=='UNFUNDED_PREVIEW_NOT_SIGNABLE'||plan.signingAuthorized!==false)
@@ -152,6 +161,7 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    document.getElementById('review-gifts').textContent=String(built.unsigned.giftOutputCount);
    document.getElementById('review-fee').textContent=fee.toLocaleString();
    document.getElementById('review-hash').textContent=built.unsigned.psbtSha256;
+   document.getElementById('review-ack-status').textContent='Review acknowledgement pending.';
    unsignedReview.hidden=false;
    unsignedStatus.textContent='Unsigned regtest gift transaction constructed: '+
     built.unsigned.fundingInputCount+' input(s), '+
