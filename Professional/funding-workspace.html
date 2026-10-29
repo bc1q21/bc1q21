@@ -43,6 +43,9 @@
 <p class="notice">This is a consistency review only. Wallet origin, recipient recovery, fee policy, and independent gift approval are not yet authenticated. Jade signing remains disabled.</p>
 <label style="display:block;margin:12px 0"><input type="checkbox" id="review-acknowledged"> I have checked the number of gifts, their release dates, and the network fee. This is a review acknowledgement, not authorization to sign.</label>
 <p id="review-ack-status" role="status">Review acknowledgement pending.</p>
+<button type="button" id="diagnostic-qr" disabled>Preview unsigned Jade QR (regtest developer only)</button>
+<p id="diagnostic-qr-status" class="status" role="status">This preview does not authorize signing or broadcasting.</p>
+<div id="diagnostic-qr-panel" hidden><img id="diagnostic-qr-image" alt="Developer-only unsigned regtest transaction QR" style="display:block;width:320px;max-width:100%;margin:15px auto"><p id="diagnostic-frame-count"></p><button type="button" id="diagnostic-pause">Pause QR</button></div>
 </div>
 </details>
 <details><summary>Manual regtest outpoint lookup (developer fallback)</summary>
@@ -67,6 +70,11 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  let publicFundingScript=null;
  let publicFundingAddress=null;
  let scannedUtxos=null;
+ let latestUnsigned=null;
+ let diagnosticTimer=null;
+ const diagnosticButton=document.getElementById("diagnostic-qr");
+ const diagnosticPanel=document.getElementById("diagnostic-qr-panel");
+ const stopDiagnostic=()=>{if(diagnosticTimer){clearInterval(diagnosticTimer);diagnosticTimer=null;}diagnosticPanel.hidden=true;diagnosticButton.disabled=true;latestUnsigned=null;};
  let derivedXpub=null;
  let latestScanId=0;
  const unsignedReview=document.getElementById("unsigned-review");
@@ -76,15 +84,49 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    "Review acknowledged locally. Hardware wallet identity and signing authorization remain unverified.":
    "Review acknowledgement pending.";
  });
- const resetUnsigned=()=>{scannedUtxos=null;constructButton.disabled=true;unsignedReview.hidden=true;reviewAck.checked=false;};
+ const resetUnsigned=()=>{scannedUtxos=null;constructButton.disabled=true;unsignedReview.hidden=true;reviewAck.checked=false;stopDiagnostic();};
  const constructButton=document.getElementById("construct-unsigned");
  const unsignedStatus=document.getElementById("unsigned-status");
  for(const id of ['network-fee','jade-fingerprint']){
   document.getElementById(id).addEventListener('input',()=>{
-   unsignedReview.hidden=true;reviewAck.checked=false;
+   unsignedReview.hidden=true;reviewAck.checked=false;stopDiagnostic();
    unsignedStatus.textContent='Transaction parameters changed. Reconstruct and review the unsigned transaction.';
   });
  }
+ diagnosticButton.addEventListener('click',async()=>{
+  diagnosticButton.disabled=true;
+  const status=document.getElementById('diagnostic-qr-status');
+  try{
+   if(!latestUnsigned||!scannedUtxos?.length)throw Error('Fresh unsigned regtest transaction required');
+   if(!derivedXpub||document.getElementById('funding-xpub').value.trim()!==derivedXpub)
+    throw Error('Wallet information changed');
+   const render=globalThis.bc1q21ProfessionalRenderCreatorUnsignedQr;
+   if(typeof render!=='function')throw Error('Jade QR renderer unavailable');
+   const qr=await render(latestUnsigned);
+   if(qr.approvedPsbtSha256!==latestUnsigned.psbtSha256||
+      qr.signingAuthorized!==false||qr.canBroadcast!==false||
+      !Array.isArray(qr.images)||!qr.images.length)
+    throw Error('Invalid unsigned QR preview');
+   if(diagnosticTimer)clearInterval(diagnosticTimer);
+   const img=document.getElementById('diagnostic-qr-image');
+   const pause=document.getElementById('diagnostic-pause');
+   let frame=0;
+   img.src=qr.images[0];diagnosticPanel.hidden=false;
+   document.getElementById('diagnostic-frame-count').textContent=
+    qr.frameCount+' QR frame(s) · diagnostic only';
+   const tick=()=>{frame=(frame+1)%qr.images.length;img.src=qr.images[frame];};
+   diagnosticTimer=setInterval(tick,280);
+   pause.textContent='Pause QR';
+   pause.onclick=()=>{
+    if(diagnosticTimer){clearInterval(diagnosticTimer);diagnosticTimer=null;pause.textContent='Resume QR';}
+    else{diagnosticTimer=setInterval(tick,280);pause.textContent='Pause QR';}
+   };
+   status.textContent='Disposable regtest unsigned QR preview only. Jade wallet origin and independent approval remain unverified. Do not sign or broadcast.';
+  }catch(error){
+   diagnosticPanel.hidden=true;
+   status.textContent='QR preview unavailable: '+String(error.message||error);
+  }finally{diagnosticButton.disabled=!latestUnsigned;}
+ });
  const scanButton=document.getElementById('scan-funding');
  scanButton.addEventListener('click',async()=>{
   const output=document.getElementById('scan-status');
@@ -143,7 +185,7 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
  constructButton.addEventListener('click',()=>{
   constructButton.disabled=true;
   try{
-   unsignedReview.hidden=true;reviewAck.checked=false;
+   unsignedReview.hidden=true;reviewAck.checked=false;stopDiagnostic();
    if(!scannedUtxos?.length)throw Error('Confirmed regtest inputs required');
    if(!derivedXpub||document.getElementById('funding-xpub').value.trim()!==derivedXpub)throw Error('Public wallet changed; reimport and rescan');
    if(plan.releases.length>24)throw Error('Jade Plus creator currently supports at most 24 gift releases');
@@ -185,6 +227,8 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
    document.getElementById('review-hash').textContent=built.unsigned.psbtSha256;
    document.getElementById('review-ack-status').textContent='Review acknowledgement pending.';
    unsignedReview.hidden=false;
+   latestUnsigned=built.unsigned;
+   diagnosticButton.disabled=false;
    unsignedStatus.textContent='Unsigned regtest gift transaction constructed: '+
     built.unsigned.fundingInputCount+' input(s), '+
     built.unsigned.giftOutputCount+' locked gift output(s), '+
