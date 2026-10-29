@@ -29,7 +29,7 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts --prefix Professional bitcoinjs-lib@6.1.7 @ngraveio/bc-ur@1.1.13 @noble/curves@1.9.7
       - name: Test funded intent and unsigned Jade PSBT construction
         run: |
-          node --test Professional/funded-distribution-intent.test.mjs Professional/unsigned-funded-distribution-psbt.test.mjs Professional/unsigned-distribution-jade-qr.test.mjs Professional/verify-signed-funded-distribution.test.mjs
+          node --test Professional/funded-distribution-intent.test.mjs Professional/unsigned-funded-distribution-psbt.test.mjs Professional/unsigned-distribution-jade-qr.test.mjs Professional/verify-signed-funded-distribution.test.mjs Professional/creator-signed-qr-verification-gate.test.mjs
       - name: Prepare self-contained preview folder
         run: |
           mkdir -p preview
