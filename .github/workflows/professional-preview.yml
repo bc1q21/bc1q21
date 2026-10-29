@@ -30,6 +30,12 @@ jobs:
       - name: Test funded intent and unsigned Jade PSBT construction
         run: |
           node --test Professional/funded-distribution-intent.test.mjs Professional/unsigned-funded-distribution-psbt.test.mjs Professional/unsigned-distribution-jade-qr.test.mjs Professional/verify-signed-funded-distribution.test.mjs Professional/creator-signed-qr-verification-gate.test.mjs Professional/creator-signed-qr-camera.test.mjs
+      - name: Build isolated Professional browser verifier bundle
+        run: |
+          npm install --no-package-lock --ignore-scripts --prefix Professional/browser-integration
+          (cd Professional/browser-integration && npm run build)
+          test -s Professional/browser-integration/professional-verifier.bundle.js
+          grep -q 'bc1q21ProfessionalAttachCreatorCamera' Professional/browser-integration/professional-verifier.bundle.js
       - name: Prepare self-contained preview folder
         run: |
           mkdir -p preview
