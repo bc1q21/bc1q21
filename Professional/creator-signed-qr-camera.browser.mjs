@@ -19,7 +19,11 @@ export function createCreatorSignedQrController({
   let approved = null, receiver = null, verified = null, busy = false, generation = 0;
   const status = message => {statusElement.textContent=message;};
   const update = () => {
-    startButton.disabled=busy||!approved||Boolean(verified);
+    const candidate=getApprovedUnsigned();
+    startButton.disabled=busy||Boolean(verified)||
+      candidate?.format!=='bc1q21-professional-funded-distribution-unsigned-psbt-v1'||
+      candidate.network!=='regtest'||candidate.signed!==false||
+      candidate.broadcast!==false||candidate.hardwareSignatureVerified!==false;
     stopButton.disabled=!busy;
   };
   const invalidate = () => {
@@ -81,7 +85,7 @@ export function createCreatorSignedQrController({
   stopButton.addEventListener('click',stop);
   invalidate();
   return Object.freeze({
-    start,stop,invalidate,
+    start,stop,invalidate,refresh:update,
     get verified(){return verified;},
     get active(){return busy;}
   });
