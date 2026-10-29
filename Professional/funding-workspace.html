@@ -20,12 +20,14 @@
 </div>
 </div>
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
-<h3>Inspect regtest funding (development only)</h3>
-<p>Once a disposable regtest funding transaction exists, the local inspection service can check its unspent outputs against Bitcoin Core. This is a read-only inspection, <strong>not</strong> permission to deposit, sign or broadcast.</p>
-<label for="funding-intent" style="display:block;margin:12px 0 6px">Prepared public funding intent (JSON; no private keys)</label>
-<textarea id="funding-intent" rows="5" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px" spellcheck="false" placeholder="Development-only public intent; no seeds, passwords or wallet secrets"></textarea>
-<button type="button" id="inspect-funding">Inspect with local regtest Bitcoin Core</button>
-<p id="inspection-status" class="status" role="status">No verified funding inspection yet. Signing remains locked.</p>
+<h3>Check a regtest deposit (development only)</h3>
+<p>Enter a disposable regtest transaction ID and output number. The app checks Bitcoin Core directly; you do not need to paste a transaction JSON document. Do not send real Bitcoin.</p>
+<label for="funding-txid">Regtest transaction ID</label>
+<input id="funding-txid" type="text" maxlength="64" autocomplete="off" spellcheck="false" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px" placeholder="64-character transaction ID">
+<label for="funding-vout" style="display:block;margin:12px 0 6px">Output number</label>
+<input id="funding-vout" type="number" min="0" max="4294967295" step="1" value="0" style="width:120px;padding:12px">
+<button type="button" id="inspect-funding" disabled>Check regtest funding</button>
+<p id="inspection-status" class="status" role="status">First import a disposable Jade public wallet. Signing remains locked.</p>
 </div>
 <p><button disabled>Show funding QR</button><button disabled>Continue to Jade Plus →</button></p>
 <p><a class="button secondary" href="./jade-signing-workspace.html">Preview Jade Plus signing page (disabled) →</a></p>
@@ -36,40 +38,45 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
 'use strict';
 (function(){
  const status=document.getElementById('status');
+ let publicFundingScript=null;
  const inspectButton=document.getElementById('inspect-funding');
  inspectButton.addEventListener('click',async()=>{
   const output=document.getElementById('inspection-status');
   inspectButton.disabled=true;
-  output.textContent='Checking funding outputs against local regtest Bitcoin Core…';
+  output.textContent='Checking this output against local regtest Bitcoin Core…';
   try{
-   const raw=document.getElementById('funding-intent').value;
-   if(raw.length>80000)throw Error('Funding intent exceeds maximum size');
-   const intent=JSON.parse(raw);
-   if(!intent||typeof intent!=='object'||Array.isArray(intent))
-    throw Error('Funding intent must be a JSON object');
-   const response=await fetch('http://127.0.0.1:18761/professional/regtest/inspect-funding',{
+   if(!publicFundingScript)throw Error('Jade public wallet preview required');
+   const txid=document.getElementById('funding-txid').value.trim();
+   const vout=Number(document.getElementById('funding-vout').value);
+   if(!/^[0-9a-f]{64}$/i.test(txid)||!Number.isSafeInteger(vout)||
+      vout<0||vout>0xffffffff)throw Error('Valid transaction ID and output number required');
+   const response=await fetch('http://127.0.0.1:18761/professional/regtest/observe-utxo',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({intent}),cache:'no-store',credentials:'omit'
+    body:JSON.stringify({txid,vout,scriptPubKeyHex:publicFundingScript}),
+    cache:'no-store',credentials:'omit'
    });
-   if(!response.ok)throw Error('Funding inspection rejected or local Core service unavailable');
+   if(!response.ok)throw Error('Funding output unavailable, unconfirmed or mismatched');
    const result=await response.json();
-   if(result.format!=='bc1q21-professional-funding-workspace-inspection-v1'||
-      result.network!=='regtest'||result.fundingOutpointsVerified!==true||
-      result.coreNetworkVerified!==true||result.inspectionOnly!==true||
-      result.walletOriginAuthenticated!==false||result.signingAuthorized!==false||
-      result.canSign!==false||result.canBroadcast!==false)
-    throw Error('Unexpected funding inspection response');
-   output.textContent='Regtest funding inputs inspected ('+
-     result.inputsChecked.length+' UTXO(s)). Wallet identity and gift approval remain pending; signing and broadcasting are locked.';
+   if(result.format!=='bc1q21-professional-core-observed-utxo-v1'||
+      result.network!=='regtest'||result.txid!==txid.toLowerCase()||
+      result.vout!==vout||result.scriptPubKeyHex!==publicFundingScript||
+      !Number.isSafeInteger(result.valueSats)||result.valueSats<=0||
+      !Number.isSafeInteger(result.confirmations)||result.confirmations<1||
+      result.walletOriginAuthenticated!==false||
+      result.signingAuthorized!==false||result.canSign!==false||
+      result.canBroadcast!==false)throw Error('Invalid Core observation');
+   output.textContent='Regtest funding observed: '+result.valueSats.toLocaleString()+
+    ' sats, '+result.confirmations+' confirmation(s). Wallet identity and gift approval remain pending. Jade signing stays locked.';
   }catch(error){
-   output.textContent='Funding inspection not accepted: '+String(error.message||error)+
-     '. No signing or payment authorization issued.';
-  }finally{inspectButton.disabled=false;}
+   output.textContent='Funding not verified: '+String(error.message||error)+
+    '. Signing remains locked.';
+  }finally{inspectButton.disabled=!publicFundingScript;}
  });
 
  document.getElementById('derive-funding-key').addEventListener('click',()=>{
   const status=document.getElementById('funding-key-status');
   document.getElementById('funding-key-result').hidden=true;
+  publicFundingScript=null;inspectButton.disabled=true;
   try{
    const derive=globalThis.bc1q21ProfessionalPreviewFundingPublicKey;
    if(typeof derive!=='function')throw Error('Professional browser verifier is unavailable');
@@ -93,6 +100,9 @@ import {prepareProfessionalFundingPreview} from './prepare-funding-preview.mjs';
     }
     table.appendChild(row);
    }
+   if(typeof result.scriptPubKeyHex!=='string'||!/^[0-9a-f]+$/i.test(result.scriptPubKeyHex))throw Error('Invalid funding script');
+   publicFundingScript=result.scriptPubKeyHex.toLowerCase();inspectButton.disabled=false;
+   document.getElementById('inspection-status').textContent='Public funding script prepared. Enter a disposable regtest transaction ID to check Bitcoin Core.';
    document.getElementById('funding-test-address').textContent=result.address;
    document.getElementById('funding-key-result').hidden=false;
    status.textContent='Public funding key and '+outputs.outputs.length+' gift-specific time-locked output(s) derived. No deposit request is enabled.';
