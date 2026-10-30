@@ -1054,8 +1054,10 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
    }
   }
   brand.prepend(info);
+  brand.style.alignItems="flex-start";
+  if(logo){logo.style.alignSelf="flex-start";logo.style.objectPosition="top left";}
   const credit=document.createElement('footer');credit.textContent='Powered by bc1q21';
-  credit.style.cssText='text-align:center;color:#64748b;font-size:12px;margin:20px auto';
+  credit.style.cssText='text-align:right;color:#64748b;font-size:12px;margin:20px auto;max-width:900px;padding-right:12px';
   document.body.append(credit);
  }catch(e){console.warn('Professional branding unavailable',e)}
 })();
