@@ -61,7 +61,7 @@
   </section>
   <main class="container" x-data="giftWizard" aria-label="Retail gift planning in Professional development; recovery and funding disabled">
     <header class="brand">
-      <img id="professional-wizard-brand-logo" src="static/img/bc1q21-logo.png" alt="bc1q21 logo"><br>
+      <img id="professional-wizard-brand-logo" src="static/img/bc1q21-logo.png" alt="bc1q21 logo">
       <div>
         <h1>Gifting Wizard</h1>
         <!-- <small class="muted">Simple, time-locked Bitcoin gifts</small> -->
@@ -1053,9 +1053,13 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
     const line=document.createElement('div');line.textContent=p[key].trim().slice(0,200);info.append(line);
    }
   }
-  brand.prepend(info);
-  brand.style.alignItems="flex-start";
-  if(logo){logo.style.alignSelf="flex-start";logo.style.objectPosition="top left";}
+  // Header: logo at top left, advisor details beside it, wizard title at far right.
+  brand.style.cssText+=';display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap';
+  const wizardTitle=brand.querySelector('h1')?.parentElement;
+  if(logo){logo.style.cssText+=';order:0;align-self:flex-start;object-position:top left;flex-shrink:0';}
+  info.style.cssText='order:1;flex:1 1 190px;min-width:0;font-size:12px;line-height:1.5';
+  brand.insertBefore(info,wizardTitle);
+  if(wizardTitle){wizardTitle.style.cssText+=';order:2;margin-left:auto;align-self:flex-end;text-align:right;flex:0 1 auto';}
   const credit=document.createElement('footer');credit.textContent='Powered by bc1q21';
   credit.style.cssText='text-align:right;color:#64748b;font-size:12px;margin:20px auto;max-width:900px;padding-right:12px';
   document.body.append(credit);
