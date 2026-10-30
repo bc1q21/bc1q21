@@ -22,6 +22,9 @@ main>.bar .section-name{font-size:1rem;line-height:1.35}
 .professional-help .help-icon{display:inline-grid;place-items:center;border-radius:50%;background:#15529a;color:white;width:20px;height:20px;margin-right:8px}
 #customer-payment{border-radius:0 0 8px 8px;border-top:0}
 @media(max-width:600px){main{padding:8px}main>header{display:flex;flex-wrap:wrap}main>header .wizard-heading{flex-basis:100%;text-align:right}.professional-help{font-size:.66rem;padding:6px}.professional-step{font-size:.7rem}main>.bar .section-name{font-size:.83rem}}
+
+/* Unified customer-facing layout: same proportions and white canvas as the Retail mirror. */
+:root{background:#fff;color:#355c70}body{background:#fff}main{max-width:1140px;width:100%;margin:8px auto;padding:12px 20px}main>header,.professional-steps,main>.bar,#customer-payment,footer{max-width:1100px;width:100%}main>header{min-height:110px}main>.bar{background:#355c70}#customer-payment{background:#fff}#customer-payment .status{background:#eaf4ed;border-left:3px solid #39744d}#customer-payment>div[style*="min-height:210px"]{background:#fff;border-color:#c9d6cc}header .advisor-details{font-size:.82rem}footer{text-align:right} @media(max-width:600px){main{padding:8px}main>header,.professional-steps,main>.bar,#customer-payment,footer{max-width:100%}}
 </style></head><body><main><header><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21"><div class="advisor-details"><p class="practice-identity" hidden></p></div><div class="wizard-heading"><h1>Gifting Wizard</h1></div></header><div class="professional-steps" aria-label="Gift creation progress: step 3 of 4, Add Funds">
 <div class="professional-step done"><div class="bubble">1</div><div>Plan</div></div>
 <div class="professional-step done"><div class="bubble">2</div><div>Recovery</div></div>
