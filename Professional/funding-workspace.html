@@ -5,12 +5,12 @@
 main > section.panel:first-of-type{display:none}#professional-developer-tools{display:none}#customer-payment{max-width:740px;margin:0 auto 18px}#customer-payment>h2{text-align:center;font-size:1.75rem}main>nav{display:none}main>header{max-width:740px;margin-left:auto;margin-right:auto}.bar{max-width:740px;margin-left:auto;margin-right:auto}footer{max-width:740px;margin-left:auto!important;margin-right:auto!important;text-align:right!important;padding-right:0!important}@media(max-width:600px){header{display:flex;flex-wrap:wrap}header .wizard-heading{flex-basis:100%;text-align:right}header .wizard-heading h1{font-size:1.3rem}}
 /* Retail-matched Professional payment shell; funding logic remains isolated. */
 main{max-width:920px;margin:8px auto;padding:12px 20px}
-main>header{max-width:740px;border:0;border-radius:0;padding:10px 0 14px;margin-bottom:0;background:transparent;min-height:98px}
-main>header img{width:125px;max-height:82px}
+main>header{max-width:740px;border:0;border-radius:0;padding:10px 0 14px;margin-bottom:0;background:#fff;min-height:98px}
+main>header img{width:125px;max-height:82px}main>header .advisor-details p{margin:0 0 2px;line-height:1.45}main>header .advisor-details{align-self:flex-start}
 main>header .wizard-heading{align-self:flex-end}
 main>header .wizard-heading h1{font-size:1.55rem;color:#355c70}
 .professional-steps{max-width:740px;margin:8px auto 22px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:relative;text-align:center}
-.professional-steps:before{content:"";position:absolute;top:13px;left:12.5%;right:12.5%;height:3px;background:linear-gradient(to right,#355c70 0 67%,#e2e7ec 67% 100%);z-index:0}
+.professional-steps:before{content:"";position:absolute;top:13px;left:0;right:0;height:3px;background:linear-gradient(to right,#355c70 0 67%,#e2e7ec 67% 100%);z-index:0}
 .professional-step{position:relative;z-index:1;color:#63778b;font-size:.8rem}
 .professional-step .bubble{width:27px;height:27px;border:2px solid #e2e7ec;border-radius:50%;background:white;margin:0 auto 6px;display:grid;place-items:center;font-size:.9rem;font-weight:700}
 .professional-step.done .bubble{background:#355c70;color:white;border-color:#355c70}
@@ -127,8 +127,8 @@ if(professionalProfile?.business){
  const details=header?.querySelector('.advisor-details');
  if(details){
   const brand=document.createElement('p');brand.className='advisor-name';brand.textContent=professionalProfile.business.slice(0,100);
-  const info=document.createElement('p');info.textContent=['contact','address','email','phone'].map(k=>professionalProfile[k]).filter(x=>typeof x==='string'&&x.trim()).join(' · ').slice(0,400);
-  details.replaceChildren(brand,info);
+  const lines=['contact','address','email','phone'].filter(k=>typeof professionalProfile[k]==='string'&&professionalProfile[k].trim()).map(k=>{const line=document.createElement('p');line.textContent=professionalProfile[k].trim().slice(0,200);return line;});
+  details.replaceChildren(brand,...lines);
  }
  const credit=document.createElement('footer');credit.textContent='Powered by bc1q21';credit.style.cssText='text-align:right;color:#64748b;font-size:.85rem;margin:20px auto;max-width:740px';document.querySelector('main').append(credit);
 }
