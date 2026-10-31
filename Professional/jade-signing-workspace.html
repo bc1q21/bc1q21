@@ -110,6 +110,16 @@ const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
      unsigned.broadcast!==false||unsigned.hardwareSignatureVerified!==false||
      typeof unsigned.psbtSha256!=='string'||!/^[0-9a-f]{64}$/.test(unsigned.psbtSha256))
    throw Error('Invalid disposable regtest transaction');
+  const inspect=window.bc1q21ProfessionalVerifyUnsignedCreatorPsbt;
+  if(typeof inspect!=='function')throw Error('Independent transaction verifier unavailable');
+  const result=inspect({unsigned,intent:handoff.intent});
+  if(result?.matchesIntent!==true||result.network!=='regtest'||
+     result.signingAuthorized!==false||result.canBroadcast!==false||
+     handoff.intent?.gifts?.length!==reviewedPlan.releases.length||
+     handoff.intent.gifts.some((gift,i)=>
+      gift.date!==reviewedPlan.releases[i].date||
+      gift.valueSats!==reviewedPlan.releases[i].amountSats))
+   throw Error('Jade transaction does not match the approved gift plan');
   const render=window.bc1q21ProfessionalRenderCreatorUnsignedQr;
   if(typeof render!=='function')throw Error('QR renderer unavailable');
   const qr=await render(unsigned);
