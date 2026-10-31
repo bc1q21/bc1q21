@@ -154,7 +154,7 @@ if(professionalProfile?.business){
   const lines=['contact','address','email','phone'].filter(k=>typeof professionalProfile[k]==='string'&&professionalProfile[k].trim()).map(k=>{const line=document.createElement('p');line.textContent=professionalProfile[k].trim().slice(0,200);return line;});
   details.replaceChildren(brand,...lines);
  }
- const credit=document.createElement('footer');credit.textContent='Powered by bc1q21';credit.style.cssText='text-align:right;color:#64748b;font-size:.85rem;margin:20px auto;max-width:740px';document.querySelector('main').append(credit);
+ const credit=document.createElement('footer');credit.textContent='Powered by bc1q21';credit.style.cssText='text-align:right;color:#64748b;font-size:.85rem;margin:20px auto;max-width:920px';document.querySelector('main').append(credit);
 }
 if(professionalIdentity){for(const element of document.querySelectorAll('.practice-identity')){if(!professionalProfile?.business){element.textContent=professionalIdentity;element.hidden=false;}}}
 
