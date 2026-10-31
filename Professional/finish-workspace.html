@@ -7,6 +7,18 @@
 <p id="summary" class="status" role="status">Checking the gift schedule…</p>
 <div id="gift-details" hidden><table><thead><tr><th>Release</th><th>Unlock date</th><th>Bitcoin (sats)</th></tr></thead><tbody id="releases"></tbody></table></div>
 <div id="verified-transaction" class="status" hidden><h3>Jade Plus verification result</h3><p id="verified-transaction-details"></p><p><strong>Broadcast status:</strong> Not broadcast. This is a disposable regtest preview only.</p></div>
+<h3>Prepare the recipient handoff</h3>
+<p>After a transaction is actually broadcast and confirmed, the recipient will need their gift information and a way to recover and claim each release independently of the Professional website. This preview prepares the delivery checklist; it does not issue credentials or claim instructions.</p>
+<div class="status" id="recipient-handoff-preview">
+ <p><strong>Recipient delivery — pending</strong></p>
+ <ul>
+  <li>Confirmed Bitcoin transaction and funding output references — not yet available</li>
+  <li>Independently recoverable recipient wallet information — not yet issued</li>
+  <li>Release dates and amounts — shown in the gift schedule above</li>
+  <li>Claim and recovery instructions — not yet issued</li>
+ </ul>
+ <p id="handoff-stage">Waiting for a verified Jade Plus transaction.</p>
+</div>
 <h3>Before a real gift can be completed</h3><p>The Jade Plus transaction must be independently verified, accepted by Bitcoin Core and broadcast. The recipient must also receive independently recoverable wallet and gift instructions. Those features remain under development and are not simulated as completed here.</p>
 <p class="status"><strong>Transaction status:</strong> Not broadcast<br><strong>Recipient recovery package:</strong> Not issued<br><strong>Gift completion:</strong> Pending</p>
 <button class="print-button" id="print-summary" type="button">Print this preview summary</button><div class="screen-navigation"><a class="button secondary" href="./jade-signing-workspace.html">← Back to Jade Plus</a><a class="button secondary" href="./retail-mirror/index.html">Review gift planning</a></div></section><nav style="max-width:920px;margin:0 auto 22px;padding:16px;text-align:center;background:#e2edf6;border-radius:8px"><a href="./customer-walkthrough.html" style="color:#09518b;font-weight:700">← Customer walkthrough &amp; all five stages</a></nav></main>
@@ -22,6 +34,7 @@ if(verified?.format==='bc1q21-professional-verified-creator-preview-v1'&&
  document.getElementById('verified-transaction-details').textContent=
   'The Jade Plus signatures passed the exact gift transaction checks. Finalized regtest transaction ID: '+verified.txid+'.';
  document.getElementById('verified-transaction').hidden=false;
+ document.getElementById('handoff-stage').textContent='Jade Plus regtest signature verified. Awaiting Bitcoin Core broadcast and confirmation before recipient delivery can begin.';
 }
 }catch(e){document.getElementById('summary').textContent='Return to gift planning: '+e.message}</script><script>
 (function(){
