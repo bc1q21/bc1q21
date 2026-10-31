@@ -69,6 +69,13 @@ footer{text-align:right!important;padding-right:0!important}
 <input id="funding-xpub" type="text" autocomplete="off" spellcheck="false" placeholder="xpub…" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px">
 <button type="button" id="derive-funding-key">Preview public funding key</button>
 <p id="funding-key-status" class="status" role="status">No Jade public wallet imported.</p>
+<div id="jade-address-check" hidden style="margin:16px 0;padding:16px;border:1px solid #b6cadd;border-radius:9px">
+<h3>Jade Plus device address check — regtest diagnostic only</h3>
+<p>Compare the complete derived test address below with the address independently displayed or verified on your Jade Plus. This is a procedural check, <strong>not proof of wallet ownership</strong> and not permission to send Bitcoin.</p>
+<p><strong>Expected test address:</strong> <code id="jade-check-address"></code></p>
+<label style="display:block;margin:12px 0"><input type="checkbox" id="jade-address-ack"> I checked the complete address on my Jade Plus device and it matches.</label>
+<p id="jade-address-check-status" class="status" role="status">Device address check not acknowledged. Funding and signing remain disabled.</p>
+</div>
 <div id="funding-key-result" hidden><p><strong>Derived test address (NOT FOR DEPOSITS):</strong><br><code id="funding-test-address"></code></p><p><strong>Derivation:</strong> <code>m/84'/0'/0'/0/0</code></p><p class="notice">This address is mathematically derived from the supplied xpub, but wallet ownership has not been authenticated. No payment QR or deposit request is issued.</p>
 <h3>Time-locked gift outputs</h3><p>These recipient addresses and unlock dates are computed from the approved gift schedule and public wallet keys. They are not deposit instructions.</p>
 <div style="overflow-x:auto"><table><thead><tr><th>Unlock date</th><th>Amount</th><th>Recipient output (preview)</th></tr></thead><tbody id="gift-output-preview"></tbody></table></div>
@@ -413,8 +420,21 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
     '. Signing remains locked.';
   }finally{constructButton.disabled=!scannedUtxos?.length;}
  });
+ const jadeAck=document.getElementById('jade-address-ack');
+ jadeAck.addEventListener('change',()=>{
+  const address=document.getElementById('jade-check-address').textContent;
+  const unchanged=!!publicFundingAddress&&address===publicFundingAddress&&
+    derivedXpub===document.getElementById('funding-xpub').value.trim();
+  if(!unchanged){jadeAck.checked=false;}
+  document.getElementById('jade-address-check-status').textContent=jadeAck.checked&&unchanged?
+   'Device address check acknowledged for this public-wallet preview. Wallet ownership is NOT authenticated. Payment QR, signing and broadcasting remain disabled.':
+   'Device address check not acknowledged. Funding and signing remain disabled.';
+ });
  document.getElementById('funding-xpub').addEventListener('input',()=>{
   ++latestScanId;publicFundingAddress=null;publicFundingScript=null;derivedXpub=null;
+  jadeAck.checked=false;document.getElementById('jade-address-check').hidden=true;
+  document.getElementById('jade-check-address').textContent='';
+  document.getElementById('jade-address-check-status').textContent='Device address check not acknowledged. Funding and signing remain disabled.';
   resetUnsigned();scanButton.disabled=true;
   document.getElementById('funding-key-result').hidden=true;
   document.getElementById('scan-status').textContent='Public wallet changed. Reimport the wallet and check funding again.';
@@ -456,6 +476,9 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
  document.getElementById('derive-funding-key').addEventListener('click',()=>{
   const status=document.getElementById('funding-key-status');
   document.getElementById('funding-key-result').hidden=true;
+  jadeAck.checked=false;document.getElementById('jade-address-check').hidden=true;
+  document.getElementById('jade-check-address').textContent='';
+  document.getElementById('jade-address-check-status').textContent='Device address check not acknowledged. Funding and signing remain disabled.';
   ++latestScanId;publicFundingScript=null;publicFundingAddress=null;derivedXpub=null;resetUnsigned();inspectButton.disabled=true;scanButton.disabled=true;
   try{
    const derive=globalThis.bc1q21ProfessionalPreviewFundingPublicKey;
@@ -485,6 +508,8 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    publicFundingAddress=result.address;derivedXpub=document.getElementById('funding-xpub').value.trim();inspectButton.disabled=false;scanButton.disabled=false;
    document.getElementById('inspection-status').textContent='Public funding script prepared. Enter a disposable regtest transaction ID to check Bitcoin Core.';
    document.getElementById('funding-test-address').textContent=result.address;
+   document.getElementById('jade-check-address').textContent=result.address;
+   document.getElementById('jade-address-check').hidden=false;
    document.getElementById('funding-key-result').hidden=false;
    status.textContent='Public funding key and '+outputs.outputs.length+' gift-specific time-locked output(s) derived. No deposit request is enabled.';
   }catch(e){status.textContent='Unable to derive public funding key: '+String(e.message||e);}
