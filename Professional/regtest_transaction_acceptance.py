@@ -200,3 +200,41 @@ def inspect_regtest_transaction_against_intent(raw_transaction_hex, expected_txi
         "walletOriginAuthenticated": False,
         "recipientRecoveryReady": False,
     }
+
+
+def inspect_regtest_distribution_for_authorization(raw_transaction_hex, expected_txid,
+                                                    trusted_intent_loader, rpc_call):
+    """Server-side integration entry; never accepts a browser-supplied gift intent.
+
+    trusted_intent_loader is a server-controlled lookup of the previously
+    approved and authenticated intent by transaction ID. The resulting report
+    remains read-only and is not a signing or broadcasting authorization.
+    """
+    if not callable(trusted_intent_loader):
+        raise RegtestAcceptanceError("Trusted server intent lookup required")
+    if not _raw_hex(raw_transaction_hex) or not _txid(expected_txid):
+        raise RegtestAcceptanceError("Valid finalized transaction and ID required")
+    intent = trusted_intent_loader(expected_txid.lower())
+    if not isinstance(intent, dict):
+        raise RegtestAcceptanceError("No server-authenticated gift intent")
+    report = inspect_regtest_transaction_against_intent(
+        raw_transaction_hex, expected_txid, intent, rpc_call)
+    if not report["acceptedAtInspection"]:
+        raise RegtestAcceptanceError("Bitcoin Core mempool acceptance failed")
+    # Recheck that the inputs are still available on the trusted node.
+    from trusted_core_funding import verify_funding_with_core
+    funding = verify_funding_with_core(intent, rpc_call)
+    if funding.get("fundingOutpointsVerified") is not True:
+        raise RegtestAcceptanceError("Funding inputs not verified")
+    return {
+        "format": "bc1q21-professional-regtest-distribution-inspection-v1",
+        "network": "regtest",
+        "txid": expected_txid.lower(),
+        "intentMatched": True,
+        "fundingOutpointsVerified": True,
+        "mempoolAcceptedAtInspection": True,
+        "walletOriginAuthenticated": False,
+        "recipientRecoveryReady": False,
+        "broadcastAuthorized": False,
+        "broadcast": False,
+    }
