@@ -87,7 +87,10 @@ if(typeof attachCamera==='function'){
     network:'regtest',diagnosticOnly:true,transactionVerified:true,
     broadcast:false,canBroadcast:false,
     psbtSha256:verified.approvedPsbtSha256,txid:verified.finalizedTxid,
-    releaseCount:reviewedPlan?.releases.length,totalSats:reviewedPlan?.totalSats
+    releaseCount:reviewedPlan?.releases.length,totalSats:reviewedPlan?.totalSats,
+    fundingInputCount:approvedUnsigned.fundingInputCount,
+    networkFeeSats:approvedUnsigned.networkFeeSats,
+    totalOutputCount:approvedUnsigned.totalOutputCount
    }));
    document.getElementById('verified-next').hidden=false;
    scanStatus.textContent='Jade signature verified for this gift. Transaction prepared, not broadcast.';
