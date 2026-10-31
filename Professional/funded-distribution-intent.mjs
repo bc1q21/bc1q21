@@ -29,6 +29,23 @@ export function snapshotFundedDistributionIntent({ network, plan, utxos, giftOut
       plan?.status !== 'UNFUNDED_PREVIEW_NOT_SIGNABLE' ||
       !Array.isArray(plan.releases) || !plan.releases.length ||
       !Number.isSafeInteger(plan.totalSats)) fail('Approved Retail plan snapshot required');
+  // A preview must never be promoted to signing authority by changing local flags.
+  for (const [name, value] of [
+    ['signingAuthorized', plan.signingAuthorized],
+    ['fundingAuthorized', plan.fundingAuthorized],
+    ['broadcastAuthorized', plan.broadcastAuthorized]
+  ]) {
+    if (value !== undefined && value !== false)
+      fail('Untrusted plan authorization flag: ' + name);
+  }
+  const releaseTotal = sum(plan.releases.map((release, index) => {
+    if (typeof release?.date !== 'string' ||
+        !/^\\d{4}-\\d{2}-\\d{2}$/.test(release.date) ||
+        !Number.isFinite(Date.parse(release.date + 'T00:00:00.000Z')))
+      fail('Invalid planned release date at ' + index);
+    return sats(release.amountSats, 'Planned release ' + index);
+  }));
+  if (releaseTotal !== plan.totalSats) fail('Planned releases do not sum to total');
   if (!Array.isArray(utxos) || !utxos.length) fail('Observed funding UTXOs required');
   if (!Array.isArray(giftOutputs) || giftOutputs.length !== plan.releases.length)
     fail('One time-locked output per planned release required');
