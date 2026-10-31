@@ -243,14 +243,14 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
   diagnosticButton.disabled=true;
   const status=document.getElementById('diagnostic-qr-status');
   try{
-   if(!latestUnsigned||!scannedUtxos?.length)throw Error('Fresh unsigned regtest transaction required');
+   if(!latestUnsigned||!scannedUtxos?.length||!planStillMatches())throw Error('Fresh unsigned regtest transaction and unchanged gift plan required');
    const renderingUnsigned=latestUnsigned;
    if(!derivedXpub||document.getElementById('funding-xpub').value.trim()!==derivedXpub)
     throw Error('Wallet information changed');
    const render=globalThis.bc1q21ProfessionalRenderCreatorUnsignedQr;
    if(typeof render!=='function')throw Error('Jade QR renderer unavailable');
    const qr=await render(latestUnsigned);
-   if(latestUnsigned!==renderingUnsigned||!scannedUtxos?.length||!derivedXpub||
+   if(latestUnsigned!==renderingUnsigned||!scannedUtxos?.length||!derivedXpub||!planStillMatches()||
       document.getElementById('funding-xpub').value.trim()!==derivedXpub)
     throw Error('Transaction or wallet changed while rendering QR');
    if(qr.approvedPsbtSha256!==latestUnsigned.psbtSha256||
@@ -326,7 +326,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    });
    if(!response.ok)throw Error('Local regtest Core scan unavailable');
    const result=await response.json();
-   if(scanId!==latestScanId||scanXpub!==derivedXpub||document.getElementById('funding-xpub').value.trim()!==scanXpub)throw Error('Public wallet changed during funding check');
+   if(scanId!==latestScanId||scanXpub!==derivedXpub||document.getElementById('funding-xpub').value.trim()!==scanXpub||!planStillMatches())throw Error('Wallet or gift plan changed during funding check');
    if(result.format!=='bc1q21-professional-regtest-auto-funding-observation-v1'||
       result.network!=='regtest'||!Array.isArray(result.confirmedUtxos)||
       !Number.isSafeInteger(result.totalConfirmedSats)||result.totalConfirmedSats<0||
@@ -361,7 +361,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
   }catch(error){
    output.textContent='Automatic funding check unavailable: '+String(error.message||error)+
     '. Signing remains locked.';
-  }finally{scanButton.disabled=!publicFundingAddress;}
+  }finally{scanButton.disabled=!publicFundingAddress||!planStillMatches();}
  });
 
  constructButton.addEventListener('click',()=>{
