@@ -189,6 +189,23 @@ def inspect_regtest_transaction_against_intent(raw_transaction_hex, expected_txi
             raise RegtestAcceptanceError("Invalid Bitcoin Core output value") from None
         if value != value.to_integral_value() or int(value) != expected.get("valueSats"):
             raise RegtestAcceptanceError("Gift output amount mismatch")
+    # Reconcile the complete satoshi ledger, not only individual outputs.
+    # This rejects mismatched fee accounting and malformed intent amounts.
+    if type(intent.get("networkFeeSats")) is not int or intent["networkFeeSats"] < 0:
+        raise RegtestAcceptanceError("Invalid intended network fee")
+    values = [item.get("valueSats") for item in inputs if isinstance(item, dict)]
+    output_values = [item.get("valueSats") for item in expected_outputs]
+    if (len(values) != len(inputs) or
+            any(type(value) is not int or value <= 0 for value in values + output_values)):
+        raise RegtestAcceptanceError("Invalid intended satoshi amounts")
+    input_total, output_total = sum(values), sum(output_values)
+    if (input_total != intent.get("inputTotalSats") or
+            output_total != intent.get("outputTotalSats") or
+            input_total - output_total != intent["networkFeeSats"]):
+        raise RegtestAcceptanceError("Transaction network fee does not match gift intent")
+    if any(type(gift.get("locktime")) is not int or
+           gift["locktime"] < 500000000 for gift in gifts):
+        raise RegtestAcceptanceError("Invalid gift locktime metadata")
     return {
         "format": "bc1q21-professional-regtest-intent-inspection-v1",
         "network": "regtest",
