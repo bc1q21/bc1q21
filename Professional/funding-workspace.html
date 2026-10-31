@@ -25,6 +25,34 @@ main>.bar .section-name{font-size:1rem;line-height:1.35}
 
 /* Unified customer-facing layout: same proportions and white canvas as the Retail mirror. */
 :root{background:#fff;color:#355c70}body{background:#fff}main{max-width:1140px;width:100%;margin:8px auto;padding:12px 20px}main>header,.professional-steps,main>.bar,#customer-payment,footer{max-width:1100px;width:100%}main>header{min-height:110px}main>.bar{background:#355c70}#customer-payment{background:#fff}#customer-payment .status{background:#eaf4ed;border-left:3px solid #39744d}#customer-payment>div[style*="min-height:210px"]{background:#fff;border-color:#c9d6cc}header .advisor-details{font-size:.82rem}footer{text-align:right} @media(max-width:600px){main{padding:8px}main>header,.professional-steps,main>.bar,#customer-payment,footer{max-width:100%}}
+
+/* Professional-only visual parity with the Plan Ready wizard.
+   Presentation only: funding, signing, broadcast and navigation logic unchanged. */
+main{max-width:940px}
+main>header,.professional-steps,main>.bar,#customer-payment,footer{max-width:760px}
+main>header{min-height:152px;padding:12px 0 8px;gap:12px;align-items:flex-start}
+main>header img{width:155px;max-height:125px}
+main>header .wizard-heading h1{font-size:2rem;font-weight:800;line-height:1.15}
+main>header .advisor-details{font-size:.82rem}
+.professional-steps{margin:8px auto 22px}
+.professional-steps:before{top:18px;height:4px}
+.professional-step{font-size:.85rem}
+.professional-step .bubble{width:36px;height:36px;border-width:3px;font-size:1rem;margin-bottom:6px}
+main>.bar{min-height:60px;padding:12px 14px}
+main>.bar .section-name{font-size:1.05rem}
+.professional-help{padding:9px 14px;font-size:.82rem}
+.professional-help .help-icon{width:24px;height:24px}
+#customer-payment{font-size:1rem;padding:22px}
+#customer-payment>h2{font-size:1.75rem}
+@media(max-width:600px){
+ main>header{min-height:0;gap:8px}
+ main>header img{width:115px;max-height:95px}
+ main>header .wizard-heading h1{font-size:1.5rem}
+ .professional-step .bubble{width:30px;height:30px}
+ .professional-steps:before{top:15px}
+ main>.bar{min-height:54px}
+ #customer-payment{padding:14px}
+}
 </style></head><body><main><header><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21"><div class="advisor-details"><p class="practice-identity" hidden></p></div><div class="wizard-heading"><h1>Gifting Wizard</h1></div></header><div class="professional-steps" aria-label="Gift creation progress: step 3 of 4, Add Funds">
 <div class="professional-step done"><div class="bubble">1</div><div>Plan</div></div>
 <div class="professional-step done"><div class="bubble">2</div><div>Recovery</div></div>
