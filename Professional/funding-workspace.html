@@ -404,6 +404,25 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
       built.signingAuthorized!==false||built.canSign!==false||
       built.canBroadcast!==false||built.unsigned?.signed!==false)
     throw Error('Unsafe unsigned PSBT construction');
+   // The browser builder already creates the validated funded intent. Verify that
+   // the exact observed outpoints, gift schedule and fee survived that boundary.
+   const intent=built.intent;
+   if(intent?.format!=='bc1q21-professional-funded-distribution-intent-v1'||
+      intent.network!=='regtest'||intent.signed!==false||
+      intent.signatureVerified!==false||intent.broadcastAuthorized!==false||
+      intent.inputs?.length!==scannedUtxos.length||
+      intent.gifts?.length!==plan.releases.length||
+      intent.networkFeeSats!==fee||intent.inputTotalSats!==inputTotal||
+      intent.gifts.some((gift,i)=>gift.date!==plan.releases[i].date||
+       gift.valueSats!==plan.releases[i].amountSats)||
+      intent.inputs.some((input,i)=>input.txid!==scannedUtxos[i].txid.toLowerCase()||
+       input.vout!==scannedUtxos[i].vout||input.valueSats!==scannedUtxos[i].valueSats||
+       input.scriptPubKeyHex!==scannedUtxos[i].scriptPubKeyHex.toLowerCase())||
+      (remaining===0?intent.change!==null:
+       intent.change?.valueSats!==remaining||
+       intent.change?.scriptPubKeyHex!==change.scriptPubKeyHex.toLowerCase())||
+      !planStillMatches())
+    throw Error('Funded intent differs from reviewed gift plan or observed Bitcoin Core inputs');
    document.getElementById('review-inputs').textContent=String(built.unsigned.fundingInputCount);
    document.getElementById('review-gifts').textContent=String(built.unsigned.giftOutputCount);
    document.getElementById('review-fee').textContent=fee.toLocaleString();
