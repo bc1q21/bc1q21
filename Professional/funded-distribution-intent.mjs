@@ -40,7 +40,7 @@ export function snapshotFundedDistributionIntent({ network, plan, utxos, giftOut
   }
   const releaseTotal = sum(plan.releases.map((release, index) => {
     if (typeof release?.date !== 'string' ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(release.date) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(release.date) ||
         !Number.isFinite(Date.parse(release.date + 'T00:00:00.000Z')))
       fail('Invalid planned release date at ' + index);
     return sats(release.amountSats, 'Planned release ' + index);
