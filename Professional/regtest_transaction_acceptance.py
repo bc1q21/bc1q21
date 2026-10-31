@@ -171,7 +171,7 @@ def inspect_regtest_transaction_against_intent(raw_transaction_hex, expected_txi
     actual_inputs = [(item.get("txid"), item.get("vout")) for item in decoded.get("vin", []) if isinstance(item, dict)]
     if len(expected_inputs) != len(inputs) or actual_inputs != expected_inputs:
         raise RegtestAcceptanceError("Funding outpoints do not match approved intent")
-    expected_outputs = gifts + ([intent["change"]] if intent.get("change") else []) + ([intent["serviceFee"]] if intent.get("serviceFee") else [])
+    expected_outputs = gifts + ([intent["serviceFee"]] if intent.get("serviceFee") else []) + ([intent["change"]] if intent.get("change") else [])
     actual_outputs = decoded.get("vout")
     if not isinstance(actual_outputs, list) or len(actual_outputs) != len(expected_outputs):
         raise RegtestAcceptanceError("Gift output count mismatch")
