@@ -37,3 +37,12 @@ test('customer payment QR and trusted signing remain locked',()=>{
  assert.match(html,/<button disabled>Show funding QR<\/button>/);
  assert.match(html,/<button disabled>Continue to Jade Plus/);
 });
+
+test('Core scan rechecks the gift plan after asynchronous response',()=>{
+ assert.match(html,/scanXpub!==derivedXpub\|\|document\.getElementById\('funding-xpub'\)\.value\.trim\(\)!==scanXpub\|\|!planStillMatches\(\)/);
+ assert.match(html,/scanButton\.disabled=!publicFundingAddress\|\|!planStillMatches\(\)/);
+});
+test('Jade QR diagnostic rejects a changed gift plan',()=>{
+ assert.match(html,/if\(!latestUnsigned\|\|!scannedUtxos\?\.length\|\|!planStillMatches\(\)\)/);
+ assert.match(html,/latestUnsigned!==renderingUnsigned\|\|!scannedUtxos\?\.length\|\|!derivedXpub\|\|!planStillMatches\(\)/);
+});
