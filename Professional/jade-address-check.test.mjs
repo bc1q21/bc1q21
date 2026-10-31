@@ -60,3 +60,13 @@ test('funding page reconciles constructed intent with observed inputs',()=>{
  ];
  for(const snippet of required) assert.ok(html.includes(snippet),snippet);
 });
+
+test('funding reconciliation binds actual scripts and CLTV locktimes',()=>{
+ for(const required of [
+  'gift.locktime!==expectedGifts.outputs[i].locktime',
+  'gift.scriptPubKeyHex!==expectedGifts.outputs[i].scriptPubKeyHex.toLowerCase()',
+  'input.scriptPubKeyHex!==publicFundingScript',
+  'expectedGifts.fundingScriptPubKeyHex?.toLowerCase()!==publicFundingScript',
+  'intent.serviceFee!==null'
+ ]) assert.ok(html.includes(required),required);
+});
