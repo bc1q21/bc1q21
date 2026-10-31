@@ -278,6 +278,50 @@ globalThis.bc1q21ProfessionalConstructUntrustedCreatorPsbt=function({
   independentGiftApproval:false,signingAuthorized:false,canSign:false,canBroadcast:false,
   nextStep:'TRUSTED_BITCOIN_CORE_AND_WALLET_IDENTITY_VERIFICATION_REQUIRED'});
 };
+// Independently parse the actual PSBT bytes, rather than trusting the
+// builder's reported output counts or its intent object.
+globalThis.bc1q21ProfessionalVerifyUnsignedCreatorPsbt=function({unsigned,intent}){
+ if(unsigned?.format!=='bc1q21-professional-funded-distribution-unsigned-psbt-v1'||
+    unsigned.network!=='regtest'||unsigned.signed!==false||
+    unsigned.broadcast!==false||unsigned.hardwareSignatureVerified!==false||
+    intent?.format!=='bc1q21-professional-funded-distribution-intent-v1'||
+    intent.network!=='regtest'||intent.broadcastAuthorized!==false)
+  throw Error('Untrusted regtest unsigned transaction or intent');
+ const raw=Buffer.from(unsigned.unsignedPsbtBase64||'','base64');
+ if(raw.length<10||raw.length>100000||
+    Buffer.from(sha256(raw)).toString('hex')!==unsigned.psbtSha256)
+  throw Error('PSBT checksum mismatch');
+ const psbt=bitcoin.Psbt.fromBuffer(raw,{network:bitcoin.networks.regtest});
+ const expectedOutputs=[...intent.gifts,...(intent.serviceFee?[intent.serviceFee]:[]),
+   ...(intent.change?[intent.change]:[])];
+ if(psbt.inputCount!==intent.inputs.length||
+    psbt.txOutputs.length!==expectedOutputs.length||
+    unsigned.fundingInputCount!==intent.inputs.length||
+    unsigned.giftOutputCount!==intent.gifts.length||
+    unsigned.totalOutputCount!==expectedOutputs.length||
+    unsigned.networkFeeSats!==intent.networkFeeSats)
+  throw Error('PSBT input/output counts or fee differ from funded intent');
+ psbt.txInputs.forEach((input,i)=>{
+  const expected=intent.inputs[i];
+  if(Buffer.from(input.hash).reverse().toString('hex')!==expected.txid||
+     input.index!==expected.vout||
+     psbt.data.inputs[i]?.witnessUtxo?.value!==expected.valueSats||
+     psbt.data.inputs[i]?.witnessUtxo?.script?.toString('hex')!==expected.scriptPubKeyHex||
+     psbt.data.inputs[i]?.partialSig?.length||psbt.data.inputs[i]?.finalScriptSig||
+     psbt.data.inputs[i]?.finalScriptWitness||psbt.data.inputs[i]?.tapKeySig)
+   throw Error('PSBT funding outpoint, witness UTXO or signature mismatch');
+ });
+ psbt.txOutputs.forEach((output,i)=>{
+  if(output.value!==expectedOutputs[i].valueSats||
+     output.script.toString('hex')!==expectedOutputs[i].scriptPubKeyHex)
+   throw Error('PSBT destination or amount differs from funded intent');
+ });
+ const unsignedTx=psbt.data.globalMap.unsignedTx.toBuffer();
+ if(Buffer.from(sha256(unsignedTx)).toString('hex')!==unsigned.unsignedTxSha256)
+  throw Error('Unsigned transaction hash mismatch');
+ return Object.freeze({format:'bc1q21-professional-unsigned-psbt-intent-check-v1',
+  matchesIntent:true,network:'regtest',signingAuthorized:false,canBroadcast:false});
+};
 // Creator transaction QR transport. Requires a separately constructed funded
 // unsigned PSBT; rendering does NOT authorize the user to sign or broadcast.
 globalThis.bc1q21ProfessionalRenderCreatorUnsignedQr=async function(unsigned){
