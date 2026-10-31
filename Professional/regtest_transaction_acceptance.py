@@ -95,3 +95,56 @@ def inspect_regtest_confirmation(expected_txid, rpc_call):
         "confirmed": confirmations >= 1,
         "recipientDeliveryReady": False,
     }
+
+
+def make_regtest_transaction_rpc(*, rpc_url, rpc_user, rpc_password, timeout_seconds=8):
+    """Dedicated loopback Bitcoin Core transport for the transaction pipeline.
+
+    Credentials remain server-side. Only regtest inspection, submission, and
+    confirmation RPCs are exposed. Do not expose this transport to a browser.
+    """
+    import base64
+    import json
+    import urllib.request
+    if rpc_url not in ("http://127.0.0.1:18443", "http://localhost:18443"):
+        raise RegtestAcceptanceError("Only loopback regtest Bitcoin Core RPC allowed")
+    if not isinstance(rpc_user, str) or not rpc_user or not isinstance(rpc_password, str) or not rpc_password:
+        raise RegtestAcceptanceError("Server-side Bitcoin Core credentials required")
+    if type(timeout_seconds) not in (int, float) or not 0 < timeout_seconds <= 30:
+        raise RegtestAcceptanceError("Invalid RPC timeout")
+    token = base64.b64encode((rpc_user + ":" + rpc_password).encode()).decode()
+
+    def call(method, params):
+        if method == "getblockchaininfo" and params == []:
+            pass
+        elif method == "decoderawtransaction" and isinstance(params, list) and len(params) == 1 and _raw_hex(params[0]):
+            pass
+        elif method == "testmempoolaccept" and isinstance(params, list) and len(params) == 1 and isinstance(params[0], list) and len(params[0]) == 1 and _raw_hex(params[0][0]):
+            pass
+        elif method == "getrawtransaction" and isinstance(params, list) and len(params) == 2 and _txid(params[0]) and params[1] is True:
+            pass
+        elif method == "sendrawtransaction" and isinstance(params, list) and len(params) == 1 and _raw_hex(params[0]):
+            # The caller must enforce trusted server-side authorization first.
+            pass
+        else:
+            raise RegtestAcceptanceError("RPC method or arguments not permitted")
+        payload = json.dumps({"jsonrpc": "1.0", "id": "professional-regtest", "method": method, "params": params}).encode()
+        request = urllib.request.Request(rpc_url, data=payload, headers={
+            "Content-Type": "application/json", "Authorization": "Basic " + token})
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+                result = json.load(response)
+        except Exception as exc:
+            raise RegtestAcceptanceError("Regtest Bitcoin Core RPC unavailable") from exc
+        if not isinstance(result, dict) or result.get("error") is not None:
+            raise RegtestAcceptanceError("Regtest Bitcoin Core RPC rejected request")
+        return result.get("result")
+    return call
+
+
+def _txid(value):
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-fA-F]{64}", value) is not None
+
+
+def _raw_hex(value):
+    return isinstance(value, str) and len(value) % 2 == 0 and re.fullmatch(r"[0-9a-fA-F]{120,200000}", value) is not None
