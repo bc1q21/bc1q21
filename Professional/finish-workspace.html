@@ -30,9 +30,9 @@ if(verified?.format==='bc1q21-professional-verified-creator-preview-v1'&&
  verified.network==='regtest'&&verified.diagnosticOnly===true&&
  verified.transactionVerified===true&&verified.broadcast===false&&
  verified.canBroadcast===false&&verified.releaseCount===p.releases.length&&
- verified.totalSats===p.totalSats&&/^[0-9a-f]{64}$/.test(verified.txid)){
+ verified.totalSats===p.totalSats&&Number.isSafeInteger(verified.fundingInputCount)&&verified.fundingInputCount>0&&Number.isSafeInteger(verified.networkFeeSats)&&verified.networkFeeSats>=0&&Number.isSafeInteger(verified.totalOutputCount)&&verified.totalOutputCount>=p.releases.length&&/^[0-9a-f]{64}$/.test(verified.txid)){
  document.getElementById('verified-transaction-details').textContent=
-  'The Jade Plus signatures passed the exact gift transaction checks. Finalized regtest transaction ID: '+verified.txid+'.';
+  'The Jade Plus signatures passed the exact gift transaction checks. Finalized regtest transaction ID: '+verified.txid+'. Funding inputs: '+verified.fundingInputCount+'. Gift releases: '+verified.releaseCount+'. Transaction outputs: '+verified.totalOutputCount+'. Network fee: '+verified.networkFeeSats.toLocaleString()+' sats. No transaction has been broadcast.';
  document.getElementById('verified-transaction').hidden=false;
  document.getElementById('handoff-stage').textContent='Jade Plus regtest signature verified. Awaiting Bitcoin Core broadcast and confirmation before recipient delivery can begin.';
 }
