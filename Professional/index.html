@@ -11,7 +11,7 @@
 main{max-width:960px;margin:8px auto;padding:12px 20px}
 .brand{min-height:152px;padding:12px 0 8px;gap:12px;align-items:flex-start}
 .brand img{height:125px;width:auto;max-width:240px;object-fit:contain;object-position:top left;flex-shrink:0}
-.brand h1{font-size:2rem;line-height:1.15;font-weight:800;align-self:flex-end}
+.brand h1{font-size:2rem;line-height:1.15;font-weight:800;align-self:flex-start;margin-top:22px;text-align:right}
 .identity-steps{margin:8px 0 22px;font-size:.85rem}
 .identity-steps:before{top:18px;height:4px}
 .identity-step span{height:36px;width:36px;border-width:3px;margin-bottom:6px;font-size:1rem}
@@ -20,7 +20,6 @@ main{max-width:960px;margin:8px auto;padding:12px 20px}
 </style></head><body><div class="professional-preview-banner" style="max-width:900px;margin:8px auto 0;padding:5px 12px;font-size:12px;color:#8a5000;text-align:center" role="note">bc1q21 Professional · LOCAL DEVELOPMENT PREVIEW — No real Bitcoin, signing, or funding</div><main><header class="brand"><img src="../Frontend/static/img/bc1q21-logo.png" alt="bc1q21 logo"><h1>Professional Gifting Wizard</h1></header><div class="identity-steps" aria-label="Gift creation stages; professional identity setup precedes planning"><div class="identity-step"><span>1</span>Plan</div><div class="identity-step"><span>2</span>Recovery</div><div class="identity-step"><span>3</span>Add Funds</div><div class="identity-step"><span>4</span>Finish</div></div><div class="bar"><strong>Step 1 · Your professional identity</strong></div>
 <section><p class="warn"><strong>Isolated development preview.</strong> Do not enter confidential client information or create/fund real gifts. This page stores nothing on a server.</p>
 <div style="padding:15px 17px;border:2px solid #09518b;border-radius:8px;background:#eaf3fc;margin:18px 0"><strong style="font-size:1.15rem;color:#09518b">Personalize your gifting experience — OPTIONAL</strong><p style="margin:9px 0 0">Enter your business name, contact information, and logo to present the gift in your own professional branding. <strong>Prefer standard bc1q21 branding?</strong> Leave every field blank and simply click <strong>Continue to gift planning</strong>.</p></div>
-<label for="practice">Type of practice</label><select id="practice"><option value="">Select a practice</option><option>Lawyer</option><option>Accountant</option><option>Financial adviser</option><option>Estate planner</option><option>Other professional</option></select>
 <label for="business">Business or practice name</label><input id="business" maxlength="100" autocomplete="off">
 <label for="contact">Contact name</label><input id="contact" maxlength="100" autocomplete="off">
 <label for="address">Business address (optional)</label><textarea id="address" rows="3" maxlength="300" autocomplete="off"></textarea>
@@ -31,7 +30,7 @@ main{max-width:960px;margin:8px auto;padding:12px 20px}
 <script>
 'use strict';
 const PROFILE_KEY='bc1q21-professional-profile-draft';
-const fields=['practice','business','contact','address','email','phone'];
+const fields=['business','contact','address','email','phone'];
 const $=id=>document.getElementById(id);
 let logoData='';
 function details(){return Object.fromEntries([...fields.map(id=>[id,$(id).value.trim()]),['logoData',logoData]]);}
@@ -56,7 +55,7 @@ $('logo').addEventListener('change',async e=>{
 $('continue').onclick=()=>{
   clearError();
   const d=details();
-  if(!d.business&&(d.practice||d.contact||d.address||d.email||d.phone||d.logoData)){showError('Please enter a business name to use professional branding, or clear all fields to use bc1q21 branding.','business');return;}
+  if(!d.business&&(d.contact||d.address||d.email||d.phone||d.logoData)){showError('Please enter a business name to use professional branding, or clear all fields to use bc1q21 branding.','business');return;}
   if(d.email&&!$('email').checkValidity()){showError('Please enter a valid email address (for example, name@example.com).','email');return;}
   try{sessionStorage.setItem(PROFILE_KEY,JSON.stringify(d));location.href='./retail-mirror/index.html';}
   catch(e){showError('Unable to save this browser-session preview: '+String(e.message||e));}
