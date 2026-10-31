@@ -406,6 +406,14 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
     throw Error('Unsafe unsigned PSBT construction');
    // The browser builder already creates the validated funded intent. Verify that
    // the exact observed outpoints, gift schedule and fee survived that boundary.
+   const expectedGifts=globalThis.bc1q21ProfessionalPreviewGiftOutputs({
+    accountXpub:derivedXpub,releases:plan.releases
+   });
+   if(expectedGifts?.network!=='regtest'||
+      expectedGifts.canSign!==false||
+      expectedGifts.outputs?.length!==plan.releases.length||
+      expectedGifts.fundingScriptPubKeyHex?.toLowerCase()!==publicFundingScript)
+    throw Error('Public gift derivation differs from reviewed wallet');
    const intent=built.intent;
    if(intent?.format!=='bc1q21-professional-funded-distribution-intent-v1'||
       intent.network!=='regtest'||intent.signed!==false||
@@ -413,11 +421,15 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
       intent.inputs?.length!==scannedUtxos.length||
       intent.gifts?.length!==plan.releases.length||
       intent.networkFeeSats!==fee||intent.inputTotalSats!==inputTotal||
+      intent.serviceFee!==null||
       intent.gifts.some((gift,i)=>gift.date!==plan.releases[i].date||
-       gift.valueSats!==plan.releases[i].amountSats)||
+       gift.valueSats!==plan.releases[i].amountSats||
+       gift.locktime!==expectedGifts.outputs[i].locktime||
+       gift.scriptPubKeyHex!==expectedGifts.outputs[i].scriptPubKeyHex.toLowerCase())||
       intent.inputs.some((input,i)=>input.txid!==scannedUtxos[i].txid.toLowerCase()||
        input.vout!==scannedUtxos[i].vout||input.valueSats!==scannedUtxos[i].valueSats||
-       input.scriptPubKeyHex!==scannedUtxos[i].scriptPubKeyHex.toLowerCase())||
+       input.scriptPubKeyHex!==scannedUtxos[i].scriptPubKeyHex.toLowerCase()||
+       input.scriptPubKeyHex!==publicFundingScript)||
       (remaining===0?intent.change!==null:
        intent.change?.valueSats!==remaining||
        intent.change?.scriptPubKeyHex!==change.scriptPubKeyHex.toLowerCase())||
