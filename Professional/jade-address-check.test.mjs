@@ -46,3 +46,17 @@ test('Jade QR diagnostic rejects a changed gift plan',()=>{
  assert.match(html,/if\(!latestUnsigned\|\|!scannedUtxos\?\.length\|\|!planStillMatches\(\)\)/);
  assert.match(html,/latestUnsigned!==renderingUnsigned\|\|!scannedUtxos\?\.length\|\|!derivedXpub\|\|!planStillMatches\(\)/);
 });
+
+test('funding page reconciles constructed intent with observed inputs',()=>{
+ const required=[
+  'intent.inputs?.length!==scannedUtxos.length',
+  'intent.gifts?.length!==plan.releases.length',
+  'intent.networkFeeSats!==fee',
+  'intent.inputTotalSats!==inputTotal',
+  'gift.date!==plan.releases[i].date',
+  'input.vout!==scannedUtxos[i].vout',
+  'intent.change?.valueSats!==remaining',
+  '!planStillMatches()'
+ ];
+ for(const snippet of required) assert.ok(html.includes(snippet),snippet);
+});
