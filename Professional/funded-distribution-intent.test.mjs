@@ -70,3 +70,28 @@ test('accepts valid calendar release date and rejects impossible dates', () => {
   assert.throws(()=>snapshotFundedDistributionIntent(x));
  }
 });
+
+test('rejects altered funding outpoint, funding script, gift script and change destination', () => {
+ for (const mutation of [
+  x => { x.utxos[0].txid = '00'; },
+  x => { x.utxos[0].vout = -1; },
+  x => { x.utxos[0].scriptPubKeyHex = 'not-hex'; },
+  x => { x.giftOutputs[0].scriptPubKeyHex = 'not-hex'; },
+  x => { x.changeOutput.scriptPubKeyHex = 'not-hex'; },
+  x => { x.changeOutput.valueSats = 2001; },
+  x => { x.utxos[0].valueSats = 14999; }
+ ]) {
+  const input = fixture();
+  mutation(input);
+  assert.throws(() => snapshotFundedDistributionIntent(input));
+ }
+});
+test('preserves exactly the validated outpoints, gift script and change destination', () => {
+ const input = fixture();
+ const result = snapshotFundedDistributionIntent(input);
+ assert.deepEqual(result.inputs[0], input.utxos[0]);
+ assert.equal(result.gifts[0].scriptPubKeyHex, input.giftOutputs[0].scriptPubKeyHex);
+ assert.deepEqual(result.change, input.changeOutput);
+ assert.equal(result.networkFeeSats, input.networkFeeSats);
+ assert.equal(result.inputTotalSats, result.outputTotalSats + result.networkFeeSats);
+});
