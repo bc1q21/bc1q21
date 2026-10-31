@@ -61,3 +61,12 @@ test('rejects tampered release totals, dates and self-authorizing preview flags'
   x => { x.plan = {...plan, broadcastAuthorized:true}; }
  ]) {const x=fixture();mutation(x);assert.throws(()=>snapshotFundedDistributionIntent(x));}
 });
+
+test('accepts valid calendar release date and rejects impossible dates', () => {
+ assert.equal(snapshotFundedDistributionIntent(fixture()).gifts[0].date, '2030-01-01');
+ for (const invalid of ['2030-02-30','2030-13-01','2030-00-10']) {
+  const x=fixture(); x.plan={...plan,releases:[{date:invalid,amountSats:12000}]};
+  x.giftOutputs[0].date=invalid;
+  assert.throws(()=>snapshotFundedDistributionIntent(x));
+ }
+});
