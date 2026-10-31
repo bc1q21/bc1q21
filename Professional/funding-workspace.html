@@ -435,6 +435,12 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
        intent.change?.scriptPubKeyHex!==change.scriptPubKeyHex.toLowerCase())||
       !planStillMatches())
     throw Error('Funded intent differs from reviewed gift plan or observed Bitcoin Core inputs');
+   const inspectPsbt=globalThis.bc1q21ProfessionalVerifyUnsignedCreatorPsbt;
+   if(typeof inspectPsbt!=='function')throw Error('Independent PSBT verifier unavailable');
+   const inspection=inspectPsbt({unsigned:built.unsigned,intent});
+   if(inspection?.matchesIntent!==true||inspection.network!=='regtest'||
+      inspection.signingAuthorized!==false||inspection.canBroadcast!==false)
+    throw Error('Independent unsigned PSBT inspection failed');
    document.getElementById('review-inputs').textContent=String(built.unsigned.fundingInputCount);
    document.getElementById('review-gifts').textContent=String(built.unsigned.giftOutputCount);
    document.getElementById('review-fee').textContent=fee.toLocaleString();
