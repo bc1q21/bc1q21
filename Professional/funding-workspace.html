@@ -184,6 +184,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
  const currentPlanSnapshot=()=>sessionStorage.getItem('bc1q21-professional-approved-plan-preview');
  const planStillMatches=()=>!!derivedPlanSnapshot&&currentPlanSnapshot()===derivedPlanSnapshot;
  let latestUnsigned=null;
+ let latestIntent=null;
  let diagnosticTimer=null;
  let diagnosticCamera=null;
  const diagnosticButton=document.getElementById("diagnostic-qr");
@@ -192,13 +193,13 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
  const handoffKey='bc1q21-professional-diagnostic-jade-handoff';
  const clearHandoff=()=>{sessionStorage.removeItem(handoffKey);handoffButton.disabled=true;};
  const refreshHandoff=()=>{
-  handoffButton.disabled=!(latestUnsigned&&scannedUtxos?.length&&reviewAck.checked&&derivedXpub&&
+  handoffButton.disabled=!(latestUnsigned&&latestIntent&&scannedUtxos?.length&&reviewAck.checked&&derivedXpub&&
    document.getElementById('funding-xpub').value.trim()===derivedXpub&&planStillMatches());
  };
 
  handoffButton.addEventListener('click',()=>{
   try{
-   if(!latestUnsigned||!scannedUtxos?.length||!derivedXpub||
+   if(!latestUnsigned||!latestIntent||!scannedUtxos?.length||!derivedXpub||
       document.getElementById('funding-xpub').value.trim()!==derivedXpub||
       !reviewAck.checked||!planStillMatches()||latestUnsigned.network!=='regtest'||latestUnsigned.signed!==false||
       latestUnsigned.broadcast!==false||latestUnsigned.hardwareSignatureVerified!==false)
@@ -206,7 +207,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    sessionStorage.setItem(handoffKey,JSON.stringify({
     format:'bc1q21-professional-diagnostic-jade-handoff-v1',
     diagnosticOnly:true,signingAuthorized:false,canBroadcast:false,
-    unsigned:latestUnsigned
+    unsigned:latestUnsigned,intent:latestIntent
    }));
    window.location.assign('./jade-signing-workspace.html');
   }catch(error){
@@ -218,7 +219,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
   if(diagnosticTimer){clearInterval(diagnosticTimer);diagnosticTimer=null;}
   diagnosticCamera?.invalidate();
   document.getElementById('diagnostic-signed-panel').hidden=true;
-  diagnosticPanel.hidden=true;diagnosticButton.disabled=true;latestUnsigned=null;
+  diagnosticPanel.hidden=true;diagnosticButton.disabled=true;latestUnsigned=null;latestIntent=null;
  };
  let derivedXpub=null;
  let latestScanId=0;
@@ -449,6 +450,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    document.getElementById('review-ack-status').textContent='Review acknowledgement pending.';
    unsignedReview.hidden=false;
    latestUnsigned=built.unsigned;
+   latestIntent=intent;
    diagnosticButton.disabled=false;
    refreshHandoff();
    document.getElementById('handoff-jade-status').textContent=
