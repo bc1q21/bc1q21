@@ -148,3 +148,55 @@ def _txid(value):
 
 def _raw_hex(value):
     return isinstance(value, str) and len(value) % 2 == 0 and re.fullmatch(r"[0-9a-fA-F]{120,200000}", value) is not None
+
+
+def inspect_regtest_transaction_against_intent(raw_transaction_hex, expected_txid, intent, rpc_call):
+    """Independently reconcile Bitcoin Core's decoded transaction to gift intent.
+
+    This is an inspection, NOT an authorization. The caller must separately
+    authenticate the intent, wallet ownership and recipient recovery material.
+    """
+    from decimal import Decimal, InvalidOperation
+    if not isinstance(intent, dict) or intent.get("format") != "bc1q21-professional-funded-distribution-intent-v1" or intent.get("network") != "regtest":
+        raise RegtestAcceptanceError("Regtest gift intent required")
+    if intent.get("signed") is not False or intent.get("broadcastAuthorized") is not False:
+        raise RegtestAcceptanceError("Expected untrusted unsigned intent")
+    inspection = inspect_regtest_acceptance(raw_transaction_hex, expected_txid, rpc_call)
+    decoded = rpc_call("decoderawtransaction", [raw_transaction_hex])
+    inputs = intent.get("inputs")
+    gifts = intent.get("gifts")
+    if not isinstance(inputs, list) or not inputs or not isinstance(gifts, list) or not gifts:
+        raise RegtestAcceptanceError("Gift intent inputs and outputs required")
+    expected_inputs = [(item.get("txid"), item.get("vout")) for item in inputs if isinstance(item, dict)]
+    actual_inputs = [(item.get("txid"), item.get("vout")) for item in decoded.get("vin", []) if isinstance(item, dict)]
+    if len(expected_inputs) != len(inputs) or actual_inputs != expected_inputs:
+        raise RegtestAcceptanceError("Funding outpoints do not match approved intent")
+    expected_outputs = gifts + ([intent["change"]] if intent.get("change") else []) + ([intent["serviceFee"]] if intent.get("serviceFee") else [])
+    actual_outputs = decoded.get("vout")
+    if not isinstance(actual_outputs, list) or len(actual_outputs) != len(expected_outputs):
+        raise RegtestAcceptanceError("Gift output count mismatch")
+    for index, (actual, expected) in enumerate(zip(actual_outputs, expected_outputs)):
+        if not isinstance(actual, dict) or not isinstance(expected, dict) or actual.get("n") != index:
+            raise RegtestAcceptanceError("Invalid transaction output")
+        script = actual.get("scriptPubKey")
+        if not isinstance(script, dict) or script.get("hex", "").lower() != expected.get("scriptPubKeyHex", "").lower():
+            raise RegtestAcceptanceError("Gift output script mismatch")
+        try:
+            value = Decimal(str(actual.get("value"))) * 100000000
+        except (InvalidOperation, ValueError):
+            raise RegtestAcceptanceError("Invalid Bitcoin Core output value") from None
+        if value != value.to_integral_value() or int(value) != expected.get("valueSats"):
+            raise RegtestAcceptanceError("Gift output amount mismatch")
+    return {
+        "format": "bc1q21-professional-regtest-intent-inspection-v1",
+        "network": "regtest",
+        "txid": expected_txid.lower(),
+        "fundingInputsMatch": True,
+        "giftOutputsMatch": True,
+        "outputCount": len(expected_outputs),
+        "acceptedAtInspection": inspection["acceptedAtInspection"],
+        "broadcast": False,
+        "canBroadcast": False,
+        "walletOriginAuthenticated": False,
+        "recipientRecoveryReady": False,
+    }
