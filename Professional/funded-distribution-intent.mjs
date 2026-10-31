@@ -13,6 +13,14 @@ const hex = (value, bytes, label) => {
     fail('Invalid ' + label);
   return value.toLowerCase();
 };
+const validUtcDate = value => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(value + 'T00:00:00.000Z');
+  return Number.isFinite(parsed.getTime()) &&
+    parsed.getUTCFullYear() === year && parsed.getUTCMonth() + 1 === month &&
+    parsed.getUTCDate() === day;
+};
 const sum = values => {
   const result = values.reduce((total, value) => total + value, 0);
   if (!Number.isSafeInteger(result)) fail('Amount overflow');
@@ -39,9 +47,7 @@ export function snapshotFundedDistributionIntent({ network, plan, utxos, giftOut
       fail('Untrusted plan authorization flag: ' + name);
   }
   const releaseTotal = sum(plan.releases.map((release, index) => {
-    if (typeof release?.date !== 'string' ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(release.date) ||
-        !Number.isFinite(Date.parse(release.date + 'T00:00:00.000Z')))
+    if (!validUtcDate(release?.date))
       fail('Invalid planned release date at ' + index);
     return sats(release.amountSats, 'Planned release ' + index);
   }));
@@ -68,7 +74,7 @@ export function snapshotFundedDistributionIntent({ network, plan, utxos, giftOut
     const release = plan.releases[index];
     if (output?.date !== release.date || output?.valueSats !== release.amountSats)
       fail('Gift output does not match approved date and amount at ' + index);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(output.date))
+    if (!validUtcDate(output.date))
       fail('Invalid gift date');
     if (!Number.isSafeInteger(output.locktime) || output.locktime < 500000000)
       fail('Expected timestamp CLTV locktime');
