@@ -121,6 +121,8 @@ def make_regtest_transaction_rpc(*, rpc_url, rpc_user, rpc_password, timeout_sec
             pass
         elif method == "testmempoolaccept" and isinstance(params, list) and len(params) == 1 and isinstance(params[0], list) and len(params[0]) == 1 and _raw_hex(params[0][0]):
             pass
+        elif method == "gettxout" and isinstance(params, list) and len(params) == 3 and _txid(params[0]) and type(params[1]) is int and 0 <= params[1] <= 0xffffffff and params[2] is True:
+            pass
         elif method == "getrawtransaction" and isinstance(params, list) and len(params) == 2 and _txid(params[0]) and params[1] is True:
             pass
         elif method == "sendrawtransaction" and isinstance(params, list) and len(params) == 1 and _raw_hex(params[0]):
