@@ -9,6 +9,21 @@ References:
 - https://blockstream.zendesk.com/hc/en-us/articles/20270907312665-Verify-receive-addresses-with-an-air-gapped-Jade-Plus
 - https://blockstream.zendesk.com/hc/en-us/articles/20272487890841-Supported-air-gapped-functionality-via-QR
 
+## Established project test baseline — DO NOT REDO
+Prior Professional development already completed extensive physical Jade Plus and Bitcoin Core regtest validation. Reuse the existing implementation and evidence; do not reopen hardware feasibility, basic CLTV compatibility, QR transport, PSBT signing or matured gift redemption merely because this new integration stage begins.
+- Physical Jade Plus air-gapped QR signing, signed-PSBT capture, cryptographic verification and finalization have passed.
+- Multiple release dates, including a 24-release gift structure, were exercised; matured time-locked beneficiary release was demonstrated on regtest.
+- Bitcoin Core regtest acceptance and timelock behavior were tested; earlier checkpoint records include `Professional/SESSION-CLOSURE-2026-10-25-PHYSICAL-JADE-CORE-PASS.md`, plus prior integration commits and CI runs.
+- The current Professional browser preview already has a diagnostic Jade signing page with animated unsigned QR and signed-QR camera verification. Integrate it; do not rebuild it.
+- These results establish hardware and script feasibility, NOT authorization for live funding, an authenticated wallet-origin connection, production broadcast or a fully completed customer lifecycle.
+- Only run focused regression tests where newly changed integration code could affect an already-proven capability.
+
+## Actual remaining integration work
+- Link existing public-wallet import and derivation to a trusted, gift-specific funding identity without accepting arbitrary xpub/session flags as proof of origin.
+- Implement an approved funding intent, exact fee/amount computation, deposit QR and Core funding reconciliation in isolated regtest mode.
+- Connect the verified funding intent to the existing Jade signing interface, preserving transaction commitments and fail-closed authorization.
+- Complete broadcast/confirmation and recipient delivery/recovery integration separately.
+
 ## Proposed regtest-only workflow
 1. Lock reviewed gift-plan commitment (release dates, sats, beneficiary key/script commitments, fees policy).
 2. Scan Jade Plus's animated account-xpub QR into a browser camera decoder; do not request seed, private key or USB connection.
