@@ -51,3 +51,13 @@ test('rejects absent funding, missing outputs, fractional amounts and changed pl
     assert.throws(() => snapshotFundedDistributionIntent(x));
   }
 });
+
+test('rejects tampered release totals, dates and self-authorizing preview flags', () => {
+ for (const mutation of [
+  x => { x.plan = {...plan, releases:[{date,amountSats:11999}]}; },
+  x => { x.plan = {...plan, releases:[{date:'2030-02-30',amountSats:12000}]}; },
+  x => { x.plan = {...plan, signingAuthorized:true}; },
+  x => { x.plan = {...plan, fundingAuthorized:true}; },
+  x => { x.plan = {...plan, broadcastAuthorized:true}; }
+ ]) {const x=fixture();mutation(x);assert.throws(()=>snapshotFundedDistributionIntent(x));}
+});
