@@ -172,6 +172,7 @@ if (this.giftTxCandidates.length === 1) {
 
   this.buildRowsWithoutSchedule();
   await this.refreshPublicPreviewStatuses(previewTx);
+  await this.refreshClaimedReleaseValues(previewTx);
 }
 
             // Spend status
@@ -467,6 +468,7 @@ if (outputAddresses.has(legacyFirst.address)) {
             this.updateReadyCount();
 
             await this.refreshSpentStatuses();
+            await this.refreshClaimedReleaseValues();
           } catch (e) {
             this.error = e?.message || String(e);
           } finally {
@@ -1074,6 +1076,44 @@ childIndex: r.childIndex ?? null
           const byAddress = new Map(checks.map(c => [c.address, c.status]));
           this.rows = this.rows.map(row => ({
             ...row, publicPreviewStatus: byAddress.get(row.address) || null
+          }));
+        },
+
+        // Display-only historical USD valuation. Never changes spending eligibility.
+        async refreshClaimedReleaseValues(previewTx = null) {
+          const updates = await Promise.all(this.rows.map(async row => {
+            const fundingTxid = row.fundingTxid || previewTx?.txid || '';
+            const fundingVout = Number.isInteger(row.fundingVout) && row.fundingVout >= 0
+              ? row.fundingVout
+              : (previewTx?.vout || []).findIndex(v =>
+                  v.scriptpubkey_address === row.address && Number(v.value) === row.sats);
+            if (!/^[a-fA-F0-9]{64}$/.test(fundingTxid) || fundingVout < 0 ||
+                !Number.isFinite(row.btc) || row.btc <= 0)
+              return { address: row.address, usd: NaN };
+            try {
+              const response = await fetch(
+                `${this.baseApi}/address/${encodeURIComponent(row.address)}/txs`,
+                { cache: 'no-store' }
+              );
+              if (!response.ok || response.headers.get('x-stale') === 'true')
+                return { address: row.address, usd: NaN };
+              const history = await response.json();
+              if (!Array.isArray(history)) return { address: row.address, usd: NaN };
+              const spends = history.filter(tx => Array.isArray(tx.vin) &&
+                tx.vin.some(v => v.txid === fundingTxid &&
+                  Number(v.vout) === fundingVout));
+              if (spends.length !== 1 || spends[0].status?.confirmed !== true)
+                return { address: row.address, usd: NaN };
+              const price = this.extractPriceUsd(spends[0].status);
+              return { address: row.address,
+                usd: Number.isFinite(price) && price > 0 ? row.btc * price : NaN };
+            } catch (_) {
+              return { address: row.address, usd: NaN };
+            }
+          }));
+          const values = new Map(updates.map(u => [u.address, u.usd]));
+          this.rows = this.rows.map(row => ({
+            ...row, usdAtRelease: values.get(row.address) ?? NaN
           }));
         },
 
