@@ -57,7 +57,7 @@ footer{text-align:right!important;padding-right:0!important}
 <section class="panel" id="customer-payment"><h2>Make Your Gift Payment</h2><p style="text-align:center">When payment integration is ready, this page will display your Bitcoin payment request. The application will verify the payment before continuing.</p>
 <div class="status" style="font-size:1.12rem"><strong>Estimated payment:</strong> <span id="customer-payment-amount">Calculating…</span><br><small id="customer-payment-breakdown"></small></div>
 <div style="min-height:210px;border:2px dashed #a9bed2;border-radius:12px;display:grid;place-items:center;margin:20px auto;max-width:300px;text-align:center;padding:24px;background:#f7f9fc"><div><strong>Bitcoin payment QR</strong><p style="margin-bottom:0">Not available in this development preview.<br>Do not send Bitcoin.</p></div></div>
-<p class="status"><strong>Payment status:</strong> Awaiting a verified funding address. No Bitcoin has been requested or received.<br><strong>Next:</strong> Jade Plus signing becomes available only after sufficient funding is verified.</p>
+<p class="status" id="customer-funding-status" role="status"><strong>Payment status:</strong> Awaiting a verified funding address. No Bitcoin has been requested or received.<br><strong>Next:</strong> Jade Plus signing becomes available only after sufficient funding is verified.</p>
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
 <h3>Step 1 — Identify your Jade Plus public wallet</h3>
 <p>For this disposable regtest preview, import the <strong>public account xpub</strong> from your Jade test wallet. This derives the public funding key at <code>m/84'/0'/0'/0/0</code> without handling recovery words or private keys.</p>
@@ -559,6 +559,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    document.getElementById('jade-address-check').hidden=false;
    document.getElementById('funding-key-result').hidden=false;
    status.textContent='Public funding key and '+outputs.outputs.length+' gift-specific time-locked output(s) derived. No deposit request is enabled.';
+   document.getElementById('customer-funding-status').textContent='Public Jade wallet information imported for disposable regtest inspection. Device identity and payment authorization remain unverified. Do not send Bitcoin.';
   }catch(e){status.textContent='Unable to derive public funding key: '+String(e.message||e);}
  });
 
