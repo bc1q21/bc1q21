@@ -29,6 +29,11 @@ def _canonical(intent):
     for item in inputs:
         if not isinstance(item, dict) or not isinstance(item.get("txid"), str) or not isinstance(item.get("vout"), int) or isinstance(item.get("vout"), bool):
             raise IntentRegistryError("Invalid funding outpoint")
+        if (re.fullmatch(r"[0-9a-fA-F]{64}", item["txid"]) is None
+                or not 0 <= item["vout"] <= 0xffffffff
+                or type(item.get("valueSats")) is not int
+                or item["valueSats"] <= 0):
+            raise IntentRegistryError("Invalid funding outpoint or amount")
         outpoints.append((item["txid"].lower(), item["vout"]))
     if len(set(outpoints)) != len(outpoints):
         raise IntentRegistryError("Invalid or duplicate funding inputs")
