@@ -4,14 +4,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('./funding-workspace.html',import.meta.url),'utf8');
-test('device address check remains in hidden developer diagnostics',()=>{
+test('device address and read-only regtest funding check appear in customer section',()=>{
  assert.match(html,/<details id="professional-developer-tools">/);
+ const customer=html.indexOf('id="customer-payment"');
  const diagnostic=html.indexOf('<details id="professional-developer-tools">');
  const check=html.indexOf('id="jade-address-check"');
- assert.ok(check>diagnostic);
+ const scan=html.indexOf('id="scan-funding"');
+ assert.ok(customer>=0&&customer<check&&check<scan&&scan<diagnostic);
  assert.match(html,/id="jade-address-check" hidden/);
  assert.match(html,/id="jade-address-ack"/);
  assert.match(html,/id="jade-check-address"/);
+ assert.match(html,/id="scan-funding" disabled/);
+ assert.match(html,/id="scan-status"/);
 });
 test('device acknowledgement cannot authorize funding, signing or broadcast',()=>{
  const start=html.indexOf("jadeAck.addEventListener('change'");
