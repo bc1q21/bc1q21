@@ -72,6 +72,16 @@ class RegistryTests(unittest.TestCase):
             with self.assertRaises(IntentRegistryError):
                 register_inspection_intent(intent, root, operator_confirmed=True)
 
+    def test_invalid_input_fields(self):
+        for field, value in [("txid", "bad"), ("vout", -1), ("vout", True),
+                             ("valueSats", -1), ("valueSats", True)]:
+            with self.subTest(field=field, value=value):
+                with tempfile.TemporaryDirectory() as root:
+                    intent = sample()
+                    intent["inputs"][0][field] = value
+                    with self.assertRaises(IntentRegistryError):
+                        register_inspection_intent(intent, root, operator_confirmed=True)
+
     def test_no_path_traversal(self):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(IntentRegistryError):
