@@ -483,6 +483,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
   resetUnsigned();scanButton.disabled=true;
   document.getElementById('funding-key-result').hidden=true;
   document.getElementById('scan-status').textContent='Public wallet changed. Reimport the wallet and check funding again.';
+  document.getElementById('customer-funding-status').textContent='Public wallet changed. Previous address comparison is no longer valid. Reimport the wallet before continuing. Do not send Bitcoin.';
  });
  const inspectButton=document.getElementById('inspect-funding');
  inspectButton.addEventListener('click',async()=>{
