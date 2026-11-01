@@ -25,8 +25,12 @@ def _canonical(intent):
         raise IntentRegistryError("Nonempty funding inputs and gifts required")
     if len(inputs) > 100 or len(gifts) > 100:
         raise IntentRegistryError("Too many inputs or gifts")
-    outpoints = [(item.get("txid", "").lower(), item.get("vout")) for item in inputs if isinstance(item, dict) and isinstance(item.get("txid"), str)]
-    if len(outpoints) != len(inputs) or len(set(outpoints)) != len(outpoints):
+    outpoints = []
+    for item in inputs:
+        if not isinstance(item, dict) or not isinstance(item.get("txid"), str) or not isinstance(item.get("vout"), int) or isinstance(item.get("vout"), bool):
+            raise IntentRegistryError("Invalid funding outpoint")
+        outpoints.append((item["txid"].lower(), item["vout"]))
+    if len(set(outpoints)) != len(outpoints):
         raise IntentRegistryError("Invalid or duplicate funding inputs")
     try:
         encoded = json.dumps(intent, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False).encode("ascii")
