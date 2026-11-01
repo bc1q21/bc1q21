@@ -888,7 +888,7 @@ async def _fetch_mempool_address_txs(address: str) -> List[Dict[str, Any]]:
                     and output.get("scriptpubkey_address") == address
                 }
                 for tx in data:
-                    if not isinstance(tx, dict) or not tx.get("status", {}).get("confirmed"):
+                    if not isinstance(tx, dict) or not isinstance(tx.get("status"), dict) or not tx["status"].get("confirmed"):
                         continue
                     if any(
                         isinstance(vin, dict)
