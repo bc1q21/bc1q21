@@ -70,6 +70,11 @@ if(typeof attachCamera==='function'){
   statusElement:scanStatus,
   getApprovedUnsigned:()=>approvedUnsigned,
   onVerified:verified=>{
+   let currentPlan=null;
+   try{currentPlan=JSON.parse(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')||'null');}catch{}
+   if(!reviewedPlan||!currentPlan||JSON.stringify(currentPlan.releases)!==JSON.stringify(reviewedPlan.releases)||currentPlan.totalSats!==reviewedPlan.totalSats){
+    scanStatus.textContent='Gift plan changed since signing began. Return to Add Funds and prepare a new transaction.';return;
+   }
    if(verified.approvedPsbtSha256!==approvedUnsigned?.psbtSha256){
     scanStatus.textContent='Signed QR did not match the approved gift';return;
    }
@@ -88,6 +93,7 @@ if(typeof attachCamera==='function'){
     broadcast:false,canBroadcast:false,
     psbtSha256:verified.approvedPsbtSha256,txid:verified.finalizedTxid,
     releaseCount:reviewedPlan?.releases.length,totalSats:reviewedPlan?.totalSats,
+    releases:reviewedPlan.releases.map(r=>({date:r.date,amountSats:r.amountSats})),
     fundingInputCount:approvedUnsigned.fundingInputCount,
     networkFeeSats:approvedUnsigned.networkFeeSats,
     totalOutputCount:approvedUnsigned.totalOutputCount
