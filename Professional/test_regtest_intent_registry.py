@@ -51,6 +51,13 @@ class RegistryTests(unittest.TestCase):
             with self.assertRaises(IntentRegistryError):
                 load_inspection_intent(identifier, root)
 
+    def test_public_registry_directory_rejected(self):
+        with tempfile.TemporaryDirectory() as root:
+            Path(root).chmod(0o755)
+            with self.assertRaises(IntentRegistryError):
+                register_inspection_intent(sample(), root, operator_confirmed=True)
+            Path(root).chmod(0o700)
+
     def test_no_path_traversal(self):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(IntentRegistryError):
