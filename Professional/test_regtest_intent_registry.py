@@ -82,6 +82,15 @@ class RegistryTests(unittest.TestCase):
                     with self.assertRaises(IntentRegistryError):
                         register_inspection_intent(intent, root, operator_confirmed=True)
 
+    def test_duplicate_outpoint_case_insensitive(self):
+        with tempfile.TemporaryDirectory() as root:
+            intent = sample()
+            repeated = dict(intent["inputs"][0])
+            repeated["txid"] = repeated["txid"].upper()
+            intent["inputs"].append(repeated)
+            with self.assertRaises(IntentRegistryError):
+                register_inspection_intent(intent, root, operator_confirmed=True)
+
     def test_no_path_traversal(self):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(IntentRegistryError):
