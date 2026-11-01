@@ -38,6 +38,7 @@ if(verified?.format==='bc1q21-professional-verified-creator-preview-v1'&&
   'The Jade Plus signatures passed the exact gift transaction checks. Finalized regtest transaction ID: '+verified.txid+'. Funding inputs: '+verified.fundingInputCount+'. Gift releases: '+verified.releaseCount+'. Transaction outputs: '+verified.totalOutputCount+'. Network fee: '+verified.networkFeeSats.toLocaleString()+' sats. No transaction has been broadcast.';
  document.getElementById('verified-transaction').hidden=false;
  document.getElementById('handoff-stage').textContent='Jade Plus regtest signature verified. Awaiting Bitcoin Core broadcast and confirmation before recipient delivery can begin.';
+ document.getElementById('next-action').textContent='Next step: The signed regtest transaction requires independent server review and Bitcoin Core confirmation. Recipient delivery remains unavailable until recovery details are independently validated.';
 }
 }catch(e){document.getElementById('summary').textContent='Return to gift planning: '+e.message}</script><script>
 (function(){
