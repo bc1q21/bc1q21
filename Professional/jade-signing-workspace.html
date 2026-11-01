@@ -57,7 +57,8 @@ try{
 
 let approvedUnsigned=null;
 const verifiedSummaryKey='bc1q21-professional-verified-creator-preview';
-sessionStorage.removeItem(verifiedSummaryKey);
+// Keep an earlier verified diagnostic when the customer navigates back from Finish.
+// A new Add Funds handoff invalidates it before any new signing attempt.
 let cameraController=null;
 const scanStatus=document.getElementById('verification');
 const attachCamera=window.bc1q21ProfessionalAttachCreatorCamera;
@@ -114,6 +115,8 @@ const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
   if(!reviewedPlan||handoff?.format!=='bc1q21-professional-diagnostic-jade-handoff-v1'||
      handoff.diagnosticOnly!==true||handoff.signingAuthorized!==false||
      handoff.canBroadcast!==false) return;
+  sessionStorage.removeItem(verifiedSummaryKey);
+  document.getElementById('verified-next').hidden=true;
   const unsigned=handoff.unsigned;
   if(unsigned?.format!=='bc1q21-professional-funded-distribution-unsigned-psbt-v1'||
      unsigned.network!=='regtest'||unsigned.signed!==false||
