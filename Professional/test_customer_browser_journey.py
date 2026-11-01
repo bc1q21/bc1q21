@@ -113,6 +113,20 @@ class BrowserJourneyTests(unittest.TestCase):
         self.page.goto(self.base + "finish-workspace.html")
         self.assertTrue(self.page.locator("#verified-transaction").is_visible())
 
+    def test_new_handoff_discards_old_verification(self):
+        self.session(plan=PLAN, verified=SIGNED)
+        self.page.evaluate("""() => sessionStorage.setItem(
+            'bc1q21-professional-diagnostic-jade-handoff',
+            JSON.stringify({format:'bc1q21-professional-diagnostic-jade-handoff-v1',
+                diagnosticOnly:true,signingAuthorized:false,canBroadcast:false,
+                unsigned:{}})
+        )""")
+        self.page.goto(self.base + "jade-signing-workspace.html")
+        self.assertIsNone(self.page.evaluate(
+            "sessionStorage.getItem('bc1q21-professional-verified-creator-preview')"))
+        self.page.goto(self.base + "finish-workspace.html")
+        self.assertTrue(self.page.locator("#verified-transaction").is_hidden())
+
     def test_jade_without_handoff_is_locked(self):
         self.session(plan=PLAN)
         self.page.goto(self.base + "jade-signing-workspace.html")
