@@ -34,6 +34,18 @@ class StoredPlanInspectionTests(unittest.TestCase):
             self.assertFalse(result["walletOriginAuthenticated"])
             self.assertFalse(result["recipientRecoveryReady"])
 
+    def test_rejects_unverified_funding(self):
+        with tempfile.TemporaryDirectory() as root:
+            intent = plan()
+            register_inspection_intent(intent, root, operator_confirmed=True)
+            with patch("stored_plan_inspection.inspect_regtest_transaction_against_intent",
+                       return_value={"acceptedAtInspection": True}), patch(
+                       "stored_plan_inspection.verify_funding_with_core",
+                       return_value={"fundingOutpointsVerified": False}):
+                with self.assertRaises(ValueError):
+                    inspect_stored_plan(fingerprint(intent), "aa" * 100,
+                                        "bb" * 32, root, lambda *_: None)
+
     def test_rejects_unaccepted_transaction(self):
         with tempfile.TemporaryDirectory() as root:
             intent = plan()
