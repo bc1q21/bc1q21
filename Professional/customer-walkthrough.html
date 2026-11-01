@@ -42,7 +42,10 @@
    verified.network==='regtest'&&verified.diagnosticOnly===true&&
    verified.transactionVerified===true&&verified.broadcast===false&&
    verified.canBroadcast===false&&verified.releaseCount===plan.releases.length&&
-   verified.totalSats===plan.totalSats&&/^[0-9a-f]{64}$/.test(verified.txid||'');
+   verified.totalSats===plan.totalSats&&
+   Array.isArray(verified.releases)&&verified.releases.length===plan.releases.length&&
+   verified.releases.every((release,i)=>release?.date===plan.releases[i].date&&release?.amountSats===plan.releases[i].amountSats)&&
+   /^[0-9a-f]{64}$/.test(verified.txid||'');
  if(verifiedPreview){
    status.textContent='A disposable regtest signing diagnostic is available for review. The gift is not broadcast or complete.';
    next.href='./finish-workspace.html';next.textContent='Review Finish diagnostic →';
