@@ -45,6 +45,9 @@
    verified.totalSats===plan.totalSats&&
    Array.isArray(verified.releases)&&verified.releases.length===plan.releases.length&&
    verified.releases.every((release,i)=>release?.date===plan.releases[i].date&&release?.amountSats===plan.releases[i].amountSats)&&
+   Number.isSafeInteger(verified.fundingInputCount)&&verified.fundingInputCount>0&&
+   Number.isSafeInteger(verified.networkFeeSats)&&verified.networkFeeSats>=0&&
+   Number.isSafeInteger(verified.totalOutputCount)&&verified.totalOutputCount>=plan.releases.length&&
    /^[0-9a-f]{64}$/.test(verified.txid||'');
  if(verifiedPreview){
    status.textContent='A disposable regtest signing diagnostic is available for review. The gift is not broadcast or complete.';
