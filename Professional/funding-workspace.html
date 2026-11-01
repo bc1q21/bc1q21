@@ -58,13 +58,9 @@ footer{text-align:right!important;padding-right:0!important}
 <div class="status" style="font-size:1.12rem"><strong>Estimated payment:</strong> <span id="customer-payment-amount">Calculating…</span><br><small id="customer-payment-breakdown"></small></div>
 <div style="min-height:210px;border:2px dashed #a9bed2;border-radius:12px;display:grid;place-items:center;margin:20px auto;max-width:300px;text-align:center;padding:24px;background:#f7f9fc"><div><strong>Bitcoin payment QR</strong><p style="margin-bottom:0">Not available in this development preview.<br>Do not send Bitcoin.</p></div></div>
 <p class="status"><strong>Payment status:</strong> Awaiting a verified funding address. No Bitcoin has been requested or received.<br><strong>Next:</strong> Jade Plus signing becomes available only after sufficient funding is verified.</p>
-<details id="professional-developer-tools"><summary style="cursor:pointer;font-weight:700">Developer tools — disposable regtest testing only</summary>
-<p class="notice">Technical controls below are not part of the customer payment experience. They cannot authorize mainnet funding or signing.</p>
-<h3>Regtest funding diagnostics</h3><p>For isolated developer testing, inspect a disposable public wallet and regtest funding status below.</p>
-<div class="status"><strong>Funding address:</strong> Not yet generated<br><strong>Received:</strong> Not checked<br><strong>Confirmations:</strong> Not checked<br><strong>Jade Plus signing:</strong> Locked until verified funding</div>
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
-<h3>Connect Jade Plus public wallet information</h3>
-<p>Import your <strong>public account xpub</strong> from a disposable Jade test wallet. This derives the public funding key at <code>m/84'/0'/0'/0/0</code> without handling recovery words or private keys.</p>
+<h3>Step 1 — Identify your Jade Plus public wallet</h3>
+<p>For this disposable regtest preview, import the <strong>public account xpub</strong> from your Jade test wallet. This derives the public funding key at <code>m/84'/0'/0'/0/0</code> without handling recovery words or private keys.</p>
 <label for="funding-xpub" style="display:block;margin:12px 0 6px">Jade account xpub (public only)</label>
 <input id="funding-xpub" type="text" autocomplete="off" spellcheck="false" placeholder="xpub…" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px">
 <button type="button" id="derive-funding-key">Preview public funding key</button>
@@ -81,6 +77,11 @@ footer{text-align:right!important;padding-right:0!important}
 <div style="overflow-x:auto"><table><thead><tr><th>Unlock date</th><th>Amount</th><th>Recipient output (preview)</th></tr></thead><tbody id="gift-output-preview"></tbody></table></div>
 </div>
 </div>
+<p class="notice">This public-wallet identification step does not authenticate wallet ownership or issue a payment request. Keep real Bitcoin and recovery words out of this prototype.</p>
+<details id="professional-developer-tools"><summary style="cursor:pointer;font-weight:700">Developer tools — disposable regtest testing only</summary>
+<p class="notice">Technical controls below are not part of the customer payment experience. They cannot authorize mainnet funding or signing.</p>
+<h3>Regtest funding diagnostics</h3><p>For isolated developer testing, inspect a disposable public wallet and regtest funding status below.</p>
+<div class="status"><strong>Funding address:</strong> Not yet generated<br><strong>Received:</strong> Not checked<br><strong>Confirmations:</strong> Not checked<br><strong>Jade Plus signing:</strong> Locked until verified funding</div>
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
 <h3>Automatic regtest funding check (development only)</h3>
 <p>After importing the disposable Jade public wallet, check confirmed funding outputs without entering a transaction ID. No real deposits are permitted.</p>
