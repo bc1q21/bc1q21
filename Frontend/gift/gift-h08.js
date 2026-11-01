@@ -172,7 +172,7 @@ if (this.giftTxCandidates.length === 1) {
 
   this.buildRowsWithoutSchedule();
   await this.refreshPublicPreviewStatuses(previewTx);
-  await this.refreshClaimedReleaseValues();
+  await this.refreshClaimedReleaseValues(previewTx);
 }
 
             // Spend status
@@ -1080,10 +1080,15 @@ childIndex: r.childIndex ?? null
         },
 
         // Display-only historical USD valuation. Never changes spending eligibility.
-        async refreshClaimedReleaseValues() {
+        async refreshClaimedReleaseValues(previewTx = null) {
           const updates = await Promise.all(this.rows.map(async row => {
-            if (!row.fundingTxid || !Number.isInteger(row.fundingVout) ||
-                row.fundingVout < 0 || !Number.isFinite(row.btc) || row.btc <= 0)
+            const fundingTxid = row.fundingTxid || previewTx?.txid || '';
+            const fundingVout = Number.isInteger(row.fundingVout) && row.fundingVout >= 0
+              ? row.fundingVout
+              : (previewTx?.vout || []).findIndex(v =>
+                  v.scriptpubkey_address === row.address && Number(v.value) === row.sats);
+            if (!/^[a-fA-F0-9]{64}$/.test(fundingTxid) || fundingVout < 0 ||
+                !Number.isFinite(row.btc) || row.btc <= 0)
               return { address: row.address, usd: NaN };
             try {
               const response = await fetch(
@@ -1095,8 +1100,8 @@ childIndex: r.childIndex ?? null
               const history = await response.json();
               if (!Array.isArray(history)) return { address: row.address, usd: NaN };
               const spends = history.filter(tx => Array.isArray(tx.vin) &&
-                tx.vin.some(v => v.txid === row.fundingTxid &&
-                  Number(v.vout) === row.fundingVout));
+                tx.vin.some(v => v.txid === fundingTxid &&
+                  Number(v.vout) === fundingVout));
               if (spends.length !== 1 || spends[0].status?.confirmed !== true)
                 return { address: row.address, usd: NaN };
               const price = this.extractPriceUsd(spends[0].status);
