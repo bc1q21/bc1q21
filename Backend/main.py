@@ -702,6 +702,27 @@ async def _fetch_mempool_address_utxos(address: str) -> List[Dict[str, Any]]:
         raise RuntimeError(str(e)) from e
 
 
+@app.get("/bitcoin/tx/{txid}/outspends")
+async def get_transaction_outspends(txid: str, response: Response):
+    """Read-only, uncached outpoint spend status for a gift transaction."""
+    if not re.fullmatch(r"[a-fA-F0-9]{64}", txid):
+        raise HTTPException(status_code=422, detail="Invalid transaction ID.")
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            upstream = await client.get(f"https://mempool.space/api/tx/{txid}/outspends")
+            upstream.raise_for_status()
+            data = upstream.json()
+    except (httpx.HTTPError, ValueError):
+        raise HTTPException(status_code=502, detail="Outspend status temporarily unavailable.")
+    if not isinstance(data, list) or not all(
+        isinstance(item, dict) and isinstance(item.get("spent"), bool)
+        for item in data
+    ):
+        raise HTTPException(status_code=502, detail="Invalid outspend status response.")
+    response.headers["Cache-Control"] = "no-store"
+    return data
+
+
 @app.get("/bitcoin/address/{address}/utxo")
 async def get_address_utxos(address: str, response: Response):
     """

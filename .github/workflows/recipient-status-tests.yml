@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - fix/recipient-spent-status-verification
+      - fix/recipient-status-outspends-20261101
 
 permissions:
   contents: read
@@ -17,7 +18,40 @@ jobs:
     steps:
       - name: Check out repair branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Calculate gift script SRI hash
+        run: openssl dgst -sha384 -binary Frontend/gift/gift-h08.js | openssl base64 -A
       - name: Check JavaScript syntax
         run: node --check Frontend/gift/gift-h08.js
       - name: Run Lindsay claimed-status regression tests
         run: node --test tests/recipient-claimed-status.test.cjs
+      - name: Run public preview status regression tests
+        run: node --test tests/recipient-public-preview-status.test.cjs
+      - name: Verify Eric gift outspends against live mempool.space
+        run: |
+          node <<'NODE'
+          const txid = 'b41065fd5ada4f2cd4c60942e1cebb8feb355b72d597d1788f5ae046665c72f3';
+          const base = 'https://mempool.space/api/tx/' + txid;
+          async function get(url) {
+            const response = await fetch(url, {signal: AbortSignal.timeout(20000)});
+            if (!response.ok) throw new Error(url + ' HTTP ' + response.status);
+            return response.json();
+          }
+          (async () => {
+            const [tx, outspends] = await Promise.all([get(base), get(base + '/outspends')]);
+            if (!Array.isArray(tx.vout) || !Array.isArray(outspends) ||
+                tx.vout.length !== outspends.length) throw new Error('Mismatched outputs');
+            const gift = tx.vout.map((o,i) => ({index:i, address:o.scriptpubkey_address,
+              sats:o.value, spent:outspends[i]?.spent,
+              confirmed:outspends[i]?.status?.confirmed ?? null}))
+              .filter(o => o.sats === 63992 && o.address?.startsWith('3'));
+            if (gift.length !== 12) throw new Error('Expected 12 gift outputs, got ' + gift.length);
+            if (gift.some(o => typeof o.spent !== 'boolean' ||
+                (o.spent && typeof o.confirmed !== 'boolean')))
+              throw new Error('Invalid or incomplete outspend data');
+            console.log('Verified 12 public gift outputs:');
+            for (const [i,o] of gift.entries())
+              console.log('Release ' + (i+1) + ': ' + (o.spent ?
+                (o.confirmed ? 'Claimed' : 'Pending confirmation') : 'Unclaimed') +
+                ' (vout ' + o.index + ')');
+          })().catch(e => {console.error(e); process.exitCode=1;});
+          NODE
