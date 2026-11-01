@@ -93,6 +93,7 @@ if(typeof attachCamera==='function'){
     totalOutputCount:approvedUnsigned.totalOutputCount
    }));
    document.getElementById('verified-next').hidden=false;
+   document.getElementById('camera-help').textContent='Signed Jade response verified for this disposable regtest transaction. Continue to Finish; nothing has been broadcast.';
    scanStatus.textContent='Jade signature verified for this gift. Transaction prepared, not broadcast.';
   }
  });
@@ -181,11 +182,13 @@ const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
   pause.onclick=()=>{if(timer){clearInterval(timer);timer=null;pause.textContent='Resume QR';}
     else{startAnimation();pause.textContent='Pause QR';}};
   cameraController?.refresh();
+  document.getElementById('camera-help').textContent='Ready for Jade’s signed response. Select Scan signed Jade QR, allow camera access, and hold the QR steady in front of the camera.';
   document.getElementById('status').textContent='Regtest developer preview loaded. Scan the QR only with a disposable Jade test wallet. No real signing authorization or broadcasting.';
  }catch(error){
   approvedUnsigned=null;
   document.getElementById('transaction-review').hidden=true;
   cameraController?.invalidate();
+  document.getElementById('camera-help').textContent='Camera scanning requires a valid disposable regtest handoff from Add Funds.';
   document.getElementById('status').textContent='Jade preview unavailable: '+error.message;
  }
 })();
