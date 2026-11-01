@@ -25,5 +25,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install playwright
           python -m playwright install --with-deps chromium
+      - name: Run isolated regtest inspection unit tests
+        working-directory: Professional
+        run: python -m unittest -v test_regtest_intent_registry test_stored_plan_inspection
       - name: Test isolated Professional customer journey
         run: python Professional/test_customer_browser_journey.py
