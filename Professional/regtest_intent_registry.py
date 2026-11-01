@@ -50,9 +50,11 @@ def register_inspection_intent(intent, directory, *, operator_confirmed=False):
     root = Path(directory)
     if not root.is_dir() or root.is_symlink():
         raise IntentRegistryError("Existing non-symlink local registry directory required")
+    if root.stat().st_mode & 0o077:
+        raise IntentRegistryError("Registry directory must be private (mode 0700)")
     path = root / (identifier + ".json")
     try:
-        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
     except FileExistsError as exc:
         raise IntentRegistryError("Intent already registered; immutable record") from exc
     try:
@@ -75,10 +77,15 @@ def load_inspection_intent(identifier, directory):
     root = Path(directory)
     if not root.is_dir() or root.is_symlink():
         raise IntentRegistryError("Invalid registry directory")
+    if root.stat().st_mode & 0o077:
+        raise IntentRegistryError("Registry directory must be private (mode 0700)")
     path = root / (identifier + ".json")
     if path.is_symlink() or not path.is_file():
         raise IntentRegistryError("Registered intent not found")
-    with path.open("rb") as handle:
+    fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    with os.fdopen(fd, "rb") as handle:
+        if os.fstat(handle.fileno()).st_mode & 0o077:
+            raise IntentRegistryError("Registered intent file permissions are not private")
         data = handle.read(256_001)
     if len(data) > 256_000 or hashlib.sha256(data).hexdigest() != identifier:
         raise IntentRegistryError("Registered intent integrity check failed")
