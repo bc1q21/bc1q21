@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Check out repair branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Calculate gift script SRI hash
+        run: openssl dgst -sha384 -binary Frontend/gift/gift-h08.js | openssl base64 -A
       - name: Check JavaScript syntax
         run: node --check Frontend/gift/gift-h08.js
       - name: Run Lindsay claimed-status regression tests
