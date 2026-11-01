@@ -105,6 +105,14 @@ class BrowserJourneyTests(unittest.TestCase):
         self.page.goto(self.base + "finish-workspace.html")
         self.assertTrue(self.page.locator("#verified-transaction").is_hidden())
 
+    def test_finish_result_survives_back_navigation(self):
+        self.session(plan=PLAN, verified=SIGNED)
+        self.page.goto(self.base + "finish-workspace.html")
+        self.assertTrue(self.page.locator("#verified-transaction").is_visible())
+        self.page.goto(self.base + "jade-signing-workspace.html")
+        self.page.goto(self.base + "finish-workspace.html")
+        self.assertTrue(self.page.locator("#verified-transaction").is_visible())
+
     def test_jade_without_handoff_is_locked(self):
         self.session(plan=PLAN)
         self.page.goto(self.base + "jade-signing-workspace.html")
