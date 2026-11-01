@@ -20,4 +20,4 @@ jobs:
       - name: Check JavaScript syntax
         run: node --check Frontend/gift/gift-h08.js
       - name: Run Lindsay claimed-status regression tests
-        run: node --test tests/recipient-claimed-status.test.cjs
+        run: node --test tests/recipient-claimed-status.test.cjs\n      - name: Run public preview status regression tests\n        run: node --test tests/recipient-public-preview-status.test.cjs
