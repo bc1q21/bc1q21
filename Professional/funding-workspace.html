@@ -71,6 +71,7 @@ footer{text-align:right!important;padding-right:0!important}
 <p><strong>Expected test address:</strong> <code id="jade-check-address"></code></p>
 <label style="display:block;margin:12px 0"><input type="checkbox" id="jade-address-ack"> I checked the complete address on my Jade Plus device and it matches.</label>
 <p id="jade-address-check-status" class="status" role="status">Device address check not acknowledged. Funding and signing remain disabled.</p>
+<div style="margin-top:14px;padding:14px;border:1px solid #b6cadd;border-radius:9px"><h3>Check test funding status</h3><p>Read-only check of confirmed disposable regtest outputs using the local Bitcoin Core testing service. This does not request payment or authorize signing.</p><button type="button" id="scan-funding" disabled>Check regtest funding status</button><p id="scan-status" class="status" role="status">Import the public wallet first. Signing remains locked.</p></div>
 </div>
 <div id="funding-key-result" hidden><p><strong>Derived test address (NOT FOR DEPOSITS):</strong><br><code id="funding-test-address"></code></p><p><strong>Derivation:</strong> <code>m/84'/0'/0'/0/0</code></p><p class="notice">This address is mathematically derived from the supplied xpub, but wallet ownership has not been authenticated. No payment QR or deposit request is issued.</p>
 <h3>Time-locked gift outputs</h3><p>These recipient addresses and unlock dates are computed from the approved gift schedule and public wallet keys. They are not deposit instructions.</p>
@@ -85,8 +86,7 @@ footer{text-align:right!important;padding-right:0!important}
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
 <h3>Automatic regtest funding check (development only)</h3>
 <p>After importing the disposable Jade public wallet, check confirmed funding outputs without entering a transaction ID. No real deposits are permitted.</p>
-<button type="button" id="scan-funding" disabled>Check funding automatically</button>
-<p id="scan-status" class="status" role="status">Import the public wallet first. Signing remains locked.</p>
+<p class="status">The read-only regtest funding status check is available above, alongside the public wallet identification step.</p>
 <p class="notice">This check reads disposable regtest funding information only. It cannot authorize payments, signatures, or broadcasting.</p>
 <details><summary>Developer: construct unsigned regtest gift transaction (not for signing)</summary>
 <p>Uses the confirmed UTXOs from the latest local Core scan. Requires disposable Jade master fingerprint. The unsigned transaction includes the approved gift outputs, a bounded development fee, and a public change output when funds remain. This is not a trusted fee quote or signing approval.</p>
