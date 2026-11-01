@@ -875,15 +875,32 @@ async def _fetch_mempool_address_txs(address: str) -> List[Dict[str, Any]]:
             if not isinstance(data, list):
                 raise ValueError("Unexpected response shape (expected a list)")
 
-            target_tx: Dict[str, Any] = {}
-            if address.startswith("3") and data:
-                target_tx = data[0] or {}
+            if address.startswith("3"):
+                # Historical release valuations require the confirmed spending
+                # transaction's price, not an assumed first history entry.
+                # Only enrich confirmed transactions that actually spend an
+                # output belonging to this time-locked address.
+                funding_outpoints = {
+                    (tx.get("txid"), index)
+                    for tx in data if isinstance(tx, dict)
+                    for index, output in enumerate(tx.get("vout") or [])
+                    if isinstance(output, dict)
+                    and output.get("scriptpubkey_address") == address
+                }
+                for tx in data:
+                    if not isinstance(tx, dict) or not tx.get("status", {}).get("confirmed"):
+                        continue
+                    if any(
+                        isinstance(vin, dict)
+                        and (vin.get("txid"), vin.get("vout")) in funding_outpoints
+                        for vin in (tx.get("vin") or [])
+                    ):
+                        await _attach_price(tx, client)
             else:
                 target_tx = _find_distribution_transaction(data)
-
-            if target_tx:
-                await _attach_outspend_data(target_tx, client)
-                await _attach_price(target_tx, client)
+                if target_tx:
+                    await _attach_outspend_data(target_tx, client)
+                    await _attach_price(target_tx, client)
 
             return data
     except (httpx.HTTPError, ValueError) as e:
