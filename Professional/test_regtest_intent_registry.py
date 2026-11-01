@@ -58,6 +58,20 @@ class RegistryTests(unittest.TestCase):
                 register_inspection_intent(sample(), root, operator_confirmed=True)
             Path(root).chmod(0o700)
 
+    def test_duplicate_funding_outpoint_rejected(self):
+        with tempfile.TemporaryDirectory() as root:
+            intent = sample()
+            intent["inputs"].append(dict(intent["inputs"][0]))
+            with self.assertRaises(IntentRegistryError):
+                register_inspection_intent(intent, root, operator_confirmed=True)
+
+    def test_excessive_gift_count_rejected(self):
+        with tempfile.TemporaryDirectory() as root:
+            intent = sample()
+            intent["gifts"] *= 101
+            with self.assertRaises(IntentRegistryError):
+                register_inspection_intent(intent, root, operator_confirmed=True)
+
     def test_no_path_traversal(self):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(IntentRegistryError):
