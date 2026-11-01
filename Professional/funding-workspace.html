@@ -87,6 +87,7 @@ footer{text-align:right!important;padding-right:0!important}
 <p>After importing the disposable Jade public wallet, check confirmed funding outputs without entering a transaction ID. No real deposits are permitted.</p>
 <button type="button" id="scan-funding" disabled>Check funding automatically</button>
 <p id="scan-status" class="status" role="status">Import the public wallet first. Signing remains locked.</p>
+<p class="notice">This check reads disposable regtest funding information only. It cannot authorize payments, signatures, or broadcasting.</p>
 <details><summary>Developer: construct unsigned regtest gift transaction (not for signing)</summary>
 <p>Uses the confirmed UTXOs from the latest local Core scan. Requires disposable Jade master fingerprint. The unsigned transaction includes the approved gift outputs, a bounded development fee, and a public change output when funds remain. This is not a trusted fee quote or signing approval.</p>
 <label for="network-fee">Regtest network fee (sats; development estimate only)</label>
