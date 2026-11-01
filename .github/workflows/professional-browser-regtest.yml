@@ -1,0 +1,29 @@
+name: Professional isolated browser journey
+on:
+  push:
+    branches:
+      - professional/isolated-release-prototype
+    paths:
+      - 'Professional/**'
+      - '.github/workflows/professional-browser-regtest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Test isolated Professional customer journey
+        run: python Professional/test_customer_browser_journey.py
