@@ -50,3 +50,13 @@ The last QR decoder was written without an authentic Jade QR fixture and has not
 
 ## GitHub checkpoint
 Last verified code commit: `fce3846`. This handoff document is a subsequent documentation-only checkpoint. Neither is production.
+
+## November 2: review of original Jade experiment files
+Four files were inspected: the synthetic signed PSBT, saved signed-PSBT QR frames, the old camera capture HTML, and the corrected animated signing HTML.
+
+- The 388-byte PSBT contains an unsigned transaction, signature, redeem script, a child public key and its BIP32 origin path. It does NOT contain an account extended public key or the account chain code. A child public key cannot be reverse-derived into the parent account xpub.
+- The saved QR frames are all of type crypto-psbt, NOT crypto-account or crypto-hdkey.
+- The old signed-PSBT capture page explicitly rejects account/hdkey QR formats because it was designed to capture signed transactions only.
+- The corrected animated signing HTML was a synthetic unfunded transaction test, with no account xpub required.
+
+**Verified conclusion:** the previous signing tests worked, but these four artifacts do not provide the account xpub needed by the current funding-address derivation function. Do not repeat signing, camera, or 24-release tests. First inspect existing code and other artifacts for an account public export; only if none exists should we investigate one public-only export from Jade. Do not publish wallet public-account data unnecessarily.
