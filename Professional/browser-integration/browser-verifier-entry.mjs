@@ -26,12 +26,58 @@ globalThis.bc1q21ProfessionalRenderFundingAddressQr=async function({address,canv
 };
 
 
+// Read-only Jade account UR import. Accept only depth-three account HD keys with
+// explicit compressed secp256k1 public key, chain code and parent fingerprint.
+function decodeJadeAccountUr(ur){
+ const untag=v=>v&&typeof v==='object'&&'tag'in v&&'value'in v?v.value:v;
+ const mapget=(v,k)=>v instanceof Map?v.get(k):v?.[k];
+ const asBytes=v=>Buffer.isBuffer(v)?v:v instanceof Uint8Array?Buffer.from(v):null;
+ const unpackHdkey=v=>{
+  const key=untag(v);
+  if(!(key instanceof Map)||mapget(key,1)===true)return null;
+  const pub=asBytes(mapget(key,3)),chain=asBytes(mapget(key,4));
+  const parent=asBytes(mapget(key,8));
+  const origin=untag(mapget(key,6));
+  const depth=origin instanceof Map?mapget(origin,3):null;
+  if(!pub||pub.length!==33||!chain||chain.length!==32||!parent||parent.length!==4||depth!==3)return null;
+  try{secp256k1.ProjectivePoint.fromHex(pub);}catch{return null;}
+  const raw=Buffer.alloc(78);
+  raw.writeUInt32BE(0x0488b21e,0);raw[4]=3;
+  parent.copy(raw,5);raw.writeUInt32BE(0x80000000,9);
+  chain.copy(raw,13);pub.copy(raw,45);
+  const digest=b=>Buffer.from(sha256(sha256(b)));
+  const payload=Buffer.concat([raw,digest(raw).subarray(0,4)]);
+  const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  let n=BigInt('0x'+payload.toString('hex')),encoded='';
+  while(n>0n){encoded=alphabet[Number(n%58n)]+encoded;n/=58n;}
+  return encoded;
+ };
+ const decoded=untag(cbor.decodeFirstSync(Buffer.from(ur.cbor)));
+ if(ur.type==='crypto-hdkey')return unpackHdkey(decoded);
+ if(ur.type==='crypto-account'){
+  const descriptors=mapget(decoded,2);
+  if(!Array.isArray(descriptors))return null;
+  for(const descriptor of descriptors){
+   const output=untag(descriptor);
+   const candidate=unpackHdkey(output);
+   if(candidate)return candidate;
+   // Output descriptors wrap HD keys in script-expression CBOR tags.
+   let current=descriptor;
+   for(let i=0;i<6&&current&&typeof current==='object'&&'tag'in current;i++){
+    current=current.value;
+    const nested=unpackHdkey(current);
+    if(nested)return nested;
+   }
+  }
+ }
+ return null;
+}
 // Professional public-wallet camera: read-only QR import, no signing authority.
 // Reuses the existing jsQR dependency and browser camera technique.
 globalThis.bc1q21ProfessionalAttachPublicWalletCamera=function({video,canvas,startButton,stopButton,statusElement,onPublicXpub}){
  if(!video||!canvas||!startButton||!stopButton||!statusElement||typeof onPublicXpub!=='function')
   throw Error('Public wallet camera controls missing');
- let stream=null,active=false,generation=0;
+ let stream=null,active=false,generation=0,urDecoder=new URDecoder();
  const status=message=>{statusElement.textContent=message;};
  const stop=()=>{
   active=false;++generation;
@@ -49,11 +95,23 @@ globalThis.bc1q21ProfessionalAttachPublicWalletCamera=function({video,canvas,sta
     const qr=jsQR(frame.data,canvas.width,canvas.height,{inversionAttempts:'attemptBoth'});
     if(qr?.data){
      const value=qr.data.trim();
+     let xpub=value;
+     if(/^ur:crypto-(account|hdkey)\//i.test(value)){
+      urDecoder.receivePart(value.toLowerCase());
+      if(!urDecoder.isComplete()){
+       status('Reading Jade public-account QR frames…');
+       if(active&&token===generation)setTimeout(()=>tick(token),100);
+       return;
+      }
+      if(!urDecoder.isSuccess())throw Error('Jade account QR checksum or fountain decoding failed');
+      xpub=decodeJadeAccountUr(urDecoder.resultUR());
+      if(!xpub)throw Error('Jade account QR lacks a verified depth-three public HD key; no receiving address generated');
+     }
+     if(!/^xpub[1-9A-HJ-NP-Za-km-z]{100,120}$/.test(xpub))
+      throw Error('Unsupported public wallet QR format; no receiving address generated');
      stop();
-     if(!/^xpub[1-9A-HJ-NP-Za-km-z]{100,120}$/.test(value))
-      throw Error('Only a plain account xpub QR is supported; other QR formats remain unverified.');
-     onPublicXpub(value);
-     status('Public xpub imported. Wallet ownership remains unverified; no deposit or signing authorization.');
+     onPublicXpub(xpub);
+     status('Public account imported. Wallet ownership unverified; regtest only.');
      return;
     }
    }
@@ -61,7 +119,7 @@ globalThis.bc1q21ProfessionalAttachPublicWalletCamera=function({video,canvas,sta
   if(active&&token===generation)setTimeout(()=>tick(token),100);
  };
  const start=async()=>{
-  stop();
+  stop();urDecoder=new URDecoder();
   if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera requires localhost or HTTPS');
   const token=generation;
   let acquired=null;
