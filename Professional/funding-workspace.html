@@ -58,8 +58,10 @@ footer{text-align:right!important;padding-right:0!important}
 <div class="status" style="font-size:1.12rem"><strong>Estimated payment:</strong> <span id="customer-payment-amount">Calculating…</span><br><small id="customer-payment-breakdown"></small></div>
 <div style="text-align:center;padding:16px;border:2px dashed #a9bed2;border-radius:12px;margin:20px auto;max-width:330px"><strong>Regtest receiving address QR — development only</strong><canvas id="customer-address-qr" width="240" height="240" hidden></canvas><p id="customer-qr-placeholder">Awaiting a validated test address. Do not send Bitcoin.</p></div><p id="customer-payment-address" class="status" style="overflow-wrap:anywhere">No test address derived.</p>
 <p class="status" id="customer-funding-status" role="status"><strong>Payment status:</strong> Awaiting a verified funding address. No Bitcoin has been requested or received.<br><strong>Next:</strong> Jade Plus signing becomes available only after sufficient funding is verified.</p>
+</section>
+<section class="panel" id="professional-wallet-setup"><details><summary style="cursor:pointer;font-weight:700">Development wallet setup and funding diagnostics (not part of the customer payment screen)</summary>
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
-<h3>Step 1 — Identify your Jade Plus public wallet</h3>
+<h3>Import disposable public test wallet</h3>
 <p>For this disposable regtest preview, import the <strong>public account xpub</strong> from your Jade test wallet. This derives the public funding key at <code>m/84'/0'/0'/0/0</code> without handling recovery words or private keys.</p>
 <label for="funding-xpub" style="display:block;margin:12px 0 6px">Jade account xpub (public only)</label>
 <input id="funding-xpub" type="text" autocomplete="off" spellcheck="false" placeholder="xpub…" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px">
@@ -87,7 +89,7 @@ footer{text-align:right!important;padding-right:0!important}
 <div style="overflow-x:auto"><table><thead><tr><th>Unlock date</th><th>Amount</th><th>Recipient output (preview)</th></tr></thead><tbody id="gift-output-preview"></tbody></table></div>
 </div>
 </div>
-<p class="notice">This public-wallet identification step does not authenticate wallet ownership or issue a payment request. Keep real Bitcoin and recovery words out of this prototype.</p>
+<p class="notice">This public-wallet identification step does not authenticate wallet ownership or issue a payment request. Keep real Bitcoin and recovery words out of this prototype.</p></details>
 <details id="professional-developer-tools"><summary style="cursor:pointer;font-weight:700">Developer tools — disposable regtest testing only</summary>
 <p class="notice">Technical controls below are not part of the customer payment experience. They cannot authorize mainnet funding or signing.</p>
 <h3>Regtest funding diagnostics</h3><p>For isolated developer testing, inspect a disposable public wallet and regtest funding status below.</p>
@@ -594,7 +596,7 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    qrCanvas.hidden=true;
    const render=globalThis.bc1q21ProfessionalRenderFundingAddressQr;
    if(typeof render==='function')void render({address:result.address,canvas:qrCanvas}).then(()=>{
-    if(publicFundingAddress===result.address){qrCanvas.hidden=false;document.getElementById('customer-qr-placeholder').textContent='Test-network QR only. No payment authorization.';}
+    if(publicFundingAddress===result.address&&derivedXpub===document.getElementById('funding-xpub').value.trim()&&planStillMatches()){qrCanvas.hidden=false;document.getElementById('customer-qr-placeholder').textContent='Test-network QR only. No payment authorization.';}
    }).catch(e=>{document.getElementById('customer-qr-placeholder').textContent='QR preview unavailable: '+String(e.message||e);});
 
    document.getElementById('inspection-status').textContent='Public funding script prepared. Enter a disposable regtest transaction ID to check Bitcoin Core.';
