@@ -56,7 +56,7 @@ footer{text-align:right!important;padding-right:0!important}
 <h2>Approved gift plan</h2><p id="status" class="status" role="status">Loading your approved gift plan…</p><div id="details" hidden><p><strong>Total gift:</strong> <span id="total"></span> sats</p><table><thead><tr><th>Release</th><th>Unlock date</th><th>Amount</th></tr></thead><tbody id="releases"></tbody></table></div></section>
 <section class="panel" id="customer-payment"><h2>Make Your Gift Payment</h2><p style="text-align:center">When payment integration is ready, this page will display your Bitcoin payment request. The application will verify the payment before continuing.</p>
 <div class="status" style="font-size:1.12rem"><strong>Estimated payment:</strong> <span id="customer-payment-amount">Calculating…</span><br><small id="customer-payment-breakdown"></small></div>
-<div style="min-height:210px;border:2px dashed #a9bed2;border-radius:12px;display:grid;place-items:center;margin:20px auto;max-width:300px;text-align:center;padding:24px;background:#f7f9fc"><div><strong>Bitcoin payment QR</strong><p style="margin-bottom:0">Not available in this development preview.<br>Do not send Bitcoin.</p></div></div>
+<div style="text-align:center;padding:16px;border:2px dashed #a9bed2;border-radius:12px;margin:20px auto;max-width:330px"><strong>Regtest receiving address QR — development only</strong><canvas id="customer-address-qr" width="240" height="240" hidden></canvas><p id="customer-qr-placeholder">Awaiting a validated test address. Do not send Bitcoin.</p></div><p id="customer-payment-address" class="status" style="overflow-wrap:anywhere">No test address derived.</p>
 <p class="status" id="customer-funding-status" role="status"><strong>Payment status:</strong> Awaiting a verified funding address. No Bitcoin has been requested or received.<br><strong>Next:</strong> Jade Plus signing becomes available only after sufficient funding is verified.</p>
 <div style="margin-top:20px;padding:18px;border:1px solid #b6cadd;border-radius:9px">
 <h3>Step 1 — Identify your Jade Plus public wallet</h3>
@@ -508,6 +508,10 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
  }
  document.getElementById('funding-xpub').addEventListener('input',()=>{
   ++latestScanId;publicFundingAddress=null;publicFundingScript=null;derivedXpub=null;derivedPlanSnapshot=null;
+  document.getElementById('customer-address-qr').hidden=true;
+  document.getElementById('customer-payment-address').textContent='No test address derived.';
+  document.getElementById('customer-qr-placeholder').textContent='Awaiting a validated test address. Do not send Bitcoin.';
+
   jadeAck.checked=false;document.getElementById('jade-address-check').hidden=true;
   document.getElementById('jade-check-address').textContent='';
   document.getElementById('jade-address-check-status').textContent='Device address check not acknowledged. Funding and signing remain disabled.';
@@ -585,6 +589,14 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    derivedPlanSnapshot=currentPlanSnapshot();
    publicFundingScript=result.scriptPubKeyHex.toLowerCase();
    publicFundingAddress=result.address;derivedXpub=document.getElementById('funding-xpub').value.trim();inspectButton.disabled=false;scanButton.disabled=false;
+   document.getElementById('customer-payment-address').textContent='Regtest-only address (not for real BTC): '+result.address;
+   const qrCanvas=document.getElementById('customer-address-qr');
+   qrCanvas.hidden=true;
+   const render=globalThis.bc1q21ProfessionalRenderFundingAddressQr;
+   if(typeof render==='function')void render({address:result.address,canvas:qrCanvas}).then(()=>{
+    if(publicFundingAddress===result.address){qrCanvas.hidden=false;document.getElementById('customer-qr-placeholder').textContent='Test-network QR only. No payment authorization.';}
+   }).catch(e=>{document.getElementById('customer-qr-placeholder').textContent='QR preview unavailable: '+String(e.message||e);});
+
    document.getElementById('inspection-status').textContent='Public funding script prepared. Enter a disposable regtest transaction ID to check Bitcoin Core.';
    document.getElementById('funding-test-address').textContent=result.address;
    document.getElementById('jade-check-address').textContent=result.address;
