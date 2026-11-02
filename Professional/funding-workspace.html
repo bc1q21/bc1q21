@@ -59,6 +59,7 @@ footer{text-align:right!important;padding-right:0!important}
 <div class="status" style="font-size:1.12rem"><strong>Estimated payment:</strong> <span id="customer-payment-amount">Calculating…</span><br><small id="customer-payment-breakdown"></small></div>
 <div style="text-align:center;padding:16px;border:2px dashed #a9bed2;border-radius:12px;margin:20px auto;max-width:330px"><strong>Regtest receiving address QR — development only</strong><canvas id="customer-address-qr" width="240" height="240" hidden></canvas><p id="customer-qr-placeholder">Awaiting a validated test address. Do not send Bitcoin.</p></div><p id="customer-payment-address" class="status" style="overflow-wrap:anywhere">No test address derived.</p>
 <p style="text-align:center"><button type="button" id="copy-test-funding-address" disabled>Copy test receiving address</button></p>
+<p style="text-align:center"><button type="button" id="customer-import-public-wallet" class="secondary">Connect Jade public wallet QR (regtest only)</button></p>
 <p class="status" id="customer-funding-status" role="status"><strong>Payment status:</strong> Awaiting a verified funding address. No Bitcoin has been requested or received.<br><strong>Next:</strong> Jade Plus signing becomes available only after sufficient funding is verified.</p>
 </section>
 <section class="panel" id="professional-wallet-setup"><details><summary style="cursor:pointer;font-weight:700">Development wallet setup and funding diagnostics (not part of the customer payment screen)</summary>
@@ -527,6 +528,11 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
     '. Signing remains locked.';
   }finally{constructButton.disabled=!scannedUtxos?.length;}
  });
+ document.getElementById('customer-import-public-wallet').addEventListener('click',()=>{
+  document.querySelector('#professional-wallet-setup details').open=true;
+  document.getElementById('public-wallet-qr-import').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('public-wallet-camera-start').focus({preventScroll:true});
+ });
  const jadeAck=document.getElementById('jade-address-ack');
  jadeAck.addEventListener('change',()=>{
   const address=document.getElementById('jade-check-address').textContent;
@@ -550,7 +556,8 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
     field.value=xpub;
     field.dispatchEvent(new Event('input',{bubbles:true}));
     document.getElementById('funding-key-status').textContent=
-     'Public account QR imported. Select Preview public funding key to validate derivation. No payment or signing authorization.';
+     'Public account QR imported. Deriving disposable regtest receiving address…';
+    document.getElementById('derive-funding-key').click();
    }
   });
  }else{
