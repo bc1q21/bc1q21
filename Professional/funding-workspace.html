@@ -179,6 +179,27 @@ if(professionalProfile?.business){
 }
 if(professionalIdentity){for(const element of document.querySelectorAll('.practice-identity')){if(!professionalProfile?.business){element.textContent=professionalIdentity;element.hidden=false;}}}
 
+ // Recover only an approved non-secret schedule after a direct page visit.
+ // Wallet keys, signatures and funding authorization are never persisted here.
+ const planKey='bc1q21-professional-approved-plan-preview';
+ if(!sessionStorage.getItem(planKey)){
+  try{
+   const raw=localStorage.getItem('bc1q21-professional-last-approved-plan-preview');
+   if(raw){
+    const p=JSON.parse(raw);
+    if(p?.format==='bc1q21-professional-retail-plan-preview-v1'&&
+       p.status==='UNFUNDED_PREVIEW_NOT_SIGNABLE'&&
+       p.signingAuthorized===false&&p.fundingAuthorized===false&&p.broadcastAuthorized===false&&
+       Array.isArray(p.releases)&&p.releases.length>0&&p.releases.length<=60&&
+       Number.isSafeInteger(p.totalSats)&&p.totalSats>0&&
+       p.releases.every(r=>typeof r?.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&
+        Number.isSafeInteger(r.amountSats)&&r.amountSats>0)&&
+       p.releases.reduce((sum,r)=>sum+r.amountSats,0)===p.totalSats){
+     sessionStorage.setItem(planKey,raw);
+    }
+   }
+  }catch{/* Invalid or unavailable saved plans remain unavailable. */}
+ }
  const back=document.getElementById('return-to-plan');
  back?.addEventListener('click',event=>{if(sessionStorage.getItem('bc1q21-professional-return-allowed')==='yes'&&history.length>1){event.preventDefault();history.back();}});
  const storedPlan=(()=>{try{return JSON.parse(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')||'null')}catch{return null}})();
