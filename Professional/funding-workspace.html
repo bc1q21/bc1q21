@@ -64,6 +64,15 @@ footer{text-align:right!important;padding-right:0!important}
 <label for="funding-xpub" style="display:block;margin:12px 0 6px">Jade account xpub (public only)</label>
 <input id="funding-xpub" type="text" autocomplete="off" spellcheck="false" placeholder="xpub…" style="width:100%;padding:12px;border:1px solid #aebdcc;border-radius:7px">
 <button type="button" id="derive-funding-key">Preview public funding key</button>
+<div id="public-wallet-qr-import" style="margin:14px 0;padding:14px;border:1px solid #b6cadd;border-radius:9px">
+<p><strong>Import public account QR (development preview)</strong></p>
+<p>Uses the existing camera to read a plain xpub QR. Jade animated account exports are not yet supported. This is not wallet ownership authentication or permission to fund.</p>
+<button type="button" id="public-wallet-camera-start">Scan public xpub QR</button>
+<button type="button" id="public-wallet-camera-stop" disabled>Stop public-wallet camera</button>
+<video id="public-wallet-camera-video" playsinline muted style="display:block;width:400px;max-width:100%;min-height:160px;background:#162638;margin:10px 0"></video>
+<canvas id="public-wallet-camera-canvas" hidden></canvas>
+<p id="public-wallet-camera-status" class="status" role="status">No public account QR scanned. Funding and signing are not authorized.</p>
+</div>
 <p id="funding-key-status" class="status" role="status">No Jade public wallet imported.</p>
 <div id="jade-address-check" hidden style="margin:16px 0;padding:16px;border:1px solid #b6cadd;border-radius:9px">
 <h3>Jade Plus device address check — regtest diagnostic only</h3>
@@ -476,6 +485,27 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
    'Device address check acknowledged for this public-wallet preview. Wallet ownership is NOT authenticated. Payment QR, signing and broadcasting remain disabled.':
    'Device address check not acknowledged. Funding and signing remain disabled.';
  });
+ const publicCameraAttach=globalThis.bc1q21ProfessionalAttachPublicWalletCamera;
+ if(typeof publicCameraAttach==='function'){
+  publicCameraAttach({
+   video:document.getElementById('public-wallet-camera-video'),
+   canvas:document.getElementById('public-wallet-camera-canvas'),
+   startButton:document.getElementById('public-wallet-camera-start'),
+   stopButton:document.getElementById('public-wallet-camera-stop'),
+   statusElement:document.getElementById('public-wallet-camera-status'),
+   onPublicXpub:xpub=>{
+    const field=document.getElementById('funding-xpub');
+    field.value=xpub;
+    field.dispatchEvent(new Event('input',{bubbles:true}));
+    document.getElementById('funding-key-status').textContent=
+     'Public account QR imported. Select Preview public funding key to validate derivation. No payment or signing authorization.';
+   }
+  });
+ }else{
+  document.getElementById('public-wallet-camera-start').disabled=true;
+  document.getElementById('public-wallet-camera-status').textContent=
+   'Public-wallet QR importer is not available in this browser bundle. Rebuild the Professional-only bundle before using the scanner.';
+ }
  document.getElementById('funding-xpub').addEventListener('input',()=>{
   ++latestScanId;publicFundingAddress=null;publicFundingScript=null;derivedXpub=null;derivedPlanSnapshot=null;
   jadeAck.checked=false;document.getElementById('jade-address-check').hidden=true;
