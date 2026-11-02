@@ -13,9 +13,68 @@ import { createJadeSignedCameraReceiver } from '../recipient-jade-signed-camera.
 // bc1q21 Professional isolated regtest browser integration; fixture-only, no broadcast.
 import { Buffer } from 'buffer';
 import { URDecoder } from '@ngraveio/bc-ur';
+import jsQR from 'jsqr';
 import cbor from 'cbor';
 import { verifyProfessionalReturnedSignature } from './verify-returned-signature.mjs';
 globalThis.Buffer=Buffer;
+
+// Professional public-wallet camera: read-only QR import, no signing authority.
+// Reuses the existing jsQR dependency and browser camera technique.
+globalThis.bc1q21ProfessionalAttachPublicWalletCamera=function({video,canvas,startButton,stopButton,statusElement,onPublicXpub}){
+ if(!video||!canvas||!startButton||!stopButton||!statusElement||typeof onPublicXpub!=='function')
+  throw Error('Public wallet camera controls missing');
+ let stream=null,active=false,generation=0;
+ const status=message=>{statusElement.textContent=message;};
+ const stop=()=>{
+  active=false;++generation;
+  if(stream){for(const track of stream.getTracks())track.stop();stream=null;}
+  video.srcObject=null;startButton.disabled=false;stopButton.disabled=true;
+ };
+ const tick=token=>{
+  if(!active||token!==generation)return;
+  try{
+   if(video.readyState>=2&&video.videoWidth>0){
+    canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(video,0,0);
+    const frame=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const qr=jsQR(frame.data,canvas.width,canvas.height,{inversionAttempts:'attemptBoth'});
+    if(qr?.data){
+     const value=qr.data.trim();
+     stop();
+     if(!/^xpub[1-9A-HJ-NP-Za-km-z]{100,120}$/.test(value))
+      throw Error('Only a plain account xpub QR is supported; other QR formats remain unverified.');
+     onPublicXpub(value);
+     status('Public xpub imported. Wallet ownership remains unverified; no deposit or signing authorization.');
+     return;
+    }
+   }
+  }catch(error){stop();status('Public wallet QR rejected: '+error.message);return;}
+  if(active&&token===generation)setTimeout(()=>tick(token),100);
+ };
+ const start=async()=>{
+  stop();
+  if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera requires localhost or HTTPS');
+  const token=generation;
+  let acquired=null;
+  try{
+   acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+   if(token!==generation){for(const track of acquired.getTracks())track.stop();return;}
+   stream=acquired;video.srcObject=stream;await video.play();
+   if(token!==generation){for(const track of acquired.getTracks())track.stop();return;}
+   active=true;startButton.disabled=true;stopButton.disabled=false;
+   status('Scanning a plain public account xpub QR…');tick(token);
+  }catch(error){
+   if(acquired)for(const track of acquired.getTracks())track.stop();
+   if(token===generation){stop();status('Camera unavailable: '+error.message);}
+  }
+ };
+ startButton.addEventListener('click',()=>{void start();});
+ stopButton.addEventListener('click',()=>{stop();status('Public wallet scan stopped.');});
+ stopButton.disabled=true;
+ return Object.freeze({start,stop});
+};
+
 // Browser-only BIP32 non-hardened public derivation. No seed or private-key handling.
 globalThis.bc1q21ProfessionalDerivePublicReleasePlan=function({accountXpub,releaseHeights}){
  if(typeof accountXpub!=='string'||!/^xpub[1-9A-HJ-NP-Za-km-z]{100,120}$/.test(accountXpub))throw Error('Only account xpub supported');
