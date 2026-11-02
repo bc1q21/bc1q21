@@ -55,6 +55,7 @@ footer{text-align:right!important;padding-right:0!important}
 <section class="panel"><p class="notice"><strong>Development preview — do not send Bitcoin.</strong> Real Bitcoin funding is disabled. Disposable local regtest funding tools are available in the developer section below, but no customer payment request or mainnet deposit address is issued.</p>
 <h2>Approved gift plan</h2><p id="status" class="status" role="status">Loading your approved gift plan…</p><div id="details" hidden><p><strong>Total gift:</strong> <span id="total"></span> sats</p><table><thead><tr><th>Release</th><th>Unlock date</th><th>Amount</th></tr></thead><tbody id="releases"></tbody></table></div></section>
 <section class="panel" id="customer-payment"><h2>Make Your Gift Payment</h2><p style="text-align:center">When payment integration is ready, this page will display your Bitcoin payment request. The application will verify the payment before continuing.</p>
+<div id="professional-missing-plan-recovery" hidden class="notice"><strong>No gift schedule was transferred to this page.</strong> For isolated regtest development, load the existing 100,000-sat, five-annual-release test scenario without repeating the wizard. This is a disposable test fixture, not customer approval or permission to fund.<p><button type="button" id="professional-load-test-plan">Load 100,000-sat test schedule</button></p></div>
 <div class="status" style="font-size:1.12rem"><strong>Estimated payment:</strong> <span id="customer-payment-amount">Calculating…</span><br><small id="customer-payment-breakdown"></small></div>
 <div style="text-align:center;padding:16px;border:2px dashed #a9bed2;border-radius:12px;margin:20px auto;max-width:330px"><strong>Regtest receiving address QR — development only</strong><canvas id="customer-address-qr" width="240" height="240" hidden></canvas><p id="customer-qr-placeholder">Awaiting a validated test address. Do not send Bitcoin.</p></div><p id="customer-payment-address" class="status" style="overflow-wrap:anywhere">No test address derived.</p>
 <p style="text-align:center"><button type="button" id="copy-test-funding-address" disabled>Copy test receiving address</button></p>
@@ -210,7 +211,24 @@ if(professionalIdentity){for(const element of document.querySelectorAll('.practi
   const estimatedTotal=storedPlan.totalSats+service+estimatedNetwork;
   document.getElementById('customer-payment-amount').textContent=estimatedTotal.toLocaleString()+' sats (estimate)';
   document.getElementById('customer-payment-breakdown').textContent='Gift '+storedPlan.totalSats.toLocaleString()+' sats + service fee '+service.toLocaleString()+' sats + estimated mining fees '+estimatedNetwork.toLocaleString()+' sats. Final payment amount must be recalculated before funding.';
- }else document.getElementById('customer-payment-amount').textContent='Gift plan unavailable';
+ }else{
+  document.getElementById('customer-payment-amount').textContent='Gift plan unavailable';
+  document.getElementById('professional-missing-plan-recovery').hidden=false;
+ }
+ document.getElementById('professional-load-test-plan').addEventListener('click',()=>{
+  if(sessionStorage.getItem(planKey))return;
+  const dates=['2027-11-03','2028-11-03','2029-11-03','2030-11-03','2031-11-03'];
+  const plan={
+   format:'bc1q21-professional-retail-plan-preview-v1',
+   status:'UNFUNDED_PREVIEW_NOT_SIGNABLE',
+   signingAuthorized:false,fundingAuthorized:false,broadcastAuthorized:false,
+   totalSats:100000,
+   releases:dates.map(date=>({date,amountSats:20000}))
+  };
+  sessionStorage.setItem(planKey,JSON.stringify(plan));
+  // Intentionally do not save a test fixture as a customer-approved plan.
+  window.location.reload();
+ });
  const status=document.getElementById('status');
  let publicFundingScript=null;
  let publicFundingAddress=null;
