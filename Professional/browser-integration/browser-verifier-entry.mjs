@@ -18,6 +18,14 @@ import cbor from 'cbor';
 import { verifyProfessionalReturnedSignature } from './verify-returned-signature.mjs';
 globalThis.Buffer=Buffer;
 
+globalThis.bc1q21ProfessionalRenderFundingAddressQr=async function({address,canvas}){
+ if(!canvas||typeof address!=='string'||!/^bcrt1q[023456789acdefghjklmnpqrstuvwxyz]{20,90}$/.test(address))
+  throw Error('Only a validated regtest address can be previewed');
+ await QRCode.toCanvas(canvas,address,{width:240,margin:3,errorCorrectionLevel:'M'});
+ return Object.freeze({network:'regtest',paymentAuthorized:false,canBroadcast:false});
+};
+
+
 // Professional public-wallet camera: read-only QR import, no signing authority.
 // Reuses the existing jsQR dependency and browser camera technique.
 globalThis.bc1q21ProfessionalAttachPublicWalletCamera=function({video,canvas,startButton,stopButton,statusElement,onPublicXpub}){
