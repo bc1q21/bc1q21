@@ -956,9 +956,13 @@ PriceManager.prototype.loadPrice=async function(){
  const original=NavigationManager.prototype.navigateToStep;
  NavigationManager.prototype.navigateToStep=function(step){
   if(['recovery_words','add_funds','finish_share'].includes(step)){
-   const target=document.getElementById('professional-jade-workflow');
-   if(target)target.scrollIntoView({behavior:'smooth'});
-   alert('Professional development: Retail recovery and funding are disabled. Continue with the Jade public-wallet panel above. Do not send Bitcoin.');
+   // Professional planning must never enter the mirrored Retail recovery/payment lifecycle.
+   // Preserve the reviewed plan in sessionStorage; do not manufacture a new plan.
+   if(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')){
+    window.location.assign('../Professional/funding-workspace.html');
+   }else{
+    original.call(this,'welcome');
+   }
    return false;
   }
   const moved=original.call(this,step);
@@ -980,6 +984,19 @@ PriceManager.prototype.loadPrice=async function(){
   }
   return retailNavigateBack.call(this);
  };
+ // Browser history can restore an old Retail recovery/funding screen without
+ // calling navigateToStep. Fail closed to the Professional planning entry.
+ window.addEventListener('pageshow',()=>{
+  const main=document.querySelector('main[x-data="giftWizard"]');
+  const wizard=main&&window.Alpine?.$data?.(main);
+  const navigation=wizard?.navigationState;
+  if(!navigation||!['recovery_words','add_funds','finish_share'].includes(navigation.currentStep))return;
+  if(sessionStorage.getItem('bc1q21-professional-approved-plan-preview')){
+   window.location.replace('../Professional/funding-workspace.html');
+  }else{
+   navigation.navigateToStep('welcome');
+  }
+ });
  const originalForward=NavigationManager.prototype.navigateForward;
  NavigationManager.prototype.navigateForward=function(context){
   if(this.currentStep==='finish_schedule'){
