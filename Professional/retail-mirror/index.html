@@ -24,6 +24,18 @@
   <link rel="modulepreload" href="./AESHelper.js" integrity="sha384-iOZ0szfUztdJdw3JQSCld5V8YQX4DNbXo7J+TKXe9m5M1l0vcUBEFlYmtQdgzXjw" crossorigin="anonymous" />
 <style>/* Professional-only Plan Ready totals: keep row labels visible when horizontally scrolling. */ .professional-plan-totals{overflow-x:auto;max-width:100%}.professional-plan-totals th{position:sticky;left:0;z-index:2;background:#fff;min-width:165px;box-shadow:2px 0 3px rgba(0,0,0,.08)}.professional-plan-totals tfoot th{background:#f2f6fa}/* Keep dormant Professional handoff/debug panels out of the customer-facing planning flow. */
 #professional-retail-handoff,#professional-funding-handoff,#professional-jade-workflow{display:none!important}
+/* Fail closed even if Alpine or Retail CSS fails to load: these are NOT
+   Professional screens. Hide the entire Retail recovery, deposit, share,
+   and confirmation controls before scripts initialize. */
+main[x-data="giftWizard"] .card[x-show="navigationState.stepGroup===2"],
+main[x-data="giftWizard"] .card[x-show="navigationState.stepGroup===3"],
+main[x-data="giftWizard"] .card[x-show="navigationState.stepGroup===4"],
+main[x-data="giftWizard"] .wizard-actions[x-show="navigationState.stepGroup===2"],
+main[x-data="giftWizard"] .wizard-actions[x-show="navigationState.stepGroup===3"],
+main[x-data="giftWizard"] .wizard-actions[x-show="navigationState.stepGroup===4"],
+main[x-data="giftWizard"] [x-show="finalConfirmationOpen"],
+main[x-data="giftWizard"] [x-show="recoveryConfirmationOpen"]{display:none!important}
+
 </style>
 </head>
 
