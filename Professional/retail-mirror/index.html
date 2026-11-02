@@ -1050,6 +1050,9 @@ window.addEventListener('bc1q21:professional-plan-ready',event=>{
  try {
   const plan=snapshotRetailGiftPlan(event.detail.wizard);
   sessionStorage.setItem('bc1q21-professional-approved-plan-preview',JSON.stringify(plan));
+  // Store only the non-secret approved schedule for safe recovery after navigation/reload.
+  // Never persist wallet keys, signatures, recovery words or payment authorization.
+  localStorage.setItem('bc1q21-professional-last-approved-plan-preview',JSON.stringify(plan));
   // The customer proceeds directly to the payment page; never display the
   // temporary developer handoff or the duplicated Retail planner beneath it.
   sessionStorage.setItem('bc1q21-professional-return-allowed','yes');
