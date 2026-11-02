@@ -158,7 +158,7 @@ class ProfessionalFundingHandler(BaseHTTPRequestHandler):
         self._reply(200, result)
 
     def do_OPTIONS(self):
-        if (self.path not in ("/professional/regtest/inspect-funding", "/professional/regtest/observe-utxo") or
+        if (self.path not in ("/professional/regtest/inspect-funding", "/professional/regtest/observe-utxo", "/professional/regtest/scan-funding") or
                 self.headers.get("Origin") != ALLOWED_ORIGIN or
                 self.headers.get("Access-Control-Request-Method") != "POST"):
             self._reply(403, {"error": "Not allowed"})
