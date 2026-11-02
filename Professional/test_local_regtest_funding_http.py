@@ -53,6 +53,66 @@ class ProfessionalLocalFundingHttpTests(unittest.TestCase):
             scan_regtest_funding_address(
                 {"address": address, "scriptPubKeyHex": SCRIPT, "signingAuthorized": True}, rpc)
 
+    def test_scan_funding_preflight_and_http_response(self):
+        """The customer JSON POST must pass a real browser CORS preflight."""
+        address = "bcrt1q" + "q" * 35
+        base = mock_rpc()
+
+        def rpc(method, params):
+            if method == "scantxoutset":
+                self.assertEqual(params, ["start", [f"addr({address})"]])
+                return {"success": True, "unspents": [
+                    {"txid": TXID, "vout": 0, "scriptPubKey": SCRIPT, "amount": 0.001}
+                ]}
+            return base(method, params)
+
+        class Handler(ProfessionalFundingHandler):
+            rpc_call = staticmethod(rpc)
+
+            def log_message(self, *_):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = f"http://127.0.0.1:{server.server_port}/professional/regtest/scan-funding"
+        try:
+            preflight = Request(url, headers={
+                "Origin": ALLOWED_ORIGIN,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            }, method="OPTIONS")
+            with urlopen(preflight, timeout=2) as reply:
+                self.assertEqual(reply.status, 204)
+                self.assertEqual(reply.headers["Access-Control-Allow-Origin"], ALLOWED_ORIGIN)
+                self.assertIn("POST", reply.headers["Access-Control-Allow-Methods"])
+                self.assertIn("Content-Type", reply.headers["Access-Control-Allow-Headers"])
+
+            raw = json.dumps({"address": address, "scriptPubKeyHex": SCRIPT}).encode()
+            post = Request(url, data=raw, headers={
+                "Content-Type": "application/json", "Origin": ALLOWED_ORIGIN
+            }, method="POST")
+            with urlopen(post, timeout=2) as reply:
+                self.assertEqual(reply.status, 200)
+                result = json.load(reply)
+                self.assertEqual(result["network"], "regtest")
+                self.assertEqual(result["totalConfirmedSats"], 100000)
+                self.assertFalse(result["walletOriginAuthenticated"])
+                self.assertFalse(result["canSign"])
+                self.assertFalse(result["canBroadcast"])
+
+            bad_preflight = Request(url, headers={
+                "Origin": "https://bc1q21.com",
+                "Access-Control-Request-Method": "POST",
+            }, method="OPTIONS")
+            with self.assertRaises(HTTPError) as error:
+                urlopen(bad_preflight, timeout=2)
+            self.assertEqual(error.exception.code, 403)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
     def test_http_rejects_wrong_origin_and_untrusted_approval(self):
         class Handler(ProfessionalFundingHandler):
             rpc_call = staticmethod(mock_rpc())
