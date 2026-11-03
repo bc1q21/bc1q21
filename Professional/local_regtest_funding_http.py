@@ -14,7 +14,7 @@ from trusted_core_funding import (
 HOST = "127.0.0.1"
 PORT = 18761
 MAX_BODY = 100_000
-ALLOWED_ORIGIN = "http://127.0.0.1:8765"
+ALLOWED_ORIGIN = "http://127.0.0.1:8766"
 
 
 def handle_funding_inspection(payload, rpc_call):
@@ -178,8 +178,6 @@ class ProfessionalFundingHandler(BaseHTTPRequestHandler):
 def main():
     user = os.environ.get("BC1Q21_PROFESSIONAL_REGTEST_RPC_USER")
     password = os.environ.get("BC1Q21_PROFESSIONAL_REGTEST_RPC_PASSWORD")
-    if not user or not password:
-        raise SystemExit("Set isolated regtest RPC credentials in server environment")
     ProfessionalFundingHandler.rpc_call = staticmethod(make_local_core_rpc(
         rpc_url="http://127.0.0.1:18443", rpc_user=user, rpc_password=password
     ))

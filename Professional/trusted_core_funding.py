@@ -95,6 +95,10 @@ def make_local_core_rpc(*, rpc_url, rpc_user, rpc_password, timeout_seconds=8):
     """Localhost-only authenticated JSON-RPC transport, never expose credentials."""
     if rpc_url not in ("http://127.0.0.1:18443", "http://localhost:18443"):
         raise FundingVerificationError("Disposable regtest loopback RPC only")
+    if not rpc_user and not rpc_password:
+        from pathlib import Path
+        cookie = Path(r"C:\bc1q21-Regtest\Data\regtest\.cookie")
+        rpc_user, rpc_password = cookie.read_text(encoding="utf-8").strip().split(":", 1)
     if not rpc_user or not rpc_password:
         raise FundingVerificationError("Server-side Core credentials required")
     token = base64.b64encode(f"{rpc_user}:{rpc_password}".encode()).decode()
