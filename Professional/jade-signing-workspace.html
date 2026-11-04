@@ -108,15 +108,26 @@ if(typeof attachCamera==='function'){
 
 // Development-only browser-session handoff: never grants signing authorization.
 const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
+const diagnosticPreviewKey='bc1q21-professional-regtest-unsigned-preview';
 (async()=>{
  try{
-  const handoff=JSON.parse(sessionStorage.getItem(diagnosticHandoffKey)||'null');
-  sessionStorage.removeItem(diagnosticHandoffKey);
+  const freshHandoffJson=sessionStorage.getItem(diagnosticHandoffKey);
+sessionStorage.removeItem(diagnosticHandoffKey);
+if(freshHandoffJson!==null){
+ sessionStorage.removeItem(diagnosticPreviewKey);
+}
+const handoff=JSON.parse(
+ freshHandoffJson!==null
+  ? freshHandoffJson
+  : sessionStorage.getItem(diagnosticPreviewKey)||'null'
+);
   if(!reviewedPlan||handoff?.format!=='bc1q21-professional-diagnostic-jade-handoff-v1'||
      handoff.diagnosticOnly!==true||handoff.signingAuthorized!==false||
      handoff.canBroadcast!==false) return;
-  sessionStorage.removeItem(verifiedSummaryKey);
-  document.getElementById('verified-next').hidden=true;
+  if(freshHandoffJson!==null){
+ sessionStorage.removeItem(verifiedSummaryKey);
+ document.getElementById('verified-next').hidden=true;
+}
   const unsigned=handoff.unsigned;
   if(unsigned?.format!=='bc1q21-professional-funded-distribution-unsigned-psbt-v1'||
      unsigned.network!=='regtest'||unsigned.signed!==false||
@@ -148,6 +159,9 @@ const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
      unsigned.totalOutputCount<unsigned.giftOutputCount)
    throw Error('Unsigned transaction counts or network fee do not match gift review');
   approvedUnsigned=unsigned;
+if(freshHandoffJson!==null){
+ sessionStorage.setItem(diagnosticPreviewKey,JSON.stringify(handoff));
+}
   document.getElementById('transaction-review-details').textContent=
    unsigned.giftOutputCount+' gift release(s) · '+
    reviewedPlan.totalSats.toLocaleString()+' sats total gift · '+
@@ -208,6 +222,7 @@ const diagnosticHandoffKey='bc1q21-professional-diagnostic-jade-handoff';
 window.bc1q21ProfessionalShowTrustedCreatorPsbt=async function(){
  approvedUnsigned=null;
  sessionStorage.removeItem(verifiedSummaryKey);
+ sessionStorage.removeItem(diagnosticPreviewKey);
  document.getElementById('verified-next').hidden=true;
  cameraController?.invalidate();
  if(timer){clearInterval(timer);timer=null;}

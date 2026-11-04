@@ -134,6 +134,53 @@ class BrowserJourneyTests(unittest.TestCase):
         self.assertTrue(self.page.locator("#verified-next").is_hidden())
         self.assertTrue(self.page.locator("#qr-panel").is_hidden())
 
+    def test_unsigned_qr_survives_finish_back_navigation(self):
+        fixture_path = ROOT / "Professional" / "fixtures" / "five-release-unsigned-preview.json"
+        handoff = json.loads(fixture_path.read_text(encoding="utf-8-sig"))
+
+        plan = {
+            "format": "bc1q21-professional-retail-plan-preview-v1",
+            "status": "UNFUNDED_PREVIEW_NOT_SIGNABLE",
+            "signingAuthorized": False,
+            "fundingAuthorized": False,
+            "broadcastAuthorized": False,
+            "totalSats": 100000,
+            "releases": [
+                {"date": gift["date"], "amountSats": gift["valueSats"]}
+                for gift in handoff["intent"]["gifts"]
+            ],
+        }
+
+        self.session(plan=plan)
+        self.page.evaluate("""handoff => {
+            sessionStorage.setItem(
+                'bc1q21-professional-diagnostic-jade-handoff',
+                JSON.stringify(handoff)
+            );
+        }""", handoff)
+
+        self.page.goto(self.base + "jade-signing-workspace.html")
+        self.page.locator("#qr-panel").wait_for(state="visible")
+        self.assertTrue(self.page.locator("#transaction-review").is_visible())
+        self.assertTrue(self.page.locator("#qr").get_attribute("src"))
+        self.assertTrue(self.page.locator("#scan").is_enabled())
+
+        self.page.goto(self.base + "finish-workspace.html")
+        self.assertIn("Not broadcast", self.page.locator("body").inner_text())
+
+        self.page.goto(self.base + "jade-signing-workspace.html")
+        self.page.locator("#qr-panel").wait_for(state="visible")
+        self.assertTrue(self.page.locator("#transaction-review").is_visible())
+        self.assertTrue(self.page.locator("#qr").get_attribute("src"))
+        self.assertTrue(self.page.locator("#scan").is_enabled())
+        self.assertTrue(self.page.locator("#verified-next").is_hidden())
+        self.assertIsNone(self.page.evaluate(
+            "sessionStorage.getItem('bc1q21-professional-diagnostic-jade-handoff')"
+        ))
+        self.assertIsNotNone(self.page.evaluate(
+            "sessionStorage.getItem('bc1q21-professional-regtest-unsigned-preview')"
+        ))
+
 
 if __name__ == "__main__":
     unittest.main()
