@@ -29,7 +29,9 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <p class="warn"><strong>Offline demonstration only.</strong> Fictional gift and wallet address. No real Bitcoin. No wallet connection, live blockchain queries, transaction construction, private-key signing, or broadcast. Imported disposable regtest PSBTs can be inspected and displayed as unsigned QR diagnostics.</p>
 <section><h2>Gift identification</h2><p>Recipient link context:</p><p class="mono" id="giftId"></p><p class="muted" id="linkStatus"></p><small>The retail recipient link is based on the funding address: /gift/&lt;address&gt; or ?a=&lt;address&gt;. This prototype never queries that address or assumes possession of it authorizes spending.</small></section>
 <section class="overview"><h2>Your total gift value</h2><div class="big" id="giftTotal">0.00066000 BTC</div><p id="giftTotalContext">66,000 disposable regtest satoshis in four example releases</p></section>
-<section><h2>Preview a Professional gift plan</h2><p class="muted">Open the unfunded planning file exported by the Professional creator wizard. This is a local <strong>recipient preview only</strong>, not an authenticated gift, funded balance, or release authorization.</p><label for="draftGiftFile">Open unfunded Professional plan (JSON)</label><input id="draftGiftFile" type="file" accept=".json,application/json"><p id="draftGiftStatus" role="status">No creator draft loaded.</p><div id="draftGiftDetails" hidden><h3 id="draftGiftHeading"></h3><p id="draftGiftOccasion"></p><p id="draftGiftTotal"></p><div style="overflow-x:auto"><table><thead><tr><th>Release</th><th>Planned date</th><th>Amount</th><th>Regtest unlock height</th></tr></thead><tbody id="draftGiftRows"></tbody></table></div><p class="warn">UNFUNDED DRAFT. The dates and block heights are supplied by the creator, not verified against the chain. These addresses must not be funded. Recipient signing and release remain disabled.</p></div></section>
+<section><h2>Preview a Professional gift plan</h2><p class="muted">Open the unfunded planning file exported by the Professional creator wizard. This is a local <strong>recipient preview only</strong>, not an authenticated gift, funded balance, or release authorization.</p><label for="draftGiftFile">Open unfunded Professional plan (JSON)</label><input id="draftGiftFile" type="file" accept=".json,application/json"><p id="draftGiftStatus" role="status">No creator draft loaded.</p><div id="draftGiftDetails" hidden><h3 id="draftGiftHeading"></h3><p id="draftGiftOccasion"></p><p id="draftGiftTotal"></p><div style="overflow-x:auto"><table><thead><tr><th>Release</th><th>Planned date</th><th>Amount</th><th>Regtest unlock height</th></tr></thead><tbody id="draftGiftRows"></tbody></table></div><p class="warn">UNFUNDED DRAFT. The dates and block heights are supplied by the creator, not verified against the chain. These addresses must not be funded. Recipient signing and release remain disabled.</p></div>
+<p><label for="dateGiftPreviewFile">Open date-based unsigned gift preview (JSON, regtest only):</label> <input id="dateGiftPreviewFile" type="file" accept=".json,application/json"></p><p id="dateGiftPreviewStatus" role="status">No date-based preview loaded. Signing and broadcasting remain disabled.</p><div id="dateGiftPreviewDetails" hidden></div>
+</section>
 <section><h2>Security: your wallet stays offline</h2><p class="pledge">Do not type your 12 recovery words into this page. Your Jade or other hardware signer keeps the private signing keys offline. A gift link is a locator, never authorization to spend.</p><p>Instead of the retail recovery-word field, a real Professional page will exchange unsigned and signed transaction QR data with your offline signer. The isolated regtest prototype below supports diagnostic unsigned and signed PSBT QR exchange, but does not authorize real gifts or broadcast.</p></section>
 <section><h2>Gift release schedule</h2><div style="overflow-x:auto"><table><thead><tr><th>Release</th><th>Unlock height</th><th>Amount</th><th>Current status</th></tr></thead>
 <tbody id="giftScheduleRows"><tr><td>1</td><td>130</td><td>12,000 sats</td><td><span class="status">Tested</span></td></tr>
@@ -64,6 +66,102 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
   document.getElementById('message').textContent='The isolated prototype supports offline unsigned PSBT QR display and signed Jade QR verification for supplied regtest gift evidence. It does not yet authenticate the gift record, discover trusted live on-chain release state, construct a verified release PSBT from that state, authorize spending, or broadcast. No keys are requested.';
  });
 })();
+
+let datePreviewGeneration = 0;
+document.getElementById('dateGiftPreviewFile').addEventListener('change', async event => {
+  const token = ++datePreviewGeneration;
+  const status = document.getElementById('dateGiftPreviewStatus');
+  const details = document.getElementById('dateGiftPreviewDetails');
+  details.hidden = true;
+  details.replaceChildren();
+  status.textContent = 'No date-based preview loaded.';
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    if (file.size > 80000) throw Error('Preview exceeds 80 KB');
+    const data = JSON.parse(await file.text());
+    if (token !== datePreviewGeneration) return;
+    if (data?.format !== 'bc1q21-professional-diagnostic-jade-handoff-v1' ||
+        data.diagnosticOnly !== true ||
+        data.signingAuthorized !== false ||
+        data.canBroadcast !== false ||
+        data.unsigned?.format !== 'bc1q21-professional-funded-distribution-unsigned-psbt-v1' ||
+        data.unsigned.network !== 'regtest' ||
+        data.unsigned.signed !== false ||
+        data.unsigned.broadcast !== false ||
+        data.intent?.format !== 'bc1q21-professional-funded-distribution-intent-v1' ||
+        data.intent.network !== 'regtest' ||
+        data.intent.signed !== false ||
+        data.intent.signatureVerified !== false ||
+        data.intent.broadcastAuthorized !== false)
+      throw Error('Not a supported unsigned regtest diagnostic');
+    const gifts = data.intent.gifts;
+    if (!Array.isArray(gifts) || gifts.length < 1 || gifts.length > 24 ||
+        gifts.length !== data.unsigned.giftOutputCount)
+      throw Error('Invalid release count');
+    let total = 0n, previousDate = '', previousLocktime = 0;
+    const rows = [];
+    for (const [index, gift] of gifts.entries()) {
+      if (typeof gift.date !== 'string' ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(gift.date) ||
+          !Number.isSafeInteger(gift.locktime) ||
+          gift.locktime < 500000000 ||
+          gift.locktime <= previousLocktime ||
+          gift.date <= previousDate ||
+          !Number.isSafeInteger(gift.valueSats) ||
+          gift.valueSats < 1)
+        throw Error('Invalid release ' + (index + 1));
+      const date = new Date(gift.locktime * 1000);
+      if (!Number.isFinite(date.getTime()) ||
+          date.toISOString().slice(0, 10) !== gift.date)
+        throw Error('Date and locktime mismatch');
+      total += BigInt(gift.valueSats);
+      if (total > 2100000000000000n) throw Error('Invalid total');
+      rows.push([index + 1, gift.date, gift.valueSats.toLocaleString('en-US') + ' sats', 'Unfunded']);
+      previousDate = gift.date;
+      previousLocktime = gift.locktime;
+    }
+    const heading = document.createElement('h3');
+    heading.textContent = 'Unsigned date-based gift preview';
+    details.append(heading);
+    const summary = document.createElement('p');
+    summary.textContent = total.toLocaleString('en-US') +
+      ' sats planned across ' + gifts.length + ' releases. NOT FUNDED.';
+    details.append(summary);
+    const table = document.createElement('table');
+    const header = document.createElement('tr');
+    for (const name of ['Release', 'Planned date', 'Amount', 'Status']) {
+      const th = document.createElement('th');
+      th.textContent = name;
+      header.append(th);
+    }
+    const thead = document.createElement('thead');
+    thead.append(header);
+    table.append(thead);
+    const tbody = document.createElement('tbody');
+    for (const values of rows) {
+      const tr = document.createElement('tr');
+      for (const value of values) {
+        const td = document.createElement('td');
+        td.textContent = String(value);
+        tr.append(td);
+      }
+      tbody.append(tr);
+    }
+    table.append(tbody);
+    details.append(table);
+    const warning = document.createElement('p');
+    warning.className = 'warn';
+    warning.textContent = 'UNFUNDED DIAGNOSTIC ONLY. No confirmed gift, claim authorization, signing or broadcast.';
+    details.append(warning);
+    details.hidden = false;
+    status.textContent = 'Date-based unsigned regtest preview loaded. Not chain-verified or claimable.';
+  } catch (error) {
+    if (token === datePreviewGeneration)
+      status.textContent = 'Rejected preview: ' + String(error.message || error);
+  }
+});
+
 let draftImportGeneration=0;
 document.getElementById('draftGiftFile').addEventListener('change',async event=>{
  const token=++draftImportGeneration,file=event.target.files?.[0],status=document.getElementById('draftGiftStatus'),details=document.getElementById('draftGiftDetails');
