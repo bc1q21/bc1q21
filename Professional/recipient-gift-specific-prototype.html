@@ -47,7 +47,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <div class="step"><div class="number">4</div><div>Broadcast only after verifying authorization, maturity, signature and transaction details.</div></div>
 <div class="actions"><button id="sign" disabled aria-describedby="message">Sign matured release with offline wallet</button><button class="secondary" id="explain">Why is signing disabled?</button></div>
 <p id="message" role="status">Gift-specific release remains disabled while the Jade camera is integrated.</p><p class="warn">Jade signed-QR camera test: <a href="./browser-integration/professional-verification-diagnostic.html">Open the existing offline signing camera diagnostic</a>. This verifies a fixed regtest fixture, not the gift shown above.</p>
-<div class="warn"><h3>Gift-specific Jade camera — isolated integration</h3><p>Load the approved unsigned PSBT evidence for the selected gift release (local JSON: approvedUnsignedBase64, expectedApprovedSha256, releaseNumber). This does not authenticate the gift or authorize spending.</p><input id="giftPsbtFile" type="file" accept=".json,application/json"><div class="actions"><button type="button" id="showUnsignedQr" disabled>Show selected unsigned QR (diagnostic)</button><button type="button" id="hideUnsignedQr" disabled>Hide QR</button></div><p id="unsignedQrStatus" role="status">No unsigned QR displayed. Do not sign unauthenticated gift data.</p><img id="unsignedQrImage" alt="Animated unsigned Jade PSBT QR" width="300" height="300" style="display:none;max-width:100%;"><div class="actions"><button type="button" id="giftCameraStart" disabled>Scan signed Jade QR for selected release</button><button type="button" id="giftCameraStop" disabled>Stop gift camera</button></div><p id="giftCameraStatus" role="status">No gift-specific PSBT loaded. No signing or broadcast.</p></div>
+<div class="warn"><h3>Gift-specific Jade camera — isolated integration</h3><p>Load the approved unsigned PSBT evidence for the selected gift release (local JSON: approvedUnsignedBase64, expectedApprovedSha256, releaseNumber). This does not authenticate the gift or authorize spending.</p><input id="giftPsbtFile" type="file" accept=".json,application/json"><div class="actions"><button type="button" id="showUnsignedQr" disabled>Show selected unsigned QR (diagnostic)</button><button type="button" id="hideUnsignedQr" disabled>Hide QR</button></div><p id="unsignedQrStatus" role="status">No unsigned QR displayed. Do not sign unauthenticated gift data.</p><img id="unsignedQrImage" alt="Animated unsigned Jade PSBT QR" width="300" height="300" style="display:none;max-width:100%;"><div class="actions"><button type="button" id="giftCameraStart" disabled>Scan signed Jade QR for selected release</button><button type="button" id="giftCameraStop" disabled>Stop gift camera</button></div><p id="giftCameraStatus" role="status">No gift-specific PSBT loaded. No signing or broadcast.</p><button type="button" id="saveVerifiedJadePsbt" disabled>Save verified signed PSBT (regtest)</button><p id="signedPsbtStatus" role="status">No signed return verified.</p></div>
 <div class="warn"><h3>Signed QR camera — regtest diagnostic only</h3><p>Scan the disposable Jade test signature. This does not sign or release the gift shown above.</p><video id="jadeVideo" playsinline muted style="width:100%;max-width:460px;background:#18283b;min-height:160px"></video><canvas id="jadeCanvas" hidden></canvas><div class="actions"><button type="button" id="startCamera">Start test camera</button><button type="button" id="stopCamera" disabled>Stop camera</button></div><p id="cameraStatus" role="status">Camera stopped.</p></div>
 </section>
 </main>
@@ -347,12 +347,22 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
 // A local PSBT is never treated as trusted authorization. This integrates the
 // already-proven camera decoder with exact gift-specific signature verification.
 let giftCameraReceiver=null, giftPsbtEvidence=null, unsignedQrTimer=null, unsignedQrGeneration=0, giftImportGeneration=0, giftCameraGeneration=0;
+let verifiedSignedReturn=null;
+const signedSaveButton=document.getElementById('saveVerifiedJadePsbt');
+function clearSignedReturn(){verifiedSignedReturn=null;signedSaveButton.disabled=true;document.getElementById('signedPsbtStatus').textContent='No signed return verified.';}
+signedSaveButton.addEventListener('click',()=>{
+ if(!verifiedSignedReturn)return;
+ const blob=new Blob([JSON.stringify(verifiedSignedReturn,null,2)+'\n'],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement('a');link.href=url;link.download='bc1q21-professional-verified-jade-release-'+verifiedSignedReturn.releaseNumber+'.json';
+ document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
 const giftCameraStart=document.getElementById('giftCameraStart');
 const giftCameraStop=document.getElementById('giftCameraStop');
 const giftCameraStatus=document.getElementById('giftCameraStatus');
 function stopGiftCamera(){giftCameraGeneration++;if(giftCameraReceiver){giftCameraReceiver.stop();giftCameraReceiver=null;}giftCameraStop.disabled=true;giftCameraStart.disabled=!giftPsbtEvidence;if(typeof startCamera!=='undefined')startCamera.disabled=false;}
 function hideUnsignedQr(){unsignedQrGeneration++;if(unsignedQrTimer){clearInterval(unsignedQrTimer);unsignedQrTimer=null;}document.getElementById('unsignedQrImage').style.display='none';document.getElementById('unsignedQrImage').removeAttribute('src');document.getElementById('hideUnsignedQr').disabled=true;document.getElementById('unsignedQrStatus').textContent='No unsigned QR displayed. Do not sign unauthenticated gift data.';}
-function clearGiftPsbt(){giftImportGeneration++;hideUnsignedQr();document.getElementById('showUnsignedQr').disabled=true;stopGiftCamera();giftPsbtEvidence=null;giftCameraStart.disabled=true;giftCameraStatus.textContent='No gift-specific PSBT loaded. No signing or broadcast.';}
+function clearGiftPsbt(){clearSignedReturn();giftImportGeneration++;hideUnsignedQr();document.getElementById('showUnsignedQr').disabled=true;stopGiftCamera();giftPsbtEvidence=null;giftCameraStart.disabled=true;giftCameraStatus.textContent='No gift-specific PSBT loaded. No signing or broadcast.';}
 document.getElementById('selectedRelease').addEventListener('change',clearGiftPsbt);
 document.getElementById('publicGiftFile').addEventListener('change',clearGiftPsbt);
 document.getElementById('giftPsbtFile').addEventListener('change',async event=>{
@@ -402,7 +412,7 @@ giftCameraStart.addEventListener('click',async()=>{
   giftCameraReceiver=globalThis.bc1q21ProfessionalAttachGiftCamera({
    video:document.getElementById('jadeVideo'),canvas:document.getElementById('jadeCanvas'),
    ...evidence,onStatus:m=>{if(cameraToken===giftCameraGeneration&&evidence===giftPsbtEvidence)giftCameraStatus.textContent=m;},
-   onVerified:result=>{if(cameraToken!==giftCameraGeneration||evidence!==giftPsbtEvidence)return;giftCameraStatus.textContent='PASS: Jade signature verified for selected release '+result.selectedRelease+'. No broadcast; gift provenance and authorization still required.';stopGiftCamera();}
+   onVerified:result=>{if(cameraToken!==giftCameraGeneration||evidence!==giftPsbtEvidence)return;if(typeof result.verifiedSignedPsbtBase64!=='string'||!result.verifiedSignedPsbtBase64.startsWith('cHNidP'))throw Error('Verified signed PSBT bytes missing');verifiedSignedReturn=Object.freeze({format:'bc1q21-professional-verified-jade-return-v1',network:'regtest',releaseNumber:result.selectedRelease,approvedUnsignedSha256:evidence.expectedApprovedSha256,signedPsbtBase64:result.verifiedSignedPsbtBase64,signatureCryptographicallyVerified:true,chainVerified:false,broadcast:false});signedSaveButton.disabled=false;document.getElementById('signedPsbtStatus').textContent='Signed PSBT verified against selected release. Save for isolated regtest completion. Not broadcast.';giftCameraStatus.textContent='PASS: Jade signature verified for selected release '+result.selectedRelease+'. No broadcast; gift provenance and authorization still required.';stopGiftCamera();}
   });
   const receiver=giftCameraReceiver;
   await receiver.start();
