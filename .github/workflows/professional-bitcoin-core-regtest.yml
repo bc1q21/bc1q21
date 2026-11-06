@@ -11,6 +11,8 @@ on:
       - 'Professional/five-funded-recipient-regtest-acceptance.mjs'
       - 'Professional/customer-recipient-handoff.mjs'
       - 'Professional/customer-recipient-handoff.test.mjs'
+      - 'Professional/recipient-customer-handoff.html'
+      - 'Professional/browser-integration/test-customer-handoff-browser.mjs'
       - 'Professional/browser-integration/test-five-funded-recipient-regtest.mjs'
       - 'Professional/professional-recipient-release-bridge.mjs'
       - 'Professional/professional-recipient-release-bridge.test.mjs'
@@ -89,6 +91,8 @@ jobs:
         run: cd Professional/browser-integration && node test-gift-release-binding.mjs
       - name: Browser test funded recipient gift and unsigned Jade QR
         run: cd Professional/browser-integration && node test-funded-recipient-qr-regtest.mjs
+      - name: Browser verify independent customer handoff digest and all five PSBTs
+        run: cd Professional/browser-integration && node test-customer-handoff-browser.mjs
       - name: Browser verify five funded recipient releases and reject cross-release PSBT
         run: cd Professional/browser-integration && node test-five-funded-recipient-regtest.mjs
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
