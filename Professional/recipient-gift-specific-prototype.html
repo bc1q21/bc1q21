@@ -450,10 +450,12 @@ document.getElementById('redemptionReceiptFile').addEventListener('change',async
      receipt.signatureVerified!==true||receipt.bitcoinCoreAccepted!==true||
      typeof receipt.rawTransactionHex!=='string'||
      !/^[0-9a-f]{64}$/i.test(receipt.txid))throw Error('Invalid regtest receipt');
-  if(typeof globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding!=='function')
-   throw Error('Gift verifier unavailable');
+  if(typeof globalThis.bc1q21ProfessionalInspectRedemptionReceipt!=='function')
+   throw Error('Redemption receipt verifier unavailable');
+  const inspected=globalThis.bc1q21ProfessionalInspectRedemptionReceipt({gift,release,receipt});
+  if(inspected.transactionMatchesSelectedRelease!==true)throw Error('Transaction mismatch');
   // An imported receipt is not a trusted RPC response. Never unlock signing.
-  status.textContent='Regtest receipt inspected for release '+releaseNumber+
+  status.textContent='Matching regtest redemption transaction inspected for release '+releaseNumber+
    ' (txid '+receipt.txid+'). Claimed broadcast: '+(receipt.broadcast===true?'yes':'no')+
    '. UNTRUSTED FILE: confirmation and chain provenance not verified.';
  }catch(error){if(token===receiptImportGeneration)status.textContent='Rejected redemption receipt: '+String(error.message||error);}
