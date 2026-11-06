@@ -37,6 +37,16 @@ await assert.rejects(()=>inspectFiveFundedRegtestReleases({
 await assert.rejects(()=>inspectFiveFundedRegtestReleases({
  gift,psbts,rpc:async(method,args)=>{
   const response=await rpc(method,args);
+  if(method==='getrawtransaction'&&args[0]===gift.releases[0].fundingTxid){
+   const vout=response.vout.map((output,i)=>i===gift.releases[0].fundingVout
+    ?{...output,value:output.value+0.00000001}:output);
+   return {...response,vout};
+  }
+  return response;
+ }}),/Confirmed transaction output amount mismatch/);
+await assert.rejects(()=>inspectFiveFundedRegtestReleases({
+ gift,psbts,rpc:async(method,args)=>{
+  const response=await rpc(method,args);
   if(method==='gettxout'&&args[1]===gift.releases[0].fundingVout)
    return {...response,value:response.value+0.00000001};
   return response;
