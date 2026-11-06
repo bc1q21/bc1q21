@@ -111,10 +111,11 @@ await assert.rejects(()=>inspectFiveFundedRegtestReleases({
    return {...response,scriptPubKey:{...response.scriptPubKey,hex:'a914'+'11'.repeat(20)+'87'}};
   return response;
  }}),/Core UTXO value or locking script differs/);
+let headerRead=0;
 await assert.rejects(()=>inspectFiveFundedRegtestReleases({
  gift,psbts,rpc:async(method,args)=>{
   const response=await rpc(method,args);
-  if(method==='getblockheader'&&args[0]!==result.consistentChainTip)
+  if(method==='getblockheader'&&++headerRead===2)
    return {...response,confirmations:-1};
   return response;
  }}),/Funding block not on active chain/);
