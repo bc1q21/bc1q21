@@ -40,7 +40,7 @@ try{
   name:'duplicate-outpoint.json',mimeType:'application/json',
   buffer:Buffer.from(JSON.stringify({...gift,releases:gift.releases.map((release,index)=>
    index===4?{...release,fundingVout:gift.releases[0].fundingVout}:release)}))});
- await page.waitForFunction(()=>/Rejected:/.test(document.getElementById('giftRecordStatus').textContent));
+ await page.waitForFunction(()=>/Rejected public gift record:/.test(document.getElementById('giftRecordStatus').textContent));
  assert.match(await page.locator('#giftRecordStatus').textContent(),/same funded output/);
  assert.equal(await page.locator('#showUnsignedQr').isDisabled(),true);
  assert.deepEqual(errors,[]);
