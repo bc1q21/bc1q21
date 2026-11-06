@@ -47,7 +47,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <div class="step"><div class="number">4</div><div>Broadcast only after verifying authorization, maturity, signature and transaction details.</div></div>
 <div class="actions"><button id="sign" disabled aria-describedby="message">Sign matured release with offline wallet</button><button class="secondary" id="explain">Why is signing disabled?</button></div>
 <p id="message" role="status">Gift-specific release remains disabled while the Jade camera is integrated.</p><p class="warn">Jade signed-QR camera test: <a href="./browser-integration/professional-verification-diagnostic.html">Open the existing offline signing camera diagnostic</a>. This verifies a fixed regtest fixture, not the gift shown above.</p>
-<div class="warn"><h3>Gift-specific Jade camera — isolated integration</h3><p>Load the approved unsigned PSBT evidence for the selected gift release (local JSON: approvedUnsignedBase64, expectedApprovedSha256, releaseNumber). This does not authenticate the gift or authorize spending.</p><input id="giftPsbtFile" type="file" accept=".json,application/json"><div class="actions"><button type="button" id="showUnsignedQr" disabled>Show selected unsigned QR (diagnostic)</button><button type="button" id="hideUnsignedQr" disabled>Hide QR</button></div><p id="unsignedQrStatus" role="status">No unsigned QR displayed. Do not sign unauthenticated gift data.</p><img id="unsignedQrImage" alt="Animated unsigned Jade PSBT QR" width="300" height="300" style="display:none;max-width:100%;"><div class="actions"><button type="button" id="giftCameraStart" disabled>Scan signed Jade QR for selected release</button><button type="button" id="giftCameraStop" disabled>Stop gift camera</button></div><p id="giftCameraStatus" role="status">No gift-specific PSBT loaded. No signing or broadcast.</p><button type="button" id="saveVerifiedJadePsbt" disabled>Save verified signed PSBT (regtest)</button><p id="signedPsbtStatus" role="status">No signed return verified.</p></div>
+<div class="warn"><h3>Gift-specific Jade camera — isolated integration</h3><p>Load the approved unsigned PSBT evidence for the selected gift release (local JSON: approvedUnsignedBase64, expectedApprovedSha256, releaseNumber). This does not authenticate the gift or authorize spending.</p><input id="giftPsbtFile" type="file" accept=".json,application/json"><div class="actions"><button type="button" id="showUnsignedQr" disabled>Show selected unsigned QR (diagnostic)</button><button type="button" id="hideUnsignedQr" disabled>Hide QR</button></div><p id="unsignedQrStatus" role="status">No unsigned QR displayed. Do not sign unauthenticated gift data.</p><img id="unsignedQrImage" alt="Animated unsigned Jade PSBT QR" width="300" height="300" style="display:none;max-width:100%;"><div class="actions"><button type="button" id="giftCameraStart" disabled>Scan signed Jade QR for selected release</button><button type="button" id="giftCameraStop" disabled>Stop gift camera</button></div><p id="giftCameraStatus" role="status">No gift-specific PSBT loaded. No signing or broadcast.</p><button type="button" id="saveVerifiedJadePsbt" disabled>Save verified signed PSBT (regtest)</button><p id="signedPsbtStatus" role="status">No signed return verified.</p><p><label for="redemptionReceiptFile">Inspect regtest redemption receipt (JSON):</label> <input type="file" id="redemptionReceiptFile" accept=".json,application/json"></p><p id="redemptionReceiptStatus" role="status">No redemption receipt inspected. Local files do not prove chain confirmation.</p></div>
 <div class="warn"><h3>Signed QR camera — regtest diagnostic only</h3><p>Scan the disposable Jade test signature. This does not sign or release the gift shown above.</p><video id="jadeVideo" playsinline muted style="width:100%;max-width:460px;background:#18283b;min-height:160px"></video><canvas id="jadeCanvas" hidden></canvas><div class="actions"><button type="button" id="startCamera">Start test camera</button><button type="button" id="stopCamera" disabled>Stop camera</button></div><p id="cameraStatus" role="status">Camera stopped.</p></div>
 </section>
 </main>
@@ -421,6 +421,44 @@ giftCameraStart.addEventListener('click',async()=>{
 });
 giftCameraStop.addEventListener('click',()=>{stopGiftCamera();giftCameraStatus.textContent='Gift camera stopped.';});
 window.addEventListener('pagehide',stopGiftCamera);
+
+// A locally imported receipt is never treated as independently verified chain state.
+let receiptImportGeneration=0;
+function resetRedemptionReceipt(){
+ receiptImportGeneration++;
+ document.getElementById('redemptionReceiptStatus').textContent='No redemption receipt inspected. Local files do not prove chain confirmation.';
+}
+document.getElementById('selectedRelease').addEventListener('change',resetRedemptionReceipt);
+document.getElementById('publicGiftFile').addEventListener('change',resetRedemptionReceipt);
+document.getElementById('redemptionReceiptFile').addEventListener('change',async event=>{
+ const token=++receiptImportGeneration;
+ const status=document.getElementById('redemptionReceiptStatus');
+ status.textContent='Inspecting untrusted receipt...';
+ try{
+  const file=event.target.files?.[0];
+  if(!file){status.textContent='No redemption receipt selected.';return;}
+  if(file.size>200000)throw Error('Receipt file too large');
+  const gift=globalThis.bc1q21ProfessionalPublicGiftRecord;
+  const releaseNumber=Number(document.getElementById('selectedRelease').value);
+  if(!gift||!releaseNumber)throw Error('Load a public gift and select its release first');
+  const release=gift.releases.find(item=>item.releaseNumber===releaseNumber);
+  if(!release)throw Error('Selected release not found');
+  const receipt=JSON.parse(await file.text());
+  if(token!==receiptImportGeneration)return;
+  if(receipt.format!=='bc1q21-professional-regtest-release-validated-v1'||
+     receipt.network!=='regtest'||receipt.releaseNumber!==releaseNumber||
+     receipt.signatureVerified!==true||receipt.bitcoinCoreAccepted!==true||
+     typeof receipt.rawTransactionHex!=='string'||
+     !/^[0-9a-f]{64}$/i.test(receipt.txid))throw Error('Invalid regtest receipt');
+  if(typeof globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding!=='function')
+   throw Error('Gift verifier unavailable');
+  // An imported receipt is not a trusted RPC response. Never unlock signing.
+  status.textContent='Regtest receipt inspected for release '+releaseNumber+
+   ' (txid '+receipt.txid+'). Claimed broadcast: '+(receipt.broadcast===true?'yes':'no')+
+   '. UNTRUSTED FILE: confirmation and chain provenance not verified.';
+ }catch(error){if(token===receiptImportGeneration)status.textContent='Rejected redemption receipt: '+String(error.message||error);}
+});
+
 const startCamera=document.getElementById('startCamera');
 const stopCamera=document.getElementById('stopCamera');
 const cameraStatus=document.getElementById('cameraStatus');
