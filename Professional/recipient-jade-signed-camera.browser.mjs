@@ -64,7 +64,17 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
   const token=generation;
   let acquired=null;
   try{
-   acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+   // Desktop laptops often have no environment-facing camera. Request a
+   // preferred rear camera first, then fall back to any available camera.
+   // Never request audio; do not retain images or QR frames after stopping.
+   try{
+    acquired=await navigator.mediaDevices.getUserMedia({
+     video:{facingMode:{ideal:'environment'}},audio:false});
+   }catch(error){
+    if(!['OverconstrainedError','NotFoundError'].includes(error?.name))throw error;
+    if(token!==generation)return;
+    acquired=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+   }
    if(token!==generation){for(const track of acquired.getTracks())track.stop();return;}
    stream=acquired;video.srcObject=stream;
    await video.play();
