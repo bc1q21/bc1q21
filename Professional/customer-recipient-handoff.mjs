@@ -51,6 +51,12 @@ export function verifyProfessionalCustomerHandoff(packageData,independentSha256)
  if(typeof independentSha256!=='string'||!/^[a-f0-9]{64}$/.test(independentSha256))
   fail('Independent authenticated digest required');
  const normalized=normalize(packageData.gift,packageData.psbts);
+ // The independent digest authenticates the *entire* received body, not
+ // merely a projection that silently discards unexpected or reordered fields.
+ // Otherwise an attacker could attach misleading metadata while preserving
+ // the authenticated digest of the normalized subset.
+ if(JSON.stringify({gift:packageData.gift,psbts:packageData.psbts})!==
+    JSON.stringify(normalized))fail('Noncanonical or extra handoff fields');
  const actual=digest(normalized);
  if(actual!==packageData.sha256||actual!==independentSha256)
   fail('Package differs from independently received digest');
