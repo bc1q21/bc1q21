@@ -37,6 +37,12 @@ export async function collectProfessionalCoreSnapshot({rpc,txid,vout}) {
  assert.equal(end,start,'Chain tip changed during evidence collection; retry');
  assert.equal(chainInfo.bestblockhash,start,'Chain info tip differs from sampled tip');
  assert.equal(chainInfo.blocks,tip.height,'Chain info height differs from sampled tip');
+ // Header and chain-info evidence must refer to the same active chain.
+ assert.equal(tip.confirmations,1,'Sampled tip is not on the active chain');
+ assert.ok(Number.isSafeInteger(blockHeader.confirmations)&&
+  blockHeader.confirmations>=1,'Funding block not on active chain');
+ assert.equal(blockHeader.confirmations,transaction.confirmations,
+  'Funding block and transaction confirmation depths disagree');
  return Object.freeze({
   coreEvidence:Object.freeze({chainInfo,transaction,blockHeader,txout}),
   chainTip:Object.freeze({chain:'regtest',blocks:tip.height,bestblockhash:start,mediantime:tip.mediantime}),
