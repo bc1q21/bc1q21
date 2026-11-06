@@ -10,6 +10,7 @@ export function selectPublicGiftRelease({gift,recipientLocator,releaseNumber}){
   fail('Invalid public release schedule');
  if(!Number.isSafeInteger(releaseNumber)||releaseNumber<1)fail('Invalid release selection');
  const seen=new Set();
+ const spentOutpoints=new Set();
  for(const r of gift.releases){
   if(!r||!Number.isSafeInteger(r.releaseNumber)||r.releaseNumber<1||seen.has(r.releaseNumber))
    fail('Duplicate or invalid release number');
@@ -18,6 +19,11 @@ export function selectPublicGiftRelease({gift,recipientLocator,releaseNumber}){
      !Number.isSafeInteger(r.lockHeight)||r.lockHeight<0||
      !Number.isSafeInteger(r.inputSats)||r.inputSats<1||
      !script(r.fundingScriptHex))fail('Invalid release funding evidence');
+  if(!Number.isSafeInteger(r.amountSats)||r.amountSats<1||r.amountSats>r.inputSats||
+     !script(r.destinationScriptHex))fail('Invalid release destination or amount');
+  const outpoint=r.fundingTxid+':'+r.fundingVout;
+  if(spentOutpoints.has(outpoint))fail('Two releases claim the same funded output');
+  spentOutpoints.add(outpoint);
  }
  const selected=gift.releases.find(r=>r.releaseNumber===releaseNumber);
  if(!selected)fail('Selected release is absent from this gift');
