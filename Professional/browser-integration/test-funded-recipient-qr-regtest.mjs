@@ -37,6 +37,21 @@ try {
   assert.equal(await page.locator('#hideUnsignedQr').isDisabled(), true);
   assert.equal(await page.locator('#sign').isDisabled(), true);
   assert.equal(await page.locator('#saveVerifiedJadePsbt').isDisabled(), true);
+  const sampleReceipt={format:'bc1q21-professional-regtest-release-validated-v1',
+   network:'regtest',releaseNumber:evidence.releaseNumber,
+   signatureVerified:true,bitcoinCoreAccepted:true,
+   txid:gift.releases[0].fundingTxid,rawTransactionHex:'00',broadcast:false};
+  await page.locator('#redemptionReceiptFile').setInputFiles({
+   name:'receipt.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify(sampleReceipt))});
+  await page.waitForFunction(()=>/UNTRUSTED FILE/.test(
+   document.getElementById('redemptionReceiptStatus').textContent));
+  assert.equal(await page.locator('#sign').isDisabled(),true);
+  await page.locator('#redemptionReceiptFile').setInputFiles({
+   name:'invalid-receipt.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify({...sampleReceipt,network:'mainnet'}))});
+  await page.waitForFunction(()=>/Rejected redemption receipt/.test(
+   document.getElementById('redemptionReceiptStatus').textContent));
   assert.deepEqual(errors, []);
   console.log('PASS: real regtest funded gift and unsigned Jade QR load on recipient page; broadcast disabled');
 } finally { await browser.close(); }
