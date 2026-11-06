@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - professional/isolated-release-prototype
+      - professional/recipient-five-release-preview
     paths:
       - 'Professional/bitcoin-core-regtest-acceptance.mjs'
       - 'Professional/integrated-public-regtest-acceptance.mjs'
+      - 'Professional/professional-recipient-release-bridge.mjs'
+      - 'Professional/professional-recipient-release-bridge.test.mjs'
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
       - 'Professional/option-b-two-funded-core-acceptance.mjs'
       - 'Professional/verify-calendar-jade-return.mjs'
@@ -47,6 +50,8 @@ jobs:
             ruimarinho/bitcoin-core:28 \
             -regtest -server -txindex=1 -rpcuser=professional -rpcpassword=synthetic-only \
             -rpcbind=127.0.0.1 -rpcallowip=127.0.0.1 -fallbackfee=0.00001
+      - name: Test Professional recipient release bridge validation
+        run: node --test Professional/professional-recipient-release-bridge.test.mjs
       - name: Execute integrated Professional public-only funded regtest acceptance
         run: node Professional/integrated-public-regtest-acceptance.mjs
 
