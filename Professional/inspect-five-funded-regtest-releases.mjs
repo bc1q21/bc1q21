@@ -63,6 +63,11 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
    signingAuthorized:false,canBroadcast:false
   }));
  }
+ // A reorganization after the fifth UTXO read invalidates the whole batch.
+ // Fail closed instead of presenting an apparently consistent stale result.
+ const finalTip=await rpc('getbestblockhash',[]);
+ if(finalTip!==commonTip)
+  fail('Bitcoin Core chain tip changed after release checks; retry entire inspection');
  return Object.freeze({
   format:'bc1q21-professional-five-release-core-inspection-v1',
   network:'regtest',rpcTransportScope:'caller-supplied-readonly-regtest',
