@@ -13,10 +13,12 @@ try{
  await page.locator('#customerPackage').setInputFiles(path);
  await page.locator('#independentDigest').fill('00'.repeat(32));
  await page.locator('#inspect').click();
+ await page.waitForFunction(()=>/Rejected customer package/.test(document.getElementById('status').textContent));
  assert.match(await page.locator('#status').textContent(),/Rejected customer package/);
  assert.equal(await page.locator('#releaseDownloads').isHidden(),true);
  await page.locator('#independentDigest').fill(pkg.sha256);
  await page.locator('#inspect').click();
+ await page.waitForFunction(()=>/PASS: package matches|Rejected customer package/.test(document.getElementById('status').textContent));
  assert.match(await page.locator('#status').textContent(),/PASS: package matches/);
  assert.equal(await page.locator('#releaseButtons button').count(),5);
  assert.equal(await page.locator('#releaseDownloads').isVisible(),true);
@@ -27,6 +29,7 @@ try{
   buffer:Buffer.from(JSON.stringify({...pkg,psbts:pkg.psbts.map((p,i)=>
    i===2?{...p,expectedApprovedSha256:'00'.repeat(32)}:p)}))});
  await page.locator('#inspect').click();
+ await page.waitForFunction(()=>/Rejected customer package/.test(document.getElementById('status').textContent));
  assert.match(await page.locator('#status').textContent(),/Rejected customer package/);
  assert.equal(await page.locator('#releaseDownloads').isHidden(),true);
  assert.deepEqual(errors,[]);
