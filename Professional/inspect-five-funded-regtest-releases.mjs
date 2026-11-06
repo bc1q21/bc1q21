@@ -20,6 +20,13 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
  if(!gift||!Array.isArray(gift.releases)||!Array.isArray(psbts)||
   gift.releases.length!==5||psbts.length!==5)fail('Exactly five releases required');
  const checks=[];
+ let commonTip=null;
+ const evidenceNumbers=new Set();
+ for(const item of psbts){
+  if(!Number.isSafeInteger(item?.releaseNumber)||item.releaseNumber<1||item.releaseNumber>5||
+     evidenceNumbers.has(item.releaseNumber))fail('Duplicate or invalid release PSBT number');
+  evidenceNumbers.add(item.releaseNumber);
+ }
  for(let i=1;i<=5;i++){
   const release=selectPublicGiftRelease({
    gift,recipientLocator:gift.fundingAddress,releaseNumber:i});
@@ -32,6 +39,9 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
   assert.equal(binding.transactionMatchesSuppliedRelease,true);
   const snapshot=await collectProfessionalCoreSnapshot({
    rpc,txid:release.fundingTxid,vout:release.fundingVout});
+  if(commonTip===null)commonTip=snapshot.chainTip.bestblockhash;
+  if(snapshot.chainTip.bestblockhash!==commonTip)
+   fail('Bitcoin Core chain tip changed between release checks; retry entire inspection');
   const txout=snapshot.coreEvidence.txout;
   if(toSats(txout.value)!==record.inputSats||
     txout.scriptPubKey?.hex!==record.fundingScriptHex)
@@ -56,7 +66,8 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
  return Object.freeze({
   format:'bc1q21-professional-five-release-core-inspection-v1',
   network:'regtest',rpcTransportScope:'caller-supplied-readonly-regtest',
-  allFiveConfirmedUnspent:true,customerIdentityAuthenticated:false,
+  allFiveConfirmedUnspent:true,consistentChainTip:commonTip,
+  customerIdentityAuthenticated:false,
   beneficiaryAuthorized:false,signingAuthorized:false,canBroadcast:false,
   releases:Object.freeze(checks)
  });
