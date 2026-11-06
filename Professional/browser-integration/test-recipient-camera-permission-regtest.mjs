@@ -39,6 +39,41 @@ try{
  assert.equal(await page.locator('#giftCameraStart').isDisabled(),true);
  assert.equal(await page.locator('#showUnsignedQr').isDisabled(),true);
  assert.equal(await page.locator('#saveVerifiedJadePsbt').isDisabled(),true);
+ // Simulate a desktop webcam: the first camera request reports that no
+ // rear-facing device exists; the second, generic request succeeds.
+ const laptop=await browser.newPage();
+ laptop.on('pageerror',e=>errors.push(e.message));
+ await laptop.addInitScript(()=>{
+  const calls=[];
+  Object.defineProperty(window,'__cameraCalls',{value:calls});
+  Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{
+   getUserMedia:async options=>{
+    calls.push(options);
+    if(calls.length===1)throw new DOMException('Rear camera unavailable','NotFoundError');
+    return {getTracks:()=>[{stop(){}}]};
+   }
+  }});
+  HTMLMediaElement.prototype.play=async function(){};
+ });
+ await laptop.goto(pathToFileURL(resolve('../recipient-gift-specific-prototype.html')).href+
+  '?a='+encodeURIComponent(gift.fundingAddress));
+ await laptop.locator('#publicGiftFile').setInputFiles(giftPath);
+ await laptop.waitForFunction(()=>/loaded for 5 releases/.test(document.getElementById('giftRecordStatus').textContent));
+ await laptop.locator('#selectedRelease').selectOption('1');
+ await laptop.locator('#giftPsbtFile').setInputFiles({name:'release1.json',
+  mimeType:'application/json',buffer:Buffer.from(JSON.stringify(evidence))});
+ await laptop.waitForFunction(()=>/Selected gift PSBT matches/.test(
+  document.getElementById('giftCameraStatus').textContent));
+ await laptop.locator('#giftCameraStart').click();
+ await laptop.waitForFunction(()=>/Point camera at Jade Plus/.test(
+  document.getElementById('giftCameraStatus').textContent));
+ assert.equal(await laptop.evaluate(()=>window.__cameraCalls.length),2);
+ assert.equal(await laptop.evaluate(()=>window.__cameraCalls[0].audio),false);
+ assert.equal(await laptop.evaluate(()=>window.__cameraCalls[1].video),true);
+ await laptop.locator('#giftCameraStop').click();
+ assert.equal(await laptop.locator('#giftCameraStop').isDisabled(),true);
+ assert.equal(await laptop.locator('#saveVerifiedJadePsbt').isDisabled(),true);
+ await laptop.close();
  assert.deepEqual(errors,[]);
  console.log('PASS: denied Jade camera permission recovers safely; changing release clears stale signing state.');
 }finally{await browser.close()}
