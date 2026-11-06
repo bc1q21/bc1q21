@@ -8,6 +8,8 @@ on:
     paths:
       - 'Professional/bitcoin-core-regtest-acceptance.mjs'
       - 'Professional/integrated-public-regtest-acceptance.mjs'
+      - 'Professional/five-funded-recipient-regtest-acceptance.mjs'
+      - 'Professional/browser-integration/test-five-funded-recipient-regtest.mjs'
       - 'Professional/professional-recipient-release-bridge.mjs'
       - 'Professional/professional-recipient-release-bridge.test.mjs'
       - 'Professional/browser-integration/test-funded-recipient-qr-regtest.mjs'
@@ -63,6 +65,8 @@ jobs:
       - name: Execute integrated Professional public-only funded regtest acceptance
         run: node Professional/integrated-public-regtest-acceptance.mjs
 
+      - name: Fund five real CLTV releases and prepare recipient PSBTs
+        run: node Professional/five-funded-recipient-regtest-acceptance.mjs
       - name: Execute genuine calendar-timestamp CLTV regtest acceptance
         run: node Professional/integrated-calendar-timestamp-core-acceptance.mjs
 
@@ -80,6 +84,8 @@ jobs:
         run: cd Professional/browser-integration && node test-gift-release-binding.mjs
       - name: Browser test funded recipient gift and unsigned Jade QR
         run: cd Professional/browser-integration && node test-funded-recipient-qr-regtest.mjs
+      - name: Browser verify five funded recipient releases and reject cross-release PSBT
+        run: cd Professional/browser-integration && node test-five-funded-recipient-regtest.mjs
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
         run: node Professional/option-b-two-funded-core-acceptance.mjs
       - name: Reject genuine Jade signature from another gift at calendar return CLI
@@ -110,5 +116,7 @@ jobs:
             Professional/artifacts/recipient-public-gift-regtest.json
             Professional/artifacts/recipient-unsigned-psbt-regtest.json
             Professional/artifacts/recipient-confirmed-redemption-regtest.json
+            Professional/artifacts/five-funded-recipient-gift-regtest.json
+            Professional/artifacts/five-funded-recipient-psbts-regtest.json
             Professional/artifacts/calendar-regtest-chain/
           retention-days: 7
