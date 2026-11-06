@@ -382,6 +382,10 @@ globalThis.bc1q21ProfessionalInspectRedemptionReceipt=function({gift,release,rec
   signingAuthorized:false});
 };
 
+// Customer-to-recipient handoff: independently communicated digest is required.
+import {prepareProfessionalCustomerHandoff,verifyProfessionalCustomerHandoff} from '../customer-recipient-handoff.mjs';
+globalThis.bc1q21ProfessionalPrepareCustomerHandoff=prepareProfessionalCustomerHandoff;
+globalThis.bc1q21ProfessionalVerifyCustomerHandoff=verifyProfessionalCustomerHandoff;
 // Public-only selected release/PSBT binding; does not confer spending authority.
 globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding=verifyGiftReleaseBinding;
 
