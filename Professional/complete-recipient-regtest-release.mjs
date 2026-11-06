@@ -73,6 +73,47 @@ export async function broadcastVerifiedProfessionalRegtestRelease(rawTransaction
  return Object.freeze({network:'regtest',txid,broadcast:true,confirmed:false});
 }
 
+
+export async function confirmProfessionalRegtestRedemption({
+ fundingTxid,fundingVout,releaseTxid,expectedConfirmations=1
+},options={}){
+ assert.match(fundingTxid,/^[a-f0-9]{64}$/i,'Invalid gift funding txid');
+ assert.match(releaseTxid,/^[a-f0-9]{64}$/i,'Invalid release txid');
+ assert.ok(Number.isSafeInteger(fundingVout)&&fundingVout>=0,'Invalid gift output');
+ assert.ok(Number.isSafeInteger(expectedConfirmations)&&expectedConfirmations>=1,
+  'Invalid confirmation threshold');
+ const checked=await runProfessionalRegtestRpcForConfirmation(options);
+ const raw=await checked.rpc('getrawtransaction',[releaseTxid,true]);
+ assert.equal(raw.txid,releaseTxid,'Release transaction mismatch');
+ assert.ok(raw.confirmations>=expectedConfirmations,'Release is not sufficiently confirmed');
+ assert.ok(raw.vin?.some(input=>input.txid===fundingTxid&&input.vout===fundingVout),
+  'Confirmed release does not spend selected gift output');
+ const remaining=await checked.rpc('gettxout',[fundingTxid,fundingVout]);
+ assert.equal(remaining,null,'Gift funding output remains unspent');
+ return Object.freeze({network:'regtest',releaseTxid,fundingTxid,fundingVout,
+  confirmations:raw.confirmations,confirmed:true});
+}
+async function runProfessionalRegtestRpcForConfirmation({
+ port=Number(process.env.REGTEST_RPC_PORT||18443),
+ username=process.env.REGTEST_RPC_USER||'professional',
+ password=process.env.REGTEST_RPC_PASSWORD||'synthetic-only'
+}={}){
+ assert.ok(Number.isSafeInteger(port)&&port>0&&port<=65535,'Invalid RPC port');
+ const rpc=(method,params=[])=>new Promise((resolve,reject)=>{
+  const body=JSON.stringify({jsonrpc:'1.0',id:'professional-confirmation',method,params});
+  const req=http.request({hostname:'127.0.0.1',port,method:'POST',path:'/',
+   headers:{authorization:'Basic '+Buffer.from(username+':'+password).toString('base64'),
+    'content-type':'application/json','content-length':Buffer.byteLength(body)}},res=>{
+   let data='';res.on('data',part=>{data+=part;if(data.length>100000)req.destroy(Error('RPC response too large'));});
+   res.on('end',()=>{try{const result=JSON.parse(data);
+    if(result.error)reject(Error(JSON.stringify(result.error)));else resolve(result.result);
+   }catch(error){reject(error)}});
+  });req.on('error',reject);req.end(body);
+ });
+ assert.equal((await rpc('getblockchaininfo')).chain,'regtest');
+ return {rpc};
+}
+
 if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
  const [giftPath,evidencePath,returnPath]=process.argv.slice(2);
  assert.ok(giftPath&&evidencePath&&returnPath,
