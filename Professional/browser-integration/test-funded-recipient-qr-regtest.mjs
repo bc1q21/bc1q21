@@ -53,7 +53,7 @@ try {
   assert.equal(await page.locator('#sign').isDisabled(),true);
   await page.locator('#redemptionReceiptFile').setInputFiles({
    name:'wrong-gift-receipt.json',mimeType:'application/json',
-   buffer:Buffer.from(JSON.stringify({...sampleReceipt,rawTransactionHex:tx.toHex().replace(/.$/,'0')}))});
+   buffer:Buffer.from(JSON.stringify({...sampleReceipt,rawTransactionHex:tx.toHex().slice(0,-2)+'ff'}))});
   await page.waitForFunction(()=>/Rejected redemption receipt/.test(
    document.getElementById('redemptionReceiptStatus').textContent));
   await page.locator('#redemptionReceiptFile').setInputFiles({
