@@ -345,6 +345,7 @@ globalThis.bc1q21ProfessionalAttachGiftCamera=function({
       verified.transactionMatches!==true||verified.broadcast!==false)
     throw Error('Gift-specific Jade signature failed verification');
    await onVerified(Object.freeze({...verified,selectedRelease:release.releaseNumber,
+    verifiedSignedPsbtBase64:Buffer.from(bytes).toString('base64'),
     giftProvenanceVerified:false,chainVerified:false,signingAuthorized:false,broadcast:false}));
   }});
 };
