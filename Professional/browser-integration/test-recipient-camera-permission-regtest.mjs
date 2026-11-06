@@ -65,8 +65,9 @@ try{
  await laptop.waitForFunction(()=>/Selected gift PSBT matches/.test(
   document.getElementById('giftCameraStatus').textContent));
  await laptop.locator('#giftCameraStart').click();
- await laptop.waitForFunction(()=>/Point camera at Jade Plus/.test(
+ await laptop.waitForFunction(()=>/Point camera at Jade Plus|Gift camera error:/.test(
   document.getElementById('giftCameraStatus').textContent));
+ assert.match(await laptop.locator('#giftCameraStatus').textContent(),/Point camera at Jade Plus/);
  assert.equal(await laptop.evaluate(()=>window.__cameraCalls.length),2);
  assert.equal(await laptop.evaluate(()=>window.__cameraCalls[0].audio),false);
  assert.equal(await laptop.evaluate(()=>window.__cameraCalls[1].video),true);
