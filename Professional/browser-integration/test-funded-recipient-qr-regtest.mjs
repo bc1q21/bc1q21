@@ -19,6 +19,7 @@ try {
   await page.goto(pathToFileURL(resolve('../recipient-gift-specific-prototype.html')).href +
     '?a=' + encodeURIComponent(gift.fundingAddress));
   assert.equal(await page.locator('#sign').isDisabled(), true);
+  assert.equal(await page.locator('#saveVerifiedJadePsbt').isDisabled(), true);
   await page.locator('#publicGiftFile').setInputFiles(giftPath);
   await page.waitForFunction(() => /Public gift record loaded for 1 releases/.test(
     document.getElementById('giftRecordStatus').textContent));
@@ -35,6 +36,7 @@ try {
   await page.locator('#hideUnsignedQr').click();
   assert.equal(await page.locator('#hideUnsignedQr').isDisabled(), true);
   assert.equal(await page.locator('#sign').isDisabled(), true);
+  assert.equal(await page.locator('#saveVerifiedJadePsbt').isDisabled(), true);
   assert.deepEqual(errors, []);
   console.log('PASS: real regtest funded gift and unsigned Jade QR load on recipient page; broadcast disabled');
 } finally { await browser.close(); }
