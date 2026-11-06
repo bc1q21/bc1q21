@@ -63,6 +63,10 @@ jobs:
         run: node --check Professional/verify-calendar-jade-return.mjs
       - name: Install isolated Chromium
         run: npx --prefix Professional playwright install chromium
+      - name: Build isolated recipient verifier browser bundle
+        run: |
+          npm install --prefix Professional/browser-integration --ignore-scripts --no-package-lock
+          npm run --prefix Professional/browser-integration build
       - name: Browser test funded recipient gift and unsigned Jade QR
         run: cd Professional/browser-integration && node test-funded-recipient-qr-regtest.mjs
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
