@@ -350,6 +350,38 @@ globalThis.bc1q21ProfessionalAttachGiftCamera=function({
   }});
 };
 
+// Verify the exact raw redemption transaction in an imported receipt against
+// the selected public gift output. This proves internal consistency, NOT
+// confirmation, chain provenance, or spending authorization.
+globalThis.bc1q21ProfessionalInspectRedemptionReceipt=function({gift,release,receipt}){
+ if(!gift||!release||!receipt||receipt.format!=='bc1q21-professional-regtest-release-validated-v1'||
+  receipt.network!=='regtest'||receipt.releaseNumber!==release.releaseNumber||
+  receipt.signatureVerified!==true||receipt.bitcoinCoreAccepted!==true||
+  typeof receipt.rawTransactionHex!=='string'||receipt.rawTransactionHex.length>200000||
+  !/^(?:[0-9a-f]{2})+$/i.test(receipt.rawTransactionHex)||
+  typeof receipt.txid!=='string'||!/^[0-9a-f]{64}$/i.test(receipt.txid)||
+  (receipt.broadcast!==true&&receipt.broadcast!==false))
+  throw Error('Invalid regtest redemption receipt');
+ const selected=selectPublicGiftRelease({gift,recipientLocator:gift.fundingAddress,
+  releaseNumber:release.releaseNumber});
+ if(selected.fundingTxid!==release.fundingTxid||
+  selected.fundingVout!==release.fundingVout)throw Error('Gift release selection changed');
+ let tx;
+ try{tx=bitcoin.Transaction.fromHex(receipt.rawTransactionHex)}
+ catch{throw Error('Malformed redemption transaction')}
+ if(tx.getId()!==receipt.txid.toLowerCase())throw Error('Redemption transaction ID mismatch');
+ if(tx.ins.length!==1||tx.outs.length!==1||
+  Buffer.from(tx.ins[0].hash).reverse().toString('hex')!==release.fundingTxid||
+  tx.ins[0].index!==release.fundingVout||
+  tx.locktime!==release.lockHeight||
+  tx.outs[0].value!==release.amountSats||
+  tx.outs[0].script.toString('hex')!==release.destinationScriptHex.toLowerCase())
+  throw Error('Redemption transaction does not match selected gift release');
+ return Object.freeze({transactionMatchesSelectedRelease:true,txid:tx.getId(),
+  broadcastClaimed:receipt.broadcast,chainVerified:false,confirmed:false,
+  signingAuthorized:false});
+};
+
 // Public-only selected release/PSBT binding; does not confer spending authority.
 globalThis.bc1q21ProfessionalVerifyGiftReleaseBinding=verifyGiftReleaseBinding;
 
