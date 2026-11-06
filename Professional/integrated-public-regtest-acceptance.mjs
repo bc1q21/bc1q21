@@ -7,6 +7,7 @@ import bitcoin from 'bitcoinjs-lib';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { Buffer } from 'node:buffer';
 import { prepareProfessionalReleaseFromPublicHandoff } from './public-funding-release-integration.mjs';
+import { prepareRecipientReleaseEvidence } from './professional-recipient-release-bridge.mjs';
 
 const port=Number(process.env.REGTEST_RPC_PORT||18443);
 const auth='Basic '+Buffer.from('professional:synthetic-only').toString('base64');
@@ -85,6 +86,27 @@ async function check(label,raw,allowed){
  assert.equal(results[0].allowed,allowed,label+': '+JSON.stringify(results[0]));
  console.log(JSON.stringify({label,allowed:results[0].allowed,reason:results[0]['reject-reason']??null}));
 }
+
+const recipientEvidence = prepareRecipientReleaseEvidence({
+  publicHandoff: handoff,
+  funding: details,
+  releaseNumber: 1
+});
+
+assert.equal(recipientEvidence.releaseNumber, 1);
+assert.equal(
+  recipientEvidence.approvedUnsignedBase64,
+  built.unsignedPsbtBase64
+);
+assert.match(
+  recipientEvidence.expectedApprovedSha256,
+  /^[0-9a-f]{64}$/
+);
+
+console.log(
+  'PASS: funded regtest release builder produces recipient PSBT evidence.'
+);
+
 await check('Professional-builder funded regtest CLTV spend',signedTx(),true);
 await check('early locktime',signedTx({locktime:109}),false);
 await check('final sequence',signedTx({sequence:0xffffffff}),false);
