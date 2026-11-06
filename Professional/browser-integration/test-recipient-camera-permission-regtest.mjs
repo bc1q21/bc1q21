@@ -75,6 +75,39 @@ try{
  assert.equal(await laptop.locator('#giftCameraStop').isDisabled(),true);
  assert.equal(await laptop.locator('#saveVerifiedJadePsbt').isDisabled(),true);
  await laptop.close();
+ // A delayed permission response must not resurrect the camera after the
+ // recipient changes releases while the browser permission dialog is open.
+ const delayed=await browser.newPage();
+ delayed.on('pageerror',e=>errors.push(e.message));
+ await delayed.addInitScript(()=>{
+  let resolveCamera;
+  Object.defineProperty(window,'__resolveCamera',{get:()=>resolveCamera});
+  Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{
+   getUserMedia:()=>new Promise(resolve=>{resolveCamera=resolve})
+  }});
+  HTMLMediaElement.prototype.play=async function(){};
+ });
+ await delayed.goto(pathToFileURL(resolve('../recipient-gift-specific-prototype.html')).href+
+  '?a='+encodeURIComponent(gift.fundingAddress));
+ await delayed.locator('#publicGiftFile').setInputFiles(giftPath);
+ await delayed.waitForFunction(()=>/loaded for 5 releases/.test(document.getElementById('giftRecordStatus').textContent));
+ await delayed.locator('#selectedRelease').selectOption('1');
+ await delayed.locator('#giftPsbtFile').setInputFiles({name:'release1.json',
+  mimeType:'application/json',buffer:Buffer.from(JSON.stringify(evidence))});
+ await delayed.waitForFunction(()=>/Selected gift PSBT matches/.test(
+  document.getElementById('giftCameraStatus').textContent));
+ await delayed.locator('#giftCameraStart').click();
+ await delayed.waitForFunction(()=>typeof window.__resolveCamera==='function');
+ await delayed.locator('#selectedRelease').selectOption('2');
+ await delayed.evaluate(()=>{
+  const track={stop(){window.__cameraStopped=true}};
+  window.__resolveCamera({getTracks:()=>[track]});
+ });
+ await delayed.waitForFunction(()=>window.__cameraStopped===true);
+ assert.equal(await delayed.locator('#giftCameraStart').isDisabled(),true);
+ assert.equal(await delayed.locator('#giftCameraStop').isDisabled(),true);
+ assert.equal(await delayed.locator('#saveVerifiedJadePsbt').isDisabled(),true);
+ await delayed.close();
  assert.deepEqual(errors,[]);
  console.log('PASS: denied Jade camera permission recovers safely; changing release clears stale signing state.');
 }finally{await browser.close()}
