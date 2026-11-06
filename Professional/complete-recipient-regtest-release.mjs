@@ -35,7 +35,7 @@ export function validateProfessionalRecipientSignedReturn({gift,evidence,signedR
  return Object.freeze({...finalized,releaseNumber:release.releaseNumber});
 }
 
-export async function checkProfessionalRegtestMempool(rawTransactionHex,{
+async function runProfessionalRegtestRpc(rawTransactionHex,{
  port=Number(process.env.REGTEST_RPC_PORT||18443),
  username=process.env.REGTEST_RPC_USER||'professional',
  password=process.env.REGTEST_RPC_PASSWORD||'synthetic-only'
@@ -56,8 +56,21 @@ export async function checkProfessionalRegtestMempool(rawTransactionHex,{
  const accepted=await rpc('testmempoolaccept',[[rawTransactionHex]]);
  assert.equal(accepted.length,1);
  assert.equal(accepted[0].allowed,true,'Core rejected release: '+JSON.stringify(accepted[0]));
- return Object.freeze({network:'regtest',txid:accepted[0].txid,
-  bitcoinCoreAccepted:true,broadcast:false});
+ return Object.freeze({rpc,txid:accepted[0].txid});
+}
+
+export async function checkProfessionalRegtestMempool(rawTransactionHex,options={}){
+ const accepted=await runProfessionalRegtestRpc(rawTransactionHex,options);
+ return Object.freeze({network:'regtest',txid:accepted.txid,bitcoinCoreAccepted:true,broadcast:false});
+}
+
+// Broadcast is an explicit, separate CLI-only act against loopback Bitcoin Core
+// after the exact approved transaction, Jade signature and Core policy checks pass.
+export async function broadcastVerifiedProfessionalRegtestRelease(rawTransactionHex,options={}){
+ const accepted=await runProfessionalRegtestRpc(rawTransactionHex,options);
+ const txid=await accepted.rpc('sendrawtransaction',[rawTransactionHex]);
+ assert.equal(txid,accepted.txid,'Core broadcast txid differs from approved transaction');
+ return Object.freeze({network:'regtest',txid,broadcast:true,confirmed:false});
 }
 
 if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
@@ -72,7 +85,17 @@ if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
  const output={format:'bc1q21-professional-regtest-release-validated-v1',
   ...acceptance,releaseNumber:finalized.releaseNumber,signatureVerified:true,
   rawTransactionHex:finalized.rawTransactionHex};
- const destination=returnPath+'.validated-regtest.json';
+ const broadcastRequested=process.argv.includes('--broadcast-regtest');
+ if(broadcastRequested){
+  assert.equal(process.argv.at(-1),'--broadcast-regtest','Broadcast flag must be last');
+  const broadcast=await broadcastVerifiedProfessionalRegtestRelease(finalized.rawTransactionHex);
+  assert.equal(broadcast.txid,finalized.txid);
+  output.broadcast=true;
+  output.confirmed=false;
+ } else {
+  output.broadcast=false;
+ }
+ const destination=returnPath+(broadcastRequested?'.broadcast-regtest.json':'.validated-regtest.json');
  writeFileSync(destination,JSON.stringify(output,null,2)+'\n',{flag:'wx',mode:0o600});
- console.log('PASS: Jade release signature and Core regtest mempool acceptance. NOT BROADCAST.',destination);
+ console.log(broadcastRequested?'PASS: validated Jade release BROADCAST on isolated regtest.':'PASS: Jade release signature and Core regtest mempool acceptance. NOT BROADCAST.',destination);
 }
