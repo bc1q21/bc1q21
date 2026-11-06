@@ -178,6 +178,14 @@ assert.equal(await rpc('gettxout',[txid,vout]),null,'Redeemed gift output remain
 const receipt=await confirmProfessionalRegtestRedemption({fundingTxid:txid,fundingVout:vout,releaseTxid:finalized.txid});
 assert.equal(receipt.confirmed,true);
 assert.ok(receipt.confirmations>=1);
+writeFileSync('Professional/artifacts/recipient-confirmed-redemption-regtest.json',
+ JSON.stringify({format:'bc1q21-professional-regtest-release-validated-v1',
+  network:'regtest',releaseNumber:1,signatureVerified:true,
+  bitcoinCoreAccepted:true,txid:finalized.txid,
+  rawTransactionHex:finalized.rawTransactionHex,
+  broadcast:true,confirmed:true,confirmations:receipt.confirmations,
+  fundingTxid:txid,fundingVout:vout},null,2)+'\n');
+
 await assert.rejects(confirmProfessionalRegtestRedemption({fundingTxid:txid,fundingVout:vout,releaseTxid:finalized.txid,expectedConfirmations:9999}),/not sufficiently confirmed/);
 await assert.rejects(confirmProfessionalRegtestRedemption({fundingTxid:'00'.repeat(32),fundingVout:vout,releaseTxid:finalized.txid}),/does not spend selected gift output/);
 console.log('PASS: funded gift -> synthetic Jade-compatible PSBT -> signed return -> regtest broadcast -> confirmed redemption.');
