@@ -42,4 +42,18 @@ await assert.rejects(()=>inspectFiveFundedRegtestReleases({
    return 'f'.repeat(64);
   return response;
  }}));
+await assert.rejects(()=>inspectFiveFundedRegtestReleases({
+ gift,psbts,rpc:async(method,args)=>{
+  const response=await rpc(method,args);
+  if(method==='getrawtransaction'&&args[0]===gift.releases[0].fundingTxid)
+   return {...response,confirmations:response.confirmations+1};
+  return response;
+ }}),/Funding confirmation depth differs/);
+await assert.rejects(()=>inspectFiveFundedRegtestReleases({
+ gift,psbts,rpc:async(method,args)=>{
+  const response=await rpc(method,args);
+  if(method==='gettxout'&&args[1]===gift.releases[0].fundingVout)
+   return {...response,confirmations:response.confirmations+1};
+  return response;
+ }}),/UTXO confirmations differ/);
 console.log('PASS: real read-only Bitcoin Core checks all five funded unspent releases, CLTV maturity and rejects fabricated UTXO.');
