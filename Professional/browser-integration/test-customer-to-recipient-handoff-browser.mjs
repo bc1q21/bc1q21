@@ -32,6 +32,32 @@ try{
   document.getElementById('status').textContent));
  assert.match(await recipient.locator('#status').textContent(),/PASS: package matches/);
  assert.equal(await recipient.locator('#releaseButtons button').count(),5);
+ // Follow the genuine customer-created file through the recipient handoff
+ // downloads and into each of the five recipient release selectors.
+ const [giftDownload]=await Promise.all([
+  recipient.waitForEvent('download'),recipient.locator('#downloadGift').click()
+ ]);
+ const recipientPage=await browser.newPage();
+ recipientPage.on('pageerror',error=>errors.push(error.message));
+ await recipientPage.goto(pathToFileURL(resolve('../recipient-gift-specific-prototype.html')).href+
+  '?a='+encodeURIComponent(handoff.gift.fundingAddress));
+ await recipientPage.locator('#publicGiftFile').setInputFiles(await giftDownload.path());
+ await recipientPage.waitForFunction(()=>/loaded for 5 releases/.test(
+  document.getElementById('giftRecordStatus').textContent));
+ for(let n=1;n<=5;n++){
+  const [psbtDownload]=await Promise.all([
+   recipient.waitForEvent('download'),
+   recipient.locator('#releaseButtons button').nth(n-1).click()
+  ]);
+  await recipientPage.locator('#selectedRelease').selectOption(String(n));
+  await recipientPage.locator('#giftPsbtFile').setInputFiles(await psbtDownload.path());
+  await recipientPage.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record|Rejected gift PSBT/.test(
+   document.getElementById('giftCameraStatus').textContent));
+  assert.match(await recipientPage.locator('#giftCameraStatus').textContent(),
+   /Selected gift PSBT matches supplied public gift record/);
+  assert.equal(await recipientPage.locator('#saveVerifiedJadePsbt').isDisabled(),true);
+ }
+ await recipientPage.close();
  // Customer identity must not be inferred from an internally valid digest.
  assert.match(await recipient.locator('#releaseSummary').textContent(),/NOT verified/);
  // A changed digest immediately invalidates the recipient's previously
