@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bc1q21 Professional | Customer gift handoff</title>
+<style>body{font:16px system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;line-height:1.55}label{display:block;margin-top:1rem}input,button{font:inherit;padding:.5rem}section{border:1px solid #999;padding:1rem;margin:1rem 0}.mono{font:14px monospace;overflow-wrap:anywhere}button{margin-top:.7rem}</style>
+</head><body><main><h1>Customer gift handoff</h1>
+<p>Isolated Bitcoin Core regtest prototype. This page packages already funded release records and unsigned PSBTs. It cannot create, sign, fund or broadcast transactions.</p>
+<section>
+<label for="giftFile">Public funded gift record (JSON)</label><input type="file" id="giftFile" accept=".json,application/json">
+<label for="psbtFile">Release PSBT list (JSON)</label><input type="file" id="psbtFile" accept=".json,application/json">
+<button id="prepare" type="button">Validate and prepare recipient handoff</button>
+<p id="status" role="status">No customer handoff prepared.</p>
+</section>
+<section id="ready" hidden>
+<h2>Customer handoff ready</h2>
+<p id="count"></p>
+<p>Send the JSON file to the recipient. Communicate this SHA-256 fingerprint through a <strong>separate, authenticated channel</strong>. Do not send both together and call that independent verification.</p>
+<p class="mono" id="digest"></p>
+<button id="copyDigest" type="button">Copy fingerprint</button>
+<button id="download" type="button">Save recipient handoff JSON</button>
+<p>The fingerprint detects changes to the package. It does not authenticate the customer, prove funding on-chain or authorize signing.</p>
+</section>
+</main>
+<script src="./browser-integration/professional-verifier.bundle.js"></script>
+<script>
+'use strict';
+let packageData=null;let generation=0;
+const $=id=>document.getElementById(id);
+function clear(){generation++;packageData=null;$('ready').hidden=true;$('digest').textContent='';}
+$('giftFile').addEventListener('change',clear);
+$('psbtFile').addEventListener('change',clear);
+$('prepare').addEventListener('click',async()=>{
+ clear();const current=generation;$('status').textContent='Checking funded release package…';
+ try{
+  const giftFile=$('giftFile').files?.[0],psbtFile=$('psbtFile').files?.[0];
+  if(!giftFile||!psbtFile||giftFile.size>500000||psbtFile.size>700000)
+   throw Error('Choose both JSON files, each within the size limit');
+  const [gift,psbts]=await Promise.all([giftFile.text(),psbtFile.text()]);
+  if(current!==generation)return;
+  const prepared=globalThis.bc1q21ProfessionalPrepareCustomerHandoff({
+   gift:JSON.parse(gift),psbts:JSON.parse(psbts)});
+  if(current!==generation)return;
+  packageData=prepared;
+  $('digest').textContent=prepared.sha256;
+  $('count').textContent=prepared.psbts.length+' independently checked funded release PSBT(s).';
+  $('ready').hidden=false;
+  $('status').textContent='PASS: all release PSBTs match the supplied funded gift record. Chain provenance and customer identity are not verified.';
+ }catch(error){if(current===generation)$('status').textContent='Rejected: '+String(error.message||error)}
+});
+$('copyDigest').addEventListener('click',async()=>{
+ if(!packageData)return;
+ try{await navigator.clipboard.writeText(packageData.sha256)}
+ catch{$('status').textContent='Clipboard unavailable. Copy the displayed fingerprint manually.'}
+});
+$('download').addEventListener('click',()=>{
+ if(!packageData)return;
+ const url=URL.createObjectURL(new Blob([JSON.stringify(packageData,null,2)+'\n'],{type:'application/json'}));
+ const a=document.createElement('a');a.href=url;a.download='professional-recipient-handoff-regtest.json';
+ document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+</script></body></html>
