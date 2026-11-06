@@ -56,4 +56,14 @@ await assert.rejects(()=>inspectFiveFundedRegtestReleases({
    return {...response,confirmations:response.confirmations+1};
   return response;
  }}),/UTXO confirmations differ/);
+let readCount=0;
+await assert.rejects(()=>inspectFiveFundedRegtestReleases({
+ gift,psbts,rpc:async(method,args)=>{
+  const response=await rpc(method,args);
+  // Five snapshots each sample the tip twice. Only the final batch read
+  // changes, simulating a reorganization after the last UTXO inspection.
+  if(method==='getbestblockhash'&&++readCount===11)
+   return 'f'.repeat(64);
+  return response;
+ }}),/chain tip changed after release checks/);
 console.log('PASS: real read-only Bitcoin Core checks all five funded unspent releases, CLTV maturity and rejects fabricated UTXO.');
