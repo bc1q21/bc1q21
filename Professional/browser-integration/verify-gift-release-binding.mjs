@@ -44,6 +44,30 @@ export function verifyGiftReleaseBinding({gift,release,approvedUnsignedBase64,ex
   if(prev.outs[release.fundingVout].script.toString('hex')!==release.fundingScriptHex)
    fail('Selected gift locking script mismatch');
  }
+ // The supplied funding output must actually commit to the PSBT redeem script.
+ // A matching outpoint alone does not establish that this PSBT can spend it.
+ const redeem=psbt.data.inputs[0]?.redeemScript;
+ if(!Buffer.isBuffer(redeem)||redeem.length<10)
+  fail('Approved PSBT redeem script missing');
+ const expectedLock=bitcoin.payments.p2sh({redeem:{output:redeem},
+  network:bitcoin.networks.regtest}).output;
+ if(!expectedLock||!prev.outs[release.fundingVout].script.equals(expectedLock))
+  fail('Approved PSBT redeem script does not match funded output');
+ const ops=bitcoin.script.decompile(redeem);
+ if(!ops||ops.length!==5||
+    ops[1]!==bitcoin.opcodes.OP_CHECKLOCKTIMEVERIFY||
+    ops[2]!==bitcoin.opcodes.OP_DROP||
+    !Buffer.isBuffer(ops[3])||ops[3].length!==33||
+    ops[4]!==bitcoin.opcodes.OP_CHECKSIG)
+  fail('Unexpected CLTV locking script');
+ let scriptLock;
+ try{scriptLock=bitcoin.script.number.decode(
+  Buffer.isBuffer(ops[0])?ops[0]:bitcoin.script.compile([ops[0]]),5)}
+ catch{fail('Invalid CLTV script locktime')}
+ if(scriptLock!==release.lockHeight)
+  fail('CLTV redeem script maturity mismatch');
+ if(prev.outs[release.fundingVout].value<=output.value)
+  fail('Release must reserve a positive mining fee');
  if(release.inputSats!==undefined){
   if(!Number.isSafeInteger(release.inputSats)||release.inputSats<1||
      prev.outs[release.fundingVout].value!==release.inputSats)
