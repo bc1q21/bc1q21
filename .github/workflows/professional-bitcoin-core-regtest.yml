@@ -10,6 +10,8 @@ on:
       - 'Professional/integrated-public-regtest-acceptance.mjs'
       - 'Professional/five-funded-recipient-regtest-acceptance.mjs'
       - 'Professional/customer-recipient-handoff.mjs'
+      - 'Professional/inspect-five-funded-regtest-releases.mjs'
+      - 'Professional/inspect-five-funded-regtest-releases.test.mjs'
       - 'Professional/customer-recipient-handoff.test.mjs'
       - 'Professional/recipient-customer-handoff.html'
       - 'Professional/customer-recipient-handoff.html'
@@ -76,6 +78,8 @@ jobs:
 
       - name: Fund five real CLTV releases and prepare recipient PSBTs
         run: node Professional/five-funded-recipient-regtest-acceptance.mjs
+      - name: Inspect all five funded releases against authenticated loopback Core read-only RPC
+        run: node Professional/inspect-five-funded-regtest-releases.test.mjs
       - name: Verify customer five-release package and independent commitment
         run: node Professional/customer-recipient-handoff.test.mjs
       - name: Execute genuine calendar-timestamp CLTV regtest acceptance
