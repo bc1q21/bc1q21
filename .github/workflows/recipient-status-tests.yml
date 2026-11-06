@@ -18,8 +18,44 @@ jobs:
     steps:
       - name: Check out repair branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-      - name: Calculate gift script SRI hash
-        run: openssl dgst -sha384 -binary Frontend/gift/gift-h08.js | openssl base64 -A
+      - name: Verify gift script SRI hash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const crypto = require('node:crypto');
+
+          const scriptPath = 'Frontend/gift/gift-h08.js';
+          const htmlPath = 'Frontend/gift/index.html';
+
+          const html = fs.readFileSync(htmlPath, 'utf8');
+          const tags = html.match(/<script\b[^>]*>/gi) || [];
+          const matching = tags.filter(tag =>
+            /\bsrc\s*=\s*["'](?:\.\/)?gift-h08\.js["']/i.test(tag)
+          );
+
+          if (matching.length !== 1) {
+            throw new Error('Expected exactly one gift-h08.js script tag');
+          }
+
+          const declared = matching[0].match(
+            /\bintegrity\s*=\s*["'](sha384-[A-Za-z0-9+/=]+)["']/i
+          );
+
+          if (!declared) {
+            throw new Error('Missing SHA-384 integrity declaration');
+          }
+
+          const actual = 'sha384-' + crypto
+            .createHash('sha384')
+            .update(fs.readFileSync(scriptPath))
+            .digest('base64');
+
+          if (declared[1] !== actual) {
+            throw new Error('SRI mismatch: gift-h08.js does not match index.html');
+          }
+
+          console.log('PASS: Gift script SRI hash matches HTML declaration');
+          NODE
       - name: Check JavaScript syntax
         run: node --check Frontend/gift/gift-h08.js
       - name: Run Lindsay claimed-status regression tests
