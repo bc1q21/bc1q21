@@ -12,6 +12,8 @@ on:
       - 'Professional/professional-recipient-release-bridge.test.mjs'
       - 'Professional/browser-integration/test-funded-recipient-qr-regtest.mjs'
       - 'Professional/browser-integration/browser-verifier-entry.mjs'
+      - 'Professional/browser-integration/select-public-gift-release.mjs'
+      - 'Professional/browser-integration/test-gift-release-binding.mjs'
       - 'Professional/recipient-gift-specific-prototype.html'
       - 'Professional/complete-recipient-regtest-release.mjs'
       - 'Professional/complete-recipient-regtest-release.test.mjs'
@@ -74,6 +76,8 @@ jobs:
           npm run --prefix Professional/browser-integration build
       - name: Reject forged and tampered recipient Jade return files
         run: node --test Professional/complete-recipient-regtest-release.test.mjs
+      - name: Verify selected gift release and reject duplicated outpoints
+        run: cd Professional/browser-integration && node test-gift-release-binding.mjs
       - name: Browser test funded recipient gift and unsigned Jade QR
         run: cd Professional/browser-integration && node test-funded-recipient-qr-regtest.mjs
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
