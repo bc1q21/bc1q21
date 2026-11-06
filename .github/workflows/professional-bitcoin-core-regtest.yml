@@ -14,6 +14,7 @@ on:
       - 'Professional/recipient-customer-handoff.html'
       - 'Professional/customer-recipient-handoff.html'
       - 'Professional/browser-integration/test-customer-to-recipient-handoff-browser.mjs'
+      - 'Professional/browser-integration/test-recipient-camera-permission-regtest.mjs'
       - 'Professional/browser-integration/test-customer-handoff-browser.mjs'
       - 'Professional/browser-integration/test-five-funded-recipient-regtest.mjs'
       - 'Professional/professional-recipient-release-bridge.mjs'
@@ -93,6 +94,8 @@ jobs:
         run: cd Professional/browser-integration && node test-gift-release-binding.mjs
       - name: Browser test funded recipient gift and unsigned Jade QR
         run: cd Professional/browser-integration && node test-funded-recipient-qr-regtest.mjs
+      - name: Browser rejects camera permission safely and resets stale release state
+        run: cd Professional/browser-integration && node test-recipient-camera-permission-regtest.mjs
       - name: Browser customer prepares funded handoff and recipient verifies digest
         run: cd Professional/browser-integration && node test-customer-to-recipient-handoff-browser.mjs
       - name: Browser verify independent customer handoff digest and all five PSBTs
