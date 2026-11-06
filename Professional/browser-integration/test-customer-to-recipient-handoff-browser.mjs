@@ -32,6 +32,17 @@ try{
   document.getElementById('status').textContent));
  assert.match(await recipient.locator('#status').textContent(),/PASS: package matches/);
  assert.equal(await recipient.locator('#releaseButtons button').count(),5);
+ // Customer identity must not be inferred from an internally valid digest.
+ assert.match(await recipient.locator('#releaseSummary').textContent(),/NOT verified/);
+ // A changed digest immediately invalidates the recipient's previously
+ // inspected package, removes every release download and requires reinspection.
+ await recipient.locator('#independentDigest').fill('0'.repeat(64));
+ assert.equal(await recipient.locator('#releaseDownloads').isHidden(),true);
+ assert.equal(await recipient.locator('#releaseButtons button').count(),0);
+ await recipient.locator('#inspect').click();
+ await recipient.waitForFunction(()=>/Rejected customer package/.test(
+  document.getElementById('status').textContent));
+ assert.equal(await recipient.locator('#releaseDownloads').isHidden(),true);
  await recipient.close();
  await page.locator('#psbtFile').setInputFiles({
   name:'wrong-list.json',mimeType:'application/json',
