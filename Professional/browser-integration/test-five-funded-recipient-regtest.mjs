@@ -24,8 +24,9 @@ try{
   const evidence=psbts[n-1];
   await page.locator('#giftPsbtFile').setInputFiles({
    name:'release-'+n+'.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(evidence))});
-  await page.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record/.test(
+  await page.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record|Rejected gift PSBT/.test(
    document.getElementById('giftCameraStatus').textContent));
+  assert.match(await page.locator('#giftCameraStatus').textContent(),/Selected gift PSBT matches supplied public gift record/);
   assert.equal(await page.locator('#showUnsignedQr').isEnabled(),true);
   assert.equal(await page.locator('#saveVerifiedJadePsbt').isDisabled(),true);
   assert.equal(await page.locator('#sign').isDisabled(),true);
