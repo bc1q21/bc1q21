@@ -102,6 +102,16 @@ assert.match(
   recipientEvidence.expectedApprovedSha256,
   /^[0-9a-f]{64}$/
 );
+assert.equal(recipientEvidence.publicGift.fundingAddress, handoff.fundingAddress);
+assert.equal(recipientEvidence.publicGift.releases.length, 1);
+assert.equal(recipientEvidence.publicRelease.fundingTxid, txid);
+assert.equal(recipientEvidence.publicRelease.fundingVout, vout);
+assert.equal(recipientEvidence.publicRelease.lockHeight, locktime);
+assert.equal(recipientEvidence.publicRelease.inputSats, inputSats);
+assert.equal(recipientEvidence.publicRelease.amountSats, inputSats - 1000);
+assert.equal(recipientEvidence.publicRelease.fundingScriptHex, p2sh.output.toString('hex'));
+assert.equal(recipientEvidence.publicRelease.destinationScriptHex, dest.output.toString('hex'));
+assert.equal(recipientEvidence.publicRelease.signingAuthorized, false);
 
 console.log(
   'PASS: funded regtest release builder produces recipient PSBT evidence.'
