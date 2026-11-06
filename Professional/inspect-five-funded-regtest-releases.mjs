@@ -63,12 +63,16 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
   if(toSats(txout.value)!==record.inputSats||
     txout.scriptPubKey?.hex!==record.fundingScriptHex)
    fail('Core UTXO value or locking script differs from release '+i);
-  if(snapshot.coreEvidence.transaction.vout?.[record.fundingVout]?.scriptPubKey?.hex!==
-    record.fundingScriptHex)fail('Confirmed transaction output script mismatch '+i);
+  const confirmedOutput=snapshot.coreEvidence.transaction.vout?.[record.fundingVout];
+  if(confirmedOutput?.scriptPubKey?.hex!==record.fundingScriptHex)
+   fail('Confirmed transaction output script mismatch '+i);
+  if(toSats(confirmedOutput.value)!==record.inputSats)
+   fail('Confirmed transaction output amount mismatch '+i);
   if(!Number.isSafeInteger(txout.confirmations)||txout.confirmations<1)
    fail('Release funding not confirmed '+i);
   const tip=snapshot.chainTip;
-  // BIP65/BIP113 maturity is evaluated against the next block height or\n  // the verified tip median-time-past, never against the local wall clock.
+  // BIP65/BIP113 maturity is evaluated against the next block height or
+  // the verified tip median-time-past, never against the local wall clock.
   const maturity=evaluateProfessionalCltvMaturity({
    locktime:record.lockHeight,tipHeight:tip.blocks,
    medianTimePast:tip.mediantime
