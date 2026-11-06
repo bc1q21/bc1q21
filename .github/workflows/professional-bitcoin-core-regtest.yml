@@ -13,6 +13,8 @@ on:
       - 'Professional/browser-integration/test-funded-recipient-qr-regtest.mjs'
       - 'Professional/browser-integration/browser-verifier-entry.mjs'
       - 'Professional/recipient-gift-specific-prototype.html'
+      - 'Professional/complete-recipient-regtest-release.mjs'
+      - 'Professional/complete-recipient-regtest-release.test.mjs'
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
       - 'Professional/option-b-two-funded-core-acceptance.mjs'
       - 'Professional/verify-calendar-jade-return.mjs'
@@ -69,6 +71,8 @@ jobs:
         run: |
           npm install --prefix Professional/browser-integration --ignore-scripts --no-package-lock
           npm run --prefix Professional/browser-integration build
+      - name: Reject forged and tampered recipient Jade return files
+        run: node --test Professional/complete-recipient-regtest-release.test.mjs
       - name: Browser test funded recipient gift and unsigned Jade QR
         run: cd Professional/browser-integration && node test-funded-recipient-qr-regtest.mjs
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
