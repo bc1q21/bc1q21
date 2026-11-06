@@ -15,6 +15,7 @@ on:
       - 'Professional/browser-integration/test-funded-recipient-qr-regtest.mjs'
       - 'Professional/browser-integration/browser-verifier-entry.mjs'
       - 'Professional/browser-integration/select-public-gift-release.mjs'
+      - 'Professional/browser-integration/verify-gift-release-binding.mjs'
       - 'Professional/browser-integration/test-gift-release-binding.mjs'
       - 'Professional/recipient-gift-specific-prototype.html'
       - 'Professional/complete-recipient-regtest-release.mjs'
