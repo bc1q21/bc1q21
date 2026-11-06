@@ -10,6 +10,12 @@ assert.equal(maturity({locktime:1735689600,tipHeight:999999,medianTimePast:17356
 assert.equal(maturity({locktime:1735689600,tipHeight:999999,medianTimePast:1735689601}).maturedForNextBlock,true);
 assert.equal(maturity({locktime:1735689600,tipHeight:999999,medianTimePast:1735689601}).lockType,'timestamp');
 assert.throws(()=>maturity({locktime:-1,tipHeight:100,medianTimePast:100}),/Invalid locktime/);
+assert.equal(maturity({locktime:500000000,tipHeight:500000000,medianTimePast:499999999}).lockType,'timestamp');
+assert.equal(maturity({locktime:2147483648,tipHeight:100,medianTimePast:2147483647}).maturedForNextBlock,false);
+assert.equal(maturity({locktime:2147483648,tipHeight:100,medianTimePast:2147483649}).maturedForNextBlock,true);
+assert.equal(maturity({locktime:0xffffffff,tipHeight:100,medianTimePast:0xffffffff}).maturedForNextBlock,false);
+assert.throws(()=>maturity({locktime:0x100000000,tipHeight:100,medianTimePast:100}),/Invalid locktime/);
+assert.throws(()=>maturity({locktime:500000000,tipHeight:100,medianTimePast:NaN}),/Invalid locktime/);
 const gift=JSON.parse(readFileSync('Professional/artifacts/five-funded-recipient-gift-regtest.json','utf8'));
 const psbts=JSON.parse(readFileSync('Professional/artifacts/five-funded-recipient-psbts-regtest.json','utf8'));
 const rpc=createLocalProfessionalRegtestInspector({
