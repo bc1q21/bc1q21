@@ -22,6 +22,9 @@ assert.equal(result.canBroadcast,false);
 assert.equal(result.releases.every(x=>x.fundedConfirmedUnspent&&x.coreUtxoMatches),true);
 assert.equal(new Set(result.releases.map(x=>x.txid+':'+x.vout)).size,5);
 assert.equal(result.releases.every(x=>x.maturedForNextBlock),true);
+assert.equal(result.releases.every(x=>x.lockType==='height'),true);
+assert.equal(result.releases.every(x=>x.signingAuthorized===false&&x.canBroadcast===false),true);
+assert.equal(result.releases.every(x=>x.locktime>=0),true);
 await assert.rejects(()=>inspectFiveFundedRegtestReleases({
  gift:{...gift,releases:gift.releases.map((r,i)=>i===0?{...r,inputSats:r.inputSats+1}:r)},
  psbts,rpc}),/funding amount mismatch/);
