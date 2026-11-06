@@ -53,6 +53,11 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
   const tip=snapshot.chainTip;
   // Height-based CLTV becomes eligible in the *next* block at lockHeight;
   // a current tip of lockHeight-1 may admit the spend into the next block.
+  // This inspector handles height-based CLTV only. Timestamp locks need
+  // Bitcoin's median-time-past (BIP113), not wall-clock time or block height.
+  if(!Number.isSafeInteger(record.lockHeight)||record.lockHeight<0||
+     record.lockHeight>=500000000)
+   fail('Height-based CLTV required; timestamp maturity needs median-time-past');
   const nextBlockHeight=tip.blocks+1;
   const maturedForNextBlock=nextBlockHeight>=record.lockHeight;
   checks.push(Object.freeze({
