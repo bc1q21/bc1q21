@@ -11,6 +11,8 @@ on:
       - 'Professional/professional-recipient-release-bridge.mjs'
       - 'Professional/professional-recipient-release-bridge.test.mjs'
       - 'Professional/browser-integration/test-funded-recipient-qr-regtest.mjs'
+      - 'Professional/browser-integration/browser-verifier-entry.mjs'
+      - 'Professional/recipient-gift-specific-prototype.html'
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
       - 'Professional/option-b-two-funded-core-acceptance.mjs'
       - 'Professional/verify-calendar-jade-return.mjs'
