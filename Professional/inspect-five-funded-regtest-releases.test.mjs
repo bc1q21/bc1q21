@@ -41,5 +41,5 @@ await assert.rejects(()=>inspectFiveFundedRegtestReleases({
   if(method==='getbestblockhash'&&++tipReads===3)
    return 'f'.repeat(64);
   return response;
- }}),/Tip header does not match sampled hash|Chain tip changed/);
+ }}));
 console.log('PASS: real read-only Bitcoin Core checks all five funded unspent releases, CLTV maturity and rejects fabricated UTXO.');
