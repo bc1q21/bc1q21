@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {inspectFiveFundedRegtestReleases,createLocalProfessionalRegtestInspector} from './inspect-five-funded-regtest-releases.mjs';
+import {inspectFiveFundedRegtestReleases,createLocalProfessionalRegtestInspector,evaluateProfessionalCltvMaturity} from './inspect-five-funded-regtest-releases.mjs';
+const maturity=evaluateProfessionalCltvMaturity;
+assert.equal(maturity({locktime:110,tipHeight:108,medianTimePast:2000000000}).maturedForNextBlock,false);
+assert.equal(maturity({locktime:110,tipHeight:109,medianTimePast:2000000000}).maturedForNextBlock,false);
+assert.equal(maturity({locktime:110,tipHeight:110,medianTimePast:2000000000}).maturedForNextBlock,true);
+assert.equal(maturity({locktime:1735689600,tipHeight:999999,medianTimePast:1735689599}).maturedForNextBlock,false);
+assert.equal(maturity({locktime:1735689600,tipHeight:999999,medianTimePast:1735689600}).maturedForNextBlock,false);
+assert.equal(maturity({locktime:1735689600,tipHeight:999999,medianTimePast:1735689601}).maturedForNextBlock,true);
+assert.equal(maturity({locktime:1735689600,tipHeight:999999,medianTimePast:1735689601}).lockType,'timestamp');
+assert.throws(()=>maturity({locktime:-1,tipHeight:100,medianTimePast:100}),/Invalid locktime/);
 const gift=JSON.parse(readFileSync('Professional/artifacts/five-funded-recipient-gift-regtest.json','utf8'));
 const psbts=JSON.parse(readFileSync('Professional/artifacts/five-funded-recipient-psbts-regtest.json','utf8'));
 const rpc=createLocalProfessionalRegtestInspector({
