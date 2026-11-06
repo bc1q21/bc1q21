@@ -9,6 +9,8 @@ on:
       - 'Professional/bitcoin-core-regtest-acceptance.mjs'
       - 'Professional/integrated-public-regtest-acceptance.mjs'
       - 'Professional/five-funded-recipient-regtest-acceptance.mjs'
+      - 'Professional/customer-recipient-handoff.mjs'
+      - 'Professional/customer-recipient-handoff.test.mjs'
       - 'Professional/browser-integration/test-five-funded-recipient-regtest.mjs'
       - 'Professional/professional-recipient-release-bridge.mjs'
       - 'Professional/professional-recipient-release-bridge.test.mjs'
@@ -68,6 +70,8 @@ jobs:
 
       - name: Fund five real CLTV releases and prepare recipient PSBTs
         run: node Professional/five-funded-recipient-regtest-acceptance.mjs
+      - name: Verify customer five-release package and independent commitment
+        run: node Professional/customer-recipient-handoff.test.mjs
       - name: Execute genuine calendar-timestamp CLTV regtest acceptance
         run: node Professional/integrated-calendar-timestamp-core-acceptance.mjs
 
@@ -119,5 +123,6 @@ jobs:
             Professional/artifacts/recipient-confirmed-redemption-regtest.json
             Professional/artifacts/five-funded-recipient-gift-regtest.json
             Professional/artifacts/five-funded-recipient-psbts-regtest.json
+            Professional/artifacts/five-release-customer-handoff-regtest.json
             Professional/artifacts/calendar-regtest-chain/
           retention-days: 7
