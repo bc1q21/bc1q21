@@ -15,6 +15,23 @@ const toSats=btc=>{
   fail('Imprecise Core BTC amount');
  return sats;
 };
+// BIP65/BIP113: a height lock is satisfied when the next block height is
+// strictly greater than nLockTime; timestamp locks use the prior block's
+// median-time-past, also strictly greater than nLockTime.
+export function evaluateProfessionalCltvMaturity({locktime,tipHeight,medianTimePast}){
+ if(!Number.isSafeInteger(locktime)||locktime<0||locktime>0xffffffff||
+    !Number.isSafeInteger(tipHeight)||tipHeight<0||
+    !Number.isSafeInteger(medianTimePast)||medianTimePast<0)
+  fail('Invalid locktime or verified chain tip');
+ const timestampLock=locktime>=500000000;
+ return Object.freeze({
+  locktime,lockType:timestampLock?'timestamp':'height',
+  nextBlockHeight:tipHeight+1,medianTimePast,
+  maturedForNextBlock:timestampLock
+   ?medianTimePast>locktime
+   :tipHeight+1>locktime
+ });
+}
 export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
  if(typeof rpc!=='function')fail('Authenticated local read-only Core RPC required');
  if(!gift||!Array.isArray(gift.releases)||!Array.isArray(psbts)||
@@ -53,18 +70,17 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
   const tip=snapshot.chainTip;
   // Height-based CLTV becomes eligible in the *next* block at lockHeight;
   // a current tip of lockHeight-1 may admit the spend into the next block.
-  // This inspector handles height-based CLTV only. Timestamp locks need
-  // Bitcoin's median-time-past (BIP113), not wall-clock time or block height.
-  if(!Number.isSafeInteger(record.lockHeight)||record.lockHeight<0||
-     record.lockHeight>=500000000)
-   fail('Height-based CLTV required; timestamp maturity needs median-time-past');
-  const nextBlockHeight=tip.blocks+1;
-  const maturedForNextBlock=nextBlockHeight>=record.lockHeight;
+  const maturity=evaluateProfessionalCltvMaturity({
+   locktime:record.lockHeight,tipHeight:tip.blocks,
+   medianTimePast:tip.mediantime
+  });
+  const {nextBlockHeight,maturedForNextBlock}=maturity;
   checks.push(Object.freeze({
    releaseNumber:i,txid:release.fundingTxid,vout:release.fundingVout,
    fundedConfirmedUnspent:true,coreUtxoMatches:true,
    confirmations:txout.confirmations,lockHeight:record.lockHeight,
-   nextBlockHeight,maturedForNextBlock,
+   nextBlockHeight,medianTimePast:tip.mediantime,
+   lockType:maturity.lockType,maturedForNextBlock,
    signingAuthorized:false,canBroadcast:false
   }));
  }
