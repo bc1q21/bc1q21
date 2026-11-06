@@ -12,7 +12,7 @@ function clear(){
 document.getElementById('customerPackage').addEventListener('change',clear);
 document.getElementById('independentDigest').addEventListener('input',clear);
 document.getElementById('inspect').addEventListener('click',async()=>{
- clear();const status=document.getElementById('status');const file=document.getElementById('customerPackage').files?.[0];
+ clear();const status=document.getElementById('status');status.textContent='Inspecting customer package…';const file=document.getElementById('customerPackage').files?.[0];
  try{
   if(!file||file.size>700000)throw Error('Choose a customer package smaller than 700 KB');
   const data=JSON.parse(await file.text());
