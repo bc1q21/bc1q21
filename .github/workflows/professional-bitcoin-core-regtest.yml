@@ -15,6 +15,7 @@ on:
       - 'Professional/customer-recipient-handoff.html'
       - 'Professional/browser-integration/test-customer-to-recipient-handoff-browser.mjs'
       - 'Professional/browser-integration/test-recipient-camera-permission-regtest.mjs'
+      - 'Professional/recipient-jade-signed-camera.browser.mjs'
       - 'Professional/browser-integration/test-customer-handoff-browser.mjs'
       - 'Professional/browser-integration/test-five-funded-recipient-regtest.mjs'
       - 'Professional/professional-recipient-release-bridge.mjs'
