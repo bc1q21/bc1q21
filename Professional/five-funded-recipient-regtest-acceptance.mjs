@@ -50,7 +50,7 @@ await rpc('generatetoaddress',[1,miner]);
 const funded=bitcoin.Transaction.fromHex((await rpc('gettransaction',[txid],wallet)).hex);
 const fundingTxHex=funded.__toBuffer(undefined,undefined,false).toString('hex');
 assert.equal(bitcoin.Transaction.fromHex(fundingTxHex).getId(),txid);
-const gift={fundingAddress:'bc1q21-professional-five-release-regtest',releases:[]};
+const gift={fundingAddress:outputs[0].p2sh.address,releases:[]};
 const evidences=[];
 for(let i=0;i<5;i++){
  const output=outputs[i];
