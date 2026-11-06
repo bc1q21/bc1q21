@@ -50,7 +50,7 @@ try{
    getUserMedia:async options=>{
     calls.push(options);
     if(calls.length===1)throw new DOMException('Rear camera unavailable','NotFoundError');
-    return {getTracks:()=>[{stop(){}}]};
+    return new MediaStream();
    }
   }});
   HTMLMediaElement.prototype.play=async function(){};
