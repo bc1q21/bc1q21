@@ -89,7 +89,7 @@ async function check(label,raw,allowed){
 }
 
 const {validateProfessionalRecipientSignedReturn,
- broadcastVerifiedProfessionalRegtestRelease} =
+ broadcastVerifiedProfessionalRegtestRelease,confirmProfessionalRegtestRedemption} =
  await import('./complete-recipient-regtest-release.mjs');
 
 const recipientEvidence = prepareRecipientReleaseEvidence({
@@ -175,4 +175,9 @@ await rpc('generatetoaddress',[1,miningAddress]);
 const confirmed=await rpc('getrawtransaction',[finalized.txid,true]);
 assert.ok(confirmed.confirmations>=1,'Recipient redemption not confirmed');
 assert.equal(await rpc('gettxout',[txid,vout]),null,'Redeemed gift output remains unspent');
+const receipt=await confirmProfessionalRegtestRedemption({fundingTxid:txid,fundingVout:vout,releaseTxid:finalized.txid});
+assert.equal(receipt.confirmed,true);
+assert.ok(receipt.confirmations>=1);
+await assert.rejects(confirmProfessionalRegtestRedemption({fundingTxid:txid,fundingVout:vout,releaseTxid:finalized.txid,expectedConfirmations:9999}),/not sufficiently confirmed/);
+await assert.rejects(confirmProfessionalRegtestRedemption({fundingTxid:'00'.repeat(32),fundingVout:vout,releaseTxid:finalized.txid}),/does not spend selected gift output/);
 console.log('PASS: funded gift -> synthetic Jade-compatible PSBT -> signed return -> regtest broadcast -> confirmed redemption.');
