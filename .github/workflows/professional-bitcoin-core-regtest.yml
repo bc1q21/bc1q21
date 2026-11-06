@@ -10,6 +10,7 @@ on:
       - 'Professional/integrated-public-regtest-acceptance.mjs'
       - 'Professional/professional-recipient-release-bridge.mjs'
       - 'Professional/professional-recipient-release-bridge.test.mjs'
+      - 'Professional/browser-integration/test-funded-recipient-qr-regtest.mjs'
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
       - 'Professional/option-b-two-funded-core-acceptance.mjs'
       - 'Professional/verify-calendar-jade-return.mjs'
@@ -62,6 +63,8 @@ jobs:
         run: node --check Professional/verify-calendar-jade-return.mjs
       - name: Install isolated Chromium
         run: npx --prefix Professional playwright install chromium
+      - name: Browser test funded recipient gift and unsigned Jade QR
+        run: cd Professional/browser-integration && node test-funded-recipient-qr-regtest.mjs
       - name: Verify genuine two-output Option B funded gift link with Bitcoin Core
         run: node Professional/option-b-two-funded-core-acceptance.mjs
       - name: Reject genuine Jade signature from another gift at calendar return CLI
