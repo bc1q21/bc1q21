@@ -103,5 +103,8 @@ jobs:
             Professional/artifacts/two-release-calendar-jade-handoff.json
             Professional/artifacts/two-release-calendar-unsigned-qr-frames.txt
             Professional/artifacts/two-release-calendar-recipient-preview.html
+            Professional/artifacts/recipient-public-gift-regtest.json
+            Professional/artifacts/recipient-unsigned-psbt-regtest.json
+            Professional/artifacts/recipient-confirmed-redemption-regtest.json
             Professional/artifacts/calendar-regtest-chain/
           retention-days: 7
