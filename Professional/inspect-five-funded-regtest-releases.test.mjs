@@ -28,4 +28,18 @@ await assert.rejects(()=>inspectFiveFundedRegtestReleases({
   if(method==='gettxout'&&args[1]===gift.releases[0].fundingVout)return null;
   return rpc(method,args);
  }}),/absent or spent/);
+assert.match(result.consistentChainTip,/^[a-f0-9]{64}$/);
+await assert.rejects(()=>inspectFiveFundedRegtestReleases({
+ gift,psbts:[psbts[0],psbts[0],...psbts.slice(2)],rpc
+}),/Duplicate or invalid release PSBT number/);
+let tipReads=0;
+await assert.rejects(()=>inspectFiveFundedRegtestReleases({
+ gift,psbts,rpc:async(method,args)=>{
+  const response=await rpc(method,args);
+  // Return a valid but different tip on the next release's first read.
+  // The underlying Core snapshot is stable within each individual read.
+  if(method==='getbestblockhash'&&++tipReads===3)
+   return 'f'.repeat(64);
+  return response;
+ }}),/Tip header does not match sampled hash|Chain tip changed/);
 console.log('PASS: real read-only Bitcoin Core checks all five funded unspent releases, CLTV maturity and rejects fabricated UTXO.');
