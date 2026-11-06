@@ -88,6 +88,10 @@ async function check(label,raw,allowed){
  console.log(JSON.stringify({label,allowed:results[0].allowed,reason:results[0]['reject-reason']??null}));
 }
 
+const {validateProfessionalRecipientSignedReturn,
+ broadcastVerifiedProfessionalRegtestRelease} =
+ await import('./complete-recipient-regtest-release.mjs');
+
 const recipientEvidence = prepareRecipientReleaseEvidence({
   publicHandoff: handoff,
   funding: details,
@@ -131,10 +135,44 @@ console.log(
   'PASS: funded regtest release builder produces recipient PSBT evidence.'
 );
 
+// Disposable synthetic signer models Jade's signed PSBT return; no hardware
+// secrets are accessed. Validate the exact same file contract as the browser.
+const signedPsbt=bitcoin.Psbt.fromBase64(recipientEvidence.approvedUnsignedBase64);
+const signatureDigest=baseTx.hashForSignature(0,redeem,bitcoin.Transaction.SIGHASH_ALL);
+const syntheticSignature=Buffer.from(bitcoin.script.signature.encode(
+ Buffer.from(secp256k1.sign(signatureDigest,privateKey).toCompactRawBytes()),
+ bitcoin.Transaction.SIGHASH_ALL));
+signedPsbt.updateInput(0,{partialSig:[{pubkey,signature:syntheticSignature}]});
+const signedReturn={
+ format:'bc1q21-professional-verified-jade-return-v1',network:'regtest',
+ releaseNumber:1,approvedUnsignedSha256:recipientEvidence.expectedApprovedSha256,
+ signedPsbtBase64:signedPsbt.toBase64(),signatureCryptographicallyVerified:true,
+ chainVerified:false,broadcast:false
+};
+const finalized=validateProfessionalRecipientSignedReturn({
+ gift:recipientEvidence.publicGift,
+ evidence:{releaseNumber:1,approvedUnsignedBase64:recipientEvidence.approvedUnsignedBase64,
+  expectedApprovedSha256:recipientEvidence.expectedApprovedSha256},
+ signedReturn
+});
+assert.equal(finalized.signatureCryptographicallyVerified,true);
+await check('Verified recipient signed-return transaction',finalized.rawTransactionHex,true);
+
 await check('Professional-builder funded regtest CLTV spend',signedTx(),true);
 await check('early locktime',signedTx({locktime:109}),false);
 await check('final sequence',signedTx({sequence:0xffffffff}),false);
 await check('bad signature',signedTx({corruptSignature:true}),false);
 await check('modified output',signedTx({modifyOutput:true}),false);
 await check('wrong redeem script',signedTx({wrongScript:true}),false);
-console.log('PASS: genuine regtest UTXO -> public-only Professional PSBT -> disposable signature -> Bitcoin Core acceptance. No broadcast.');
+// End-to-end disposable redemption: broadcast only on regtest, then mine
+// a confirmation and verify the exact approved outpoint is spent.
+const broadcast=await broadcastVerifiedProfessionalRegtestRelease(finalized.rawTransactionHex);
+assert.equal(broadcast.txid,finalized.txid);
+assert.equal(broadcast.broadcast,true);
+const mempool=await rpc('getmempoolentry',[finalized.txid]);
+assert.ok(mempool);
+await rpc('generatetoaddress',[1,miningAddress]);
+const confirmed=await rpc('getrawtransaction',[finalized.txid,true]);
+assert.ok(confirmed.confirmations>=1,'Recipient redemption not confirmed');
+assert.equal(await rpc('gettxout',[txid,vout]),null,'Redeemed gift output remains unspent');
+console.log('PASS: funded gift -> synthetic Jade-compatible PSBT -> signed return -> regtest broadcast -> confirmed redemption.');
