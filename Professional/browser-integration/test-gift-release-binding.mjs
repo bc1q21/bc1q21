@@ -58,6 +58,19 @@ assert.throws(()=>selectPublicGiftRelease({gift:{...publicGift,releases:[release
 // Multiple releases: selection must never silently substitute another outpoint.
 const second={...release,releaseNumber:2,fundingVout:release.fundingVout+1};
 const twoReleaseGift={fundingAddress:gift.fundingAddress,releases:[release,second]};
+assert.throws(()=>selectPublicGiftRelease({
+ gift:{...twoReleaseGift,releases:[release,{...second,fundingVout:release.fundingVout}]},
+ recipientLocator:gift.fundingAddress,releaseNumber:1
+}),/same funded output/);
+assert.throws(()=>selectPublicGiftRelease({
+ gift:{...twoReleaseGift,releases:[release,{...second,amountSats:second.inputSats+1}]},
+ recipientLocator:gift.fundingAddress,releaseNumber:1
+}),/destination or amount/);
+assert.throws(()=>selectPublicGiftRelease({
+ gift:{...twoReleaseGift,releases:[release,{...second,destinationScriptHex:'not-hex'}]},
+ recipientLocator:gift.fundingAddress,releaseNumber:1
+}),/destination or amount/);
+
 assert.equal(selectPublicGiftRelease({gift:twoReleaseGift,recipientLocator:gift.fundingAddress,releaseNumber:2}).fundingVout,second.fundingVout);
 assert.throws(()=>selectPublicGiftRelease({gift:{...twoReleaseGift,releases:[release,{...second,fundingTxid:'bad'}]},recipientLocator:gift.fundingAddress,releaseNumber:1}),/Invalid release funding evidence/);
 assert.throws(()=>selectPublicGiftRelease({gift:{...twoReleaseGift,releases:[release,{...second,releaseNumber:1}]},recipientLocator:gift.fundingAddress,releaseNumber:1}),/Duplicate/);
