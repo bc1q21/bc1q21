@@ -94,4 +94,21 @@ await assert.rejects(()=>inspectFiveFundedRegtestReleases({
    return 'f'.repeat(64);
   return response;
  }}),/chain tip changed after release checks/);
+await assert.rejects(()=>inspectFiveFundedRegtestReleases({
+ gift,psbts,rpc:async(method,args)=>{
+  const response=await rpc(method,args);
+  if(method==='getrawtransaction'&&args[0]===gift.releases[0].fundingTxid){
+   const vout=response.vout.map((output,i)=>i===gift.releases[0].fundingVout
+    ?{...output,scriptPubKey:{...output.scriptPubKey,hex:'a914'+'00'.repeat(20)+'87'}}:output);
+   return {...response,vout};
+  }
+  return response;
+ }}),/Confirmed transaction output script mismatch/);
+await assert.rejects(()=>inspectFiveFundedRegtestReleases({
+ gift,psbts,rpc:async(method,args)=>{
+  const response=await rpc(method,args);
+  if(method==='gettxout'&&args[1]===gift.releases[0].fundingVout)
+   return {...response,scriptPubKey:{...response.scriptPubKey,hex:'a914'+'11'.repeat(20)+'87'}};
+  return response;
+ }}),/Core UTXO value or locking script differs/);
 console.log('PASS: real read-only Bitcoin Core checks all five funded unspent releases, CLTV maturity and rejects fabricated UTXO.');
