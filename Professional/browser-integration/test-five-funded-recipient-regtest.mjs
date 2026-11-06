@@ -36,6 +36,13 @@ try{
   name:'wrong-release.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(psbts[4]))});
  await page.waitForFunction(()=>/Rejected gift PSBT/.test(document.getElementById('giftCameraStatus').textContent));
  assert.equal(await page.locator('#showUnsignedQr').isDisabled(),true);
+ await page.locator('#publicGiftFile').setInputFiles({
+  name:'duplicate-outpoint.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify({...gift,releases:gift.releases.map((release,index)=>
+   index===4?{...release,fundingVout:gift.releases[0].fundingVout}:release)}))});
+ await page.waitForFunction(()=>/Rejected:/.test(document.getElementById('giftRecordStatus').textContent));
+ assert.match(await page.locator('#giftRecordStatus').textContent(),/same funded output/);
+ assert.equal(await page.locator('#showUnsignedQr').isDisabled(),true);
  assert.deepEqual(errors,[]);
  console.log('PASS: browser independently selects five funded releases, validates each PSBT, rejects cross-release import.');
 }finally{await browser.close()}
