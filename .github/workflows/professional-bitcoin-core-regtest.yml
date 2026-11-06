@@ -15,6 +15,7 @@ on:
       - 'Professional/recipient-gift-specific-prototype.html'
       - 'Professional/complete-recipient-regtest-release.mjs'
       - 'Professional/complete-recipient-regtest-release.test.mjs'
+      - 'Professional/integrated-public-regtest-acceptance.mjs'
       - 'Professional/integrated-calendar-timestamp-core-acceptance.mjs'
       - 'Professional/option-b-two-funded-core-acceptance.mjs'
       - 'Professional/verify-calendar-jade-return.mjs'
