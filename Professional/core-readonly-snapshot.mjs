@@ -20,9 +20,19 @@ export async function collectProfessionalCoreSnapshot({rpc,txid,vout}) {
  assert.equal(transaction?.txid,txid,'Wrong funding transaction');
  assert.ok(hash(transaction.blockhash),'Funding transaction is not confirmed');
  const blockHeader=await rpc('getblockheader',[transaction.blockhash,true]);
+ assert.equal(blockHeader?.hash,transaction.blockhash,
+  'Funding block header does not match confirmed transaction');
+ assert.ok(Number.isSafeInteger(blockHeader.height)&&blockHeader.height>=0&&
+  blockHeader.height<=tip.height,'Invalid funding block height');
+ assert.ok(Number.isSafeInteger(transaction.confirmations)&&
+  transaction.confirmations>=1,'Funding transaction has no confirmations');
+ assert.equal(transaction.confirmations,tip.height-blockHeader.height+1,
+  'Funding confirmation depth differs from sampled chain tip');
  const txout=await rpc('gettxout',[txid,vout,false]);
  assert.ok(txout!==null&&txout!==undefined,'Funding outpoint absent or spent');
  assert.equal(txout.bestblock,start,'UTXO response tip differs from sampled tip');
+ assert.equal(txout.confirmations,transaction.confirmations,
+  'UTXO confirmations differ from confirmed transaction');
  const end=await rpc('getbestblockhash',[]);
  assert.equal(end,start,'Chain tip changed during evidence collection; retry');
  assert.equal(chainInfo.bestblockhash,start,'Chain info tip differs from sampled tip');
