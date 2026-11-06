@@ -12,7 +12,7 @@ assert.equal(verified.signingAuthorized,false);
 assert.equal(verified.creatorIdentityAuthenticated,false);
 assert.throws(()=>verifyProfessionalCustomerHandoff(pkg),/Independent authenticated digest/);
 assert.throws(()=>verifyProfessionalCustomerHandoff(pkg,'00'.repeat(32)),/differs/);
-assert.throws(()=>verifyProfessionalCustomerHandoff({...pkg,psbts:[...pkg.psbts].reverse()},pkg.sha256),/differs/);
+assert.throws(()=>verifyProfessionalCustomerHandoff({...pkg,psbts:pkg.psbts.map((e,i)=>i===4?{...e,expectedApprovedSha256:'00'.repeat(32)}:e)},pkg.sha256),/digest mismatch/);
 assert.throws(()=>prepareProfessionalCustomerHandoff({gift:{...gift,releases:gift.releases.slice(1)},psbts}),/Invalid gift release package/);
 assert.throws(()=>prepareProfessionalCustomerHandoff({gift,psbts:psbts.map((e,i)=>
  i===1?{...e,approvedUnsignedBase64:psbts[0].approvedUnsignedBase64}:e)}),/digest mismatch|funding mismatch/);
