@@ -67,7 +67,37 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
  });
 })();
 
+// Display-only planning state. Never used as a public gift record or PSBT authorization.
 let datePreviewGeneration = 0;
+let activeDatePreview = null;
+function renderDatePreview(gifts) {
+  const total = gifts.reduce((sum, gift) => sum + BigInt(gift.valueSats), 0n);
+  document.getElementById('giftTotal').textContent = (Number(total) / 1e8).toFixed(8) + ' BTC';
+  document.getElementById('giftTotalContext').textContent = total.toLocaleString('en-US') +
+    ' sats planned across ' + gifts.length + ' releases — UNFUNDED, NOT VERIFIED';
+  const schedule = document.getElementById('giftScheduleRows');
+  schedule.replaceChildren();
+  const select = document.getElementById('selectedRelease');
+  select.replaceChildren(new Option('Select release', ''));
+  for (const [index, gift] of gifts.entries()) {
+    const number = index + 1;
+    const tr = document.createElement('tr');
+    for (const value of [number, gift.date, gift.valueSats.toLocaleString('en-US') + ' sats', 'Unfunded']) {
+      const td = document.createElement('td');
+      td.textContent = String(value);
+      tr.append(td);
+    }
+    schedule.append(tr);
+    select.add(new Option('Release ' + number + ' — ' + gift.valueSats.toLocaleString('en-US') +
+      ' sats (unfunded preview)', String(number)));
+  }
+  document.getElementById('scheduleProvenance').textContent =
+    'Planned dates and amounts from a locally imported unsigned regtest preview. ' +
+    'No confirmed funding, authenticated gift record, chain verification, maturity or spending authorization.';
+  select.value = '';
+  select.dispatchEvent(new Event('change'));
+}
+
 document.getElementById('dateGiftPreviewFile').addEventListener('change', async event => {
   const token = ++datePreviewGeneration;
   const status = document.getElementById('dateGiftPreviewStatus');
@@ -75,6 +105,8 @@ document.getElementById('dateGiftPreviewFile').addEventListener('change', async 
   details.hidden = true;
   details.replaceChildren();
   status.textContent = 'No date-based preview loaded.';
+  activeDatePreview = null;
+  if (!globalThis.bc1q21ProfessionalPublicGiftRecord) renderPublicReleaseOptions(null);
   const file = event.target.files?.[0];
   if (!file) return;
   try {
@@ -154,6 +186,14 @@ document.getElementById('dateGiftPreviewFile').addEventListener('change', async 
     warning.className = 'warn';
     warning.textContent = 'UNFUNDED DIAGNOSTIC ONLY. No confirmed gift, claim authorization, signing or broadcast.';
     details.append(warning);
+    // Keep imported planning data separate from the gift-specific verification path.
+    // A preview must never supply a bc1q21ProfessionalPublicGiftRecord.
+    globalThis.bc1q21ProfessionalPublicGiftRecord = null;
+    document.getElementById('giftRecordSource').textContent = 'No record loaded';
+    document.getElementById('giftRecordStatus').textContent =
+      'No authenticated public gift record loaded. Preview is unfunded.';
+    activeDatePreview = gifts.map(g => ({date:g.date, valueSats:g.valueSats}));
+    renderDatePreview(activeDatePreview);
     details.hidden = false;
     status.textContent = 'Date-based unsigned regtest preview loaded. Not chain-verified or claimable.';
   } catch (error) {
@@ -195,6 +235,13 @@ document.getElementById('selectedRelease').addEventListener('change',event=>{
  document.getElementById('coreUtxoStatus').textContent='No Core response inspected. Imported JSON cannot establish trusted RPC provenance.';
  document.getElementById('utxoEvidenceStatus').textContent='No trusted Bitcoin Core UTXO evidence connected. Signing remains disabled.';
  if(!n){label.textContent='No release selected. Signing remains locked.';return;}
+ if(activeDatePreview && !globalThis.bc1q21ProfessionalPublicGiftRecord){
+  const planned=activeDatePreview[n-1];
+  if(!planned){label.textContent='Invalid preview release. Signing remains locked.';return;}
+  label.textContent='Release '+n+' planned for '+planned.date+' ('+
+   planned.valueSats.toLocaleString('en-US')+' sats). UNFUNDED PREVIEW ONLY; signing disabled.';
+  return;
+ }
  label.textContent='Release '+n+' selected for review only. Gift-specific signing is not enabled.';
  // Public metadata is deliberately not inferred from the gift URL or mock schedule.
  // Integration requires an independently validated public gift record.
@@ -274,6 +321,7 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
  const importToken=++publicGiftImportGeneration;
  const status=document.getElementById('giftRecordStatus');
  globalThis.bc1q21ProfessionalPublicGiftRecord=null;
+ activeDatePreview=null;
  renderPublicReleaseOptions(null);
  document.getElementById('giftRecordSource').textContent='No record loaded';
  document.getElementById('selectedReleaseEvidence').textContent='No gift-specific transaction evidence loaded.';
@@ -286,6 +334,9 @@ document.getElementById('publicGiftFile').addEventListener('change',async event=
   const locator=new URLSearchParams(location.search).get('a')||new URLSearchParams(location.search).get('address')||'';
   if(!Array.isArray(record.releases)||record.releases.length===0)throw Error('No releases');
   for(const release of record.releases)globalThis.bc1q21ProfessionalSelectPublicGiftRelease({gift:record,recipientLocator:locator,releaseNumber:release.releaseNumber});
+  activeDatePreview=null;
+  document.getElementById('dateGiftPreviewDetails').hidden=true;
+  document.getElementById('dateGiftPreviewStatus').textContent='Planning preview superseded by imported public gift record (still unverified).';
   globalThis.bc1q21ProfessionalPublicGiftRecord=record;
   renderPublicReleaseOptions(record);
   document.getElementById('giftRecordSource').textContent='Local JSON file (untrusted)';
