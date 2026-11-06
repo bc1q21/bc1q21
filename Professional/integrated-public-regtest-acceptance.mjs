@@ -3,6 +3,7 @@
 // Never broadcast. No Jade, mainnet, seed phrase, or production funding.
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import bitcoin from 'bitcoinjs-lib';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { Buffer } from 'node:buffer';
@@ -113,6 +114,19 @@ assert.equal(recipientEvidence.publicRelease.fundingScriptHex, p2sh.output.toStr
 assert.equal(recipientEvidence.publicRelease.destinationScriptHex, dest.output.toString('hex'));
 assert.equal(recipientEvidence.publicRelease.signingAuthorized, false);
 
+mkdirSync('Professional/artifacts', { recursive: true });
+writeFileSync(
+  'Professional/artifacts/recipient-public-gift-regtest.json',
+  JSON.stringify(recipientEvidence.publicGift, null, 2) + '\n'
+);
+writeFileSync(
+  'Professional/artifacts/recipient-unsigned-psbt-regtest.json',
+  JSON.stringify({
+    releaseNumber: recipientEvidence.releaseNumber,
+    approvedUnsignedBase64: recipientEvidence.approvedUnsignedBase64,
+    expectedApprovedSha256: recipientEvidence.expectedApprovedSha256
+  }, null, 2) + '\n'
+);
 console.log(
   'PASS: funded regtest release builder produces recipient PSBT evidence.'
 );
