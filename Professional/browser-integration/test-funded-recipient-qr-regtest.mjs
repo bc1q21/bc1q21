@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import bitcoin from 'bitcoinjs-lib';
 const giftPath = resolve('../artifacts/recipient-public-gift-regtest.json');
 const evidencePath = resolve('../artifacts/recipient-unsigned-psbt-regtest.json');
 const gift = JSON.parse(readFileSync(giftPath, 'utf8'));
@@ -37,16 +38,24 @@ try {
   assert.equal(await page.locator('#hideUnsignedQr').isDisabled(), true);
   assert.equal(await page.locator('#sign').isDisabled(), true);
   assert.equal(await page.locator('#saveVerifiedJadePsbt').isDisabled(), true);
+  const unsigned=bitcoin.Psbt.fromBase64(evidence.approvedUnsignedBase64);
+  const tx=bitcoin.Transaction.fromBuffer(unsigned.data.globalMap.unsignedTx.toBuffer());
+  tx.ins[0].script=bitcoin.script.compile([Buffer.from('00','hex')]);
   const sampleReceipt={format:'bc1q21-professional-regtest-release-validated-v1',
    network:'regtest',releaseNumber:evidence.releaseNumber,
    signatureVerified:true,bitcoinCoreAccepted:true,
-   txid:gift.releases[0].fundingTxid,rawTransactionHex:'00',broadcast:false};
+   txid:tx.getId(),rawTransactionHex:tx.toHex(),broadcast:false};
   await page.locator('#redemptionReceiptFile').setInputFiles({
    name:'receipt.json',mimeType:'application/json',
    buffer:Buffer.from(JSON.stringify(sampleReceipt))});
   await page.waitForFunction(()=>/UNTRUSTED FILE/.test(
    document.getElementById('redemptionReceiptStatus').textContent));
   assert.equal(await page.locator('#sign').isDisabled(),true);
+  await page.locator('#redemptionReceiptFile').setInputFiles({
+   name:'wrong-gift-receipt.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify({...sampleReceipt,rawTransactionHex:tx.toHex().replace(/.$/,'0')}))});
+  await page.waitForFunction(()=>/Rejected redemption receipt/.test(
+   document.getElementById('redemptionReceiptStatus').textContent));
   await page.locator('#redemptionReceiptFile').setInputFiles({
    name:'invalid-receipt.json',mimeType:'application/json',
    buffer:Buffer.from(JSON.stringify({...sampleReceipt,network:'mainnet'}))});
