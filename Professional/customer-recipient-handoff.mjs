@@ -2,12 +2,12 @@
 // The package carries no signing key and is NOT authenticated merely because
 // its internally computed digest matches. Send digest through a separate,
 // independently authenticated channel before trusting the package.
-import {createHash} from 'node:crypto';
+import {sha256} from '@noble/hashes/sha256';
+import {Buffer} from 'buffer';
 import {selectPublicGiftRelease} from './browser-integration/select-public-gift-release.mjs';
 import {verifyGiftReleaseBinding} from './browser-integration/verify-gift-release-binding.mjs';
 const fail=message=>{throw Error('Professional customer handoff: '+message)};
-const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
+const digest=value=>Buffer.from(sha256(Buffer.from(JSON.stringify(value),'utf8'))).toString('hex');
 function normalize(gift,psbts){
  if(!gift||typeof gift!=='object'||Array.isArray(gift)||
   !Array.isArray(gift.releases)||!Array.isArray(psbts)||
