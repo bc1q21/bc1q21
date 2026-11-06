@@ -68,8 +68,7 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
   if(!Number.isSafeInteger(txout.confirmations)||txout.confirmations<1)
    fail('Release funding not confirmed '+i);
   const tip=snapshot.chainTip;
-  // Height-based CLTV becomes eligible in the *next* block at lockHeight;
-  // a current tip of lockHeight-1 may admit the spend into the next block.
+  // BIP65/BIP113 maturity is evaluated against the next block height or\n  // the verified tip median-time-past, never against the local wall clock.
   const maturity=evaluateProfessionalCltvMaturity({
    locktime:record.lockHeight,tipHeight:tip.blocks,
    medianTimePast:tip.mediantime
@@ -78,7 +77,7 @@ export async function inspectFiveFundedRegtestReleases({gift,psbts,rpc}){
   checks.push(Object.freeze({
    releaseNumber:i,txid:release.fundingTxid,vout:release.fundingVout,
    fundedConfirmedUnspent:true,coreUtxoMatches:true,
-   confirmations:txout.confirmations,lockHeight:record.lockHeight,
+   confirmations:txout.confirmations,locktime:record.lockHeight,
    nextBlockHeight,medianTimePast:tip.mediantime,
    lockType:maturity.lockType,maturedForNextBlock,
    signingAuthorized:false,canBroadcast:false
