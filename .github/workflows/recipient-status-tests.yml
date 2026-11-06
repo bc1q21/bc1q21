@@ -50,7 +50,7 @@ jobs:
             .update(fs.readFileSync(scriptPath))
             .digest('base64');
 
-          if (declared[1] !== actual) {
+          if (declared[1] !== actual + 'TEST') {
             throw new Error('SRI mismatch: gift-h08.js does not match index.html');
           }
 
