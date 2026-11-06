@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>bc1q21 Professional | Recipient handoff inspection</title><style>body{font:16px system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;line-height:1.55}input,button{font:inherit;padding:.5rem}label{display:block;margin-top:1rem}button{margin:.4rem}.mono{font-family:monospace;overflow-wrap:anywhere}section{padding:1rem;border:1px solid #999;margin:1rem 0}#releaseDownloads[hidden]{display:none}</style></head><body><main><h1>Professional recipient handoff</h1><p>Isolated Bitcoin Core regtest. No keys, no signing, no broadcast. Verify the SHA-256 digest through a <strong>separate authenticated channel</strong> with the customer before importing this package. A matching digest does not prove the customer's identity or the blockchain state.</p><section><label for="customerPackage">Customer package (JSON)</label><input id="customerPackage" type="file" accept=".json,application/json"><label for="independentDigest">SHA-256 digest received separately</label><input id="independentDigest" class="mono" type="text" size="65" maxlength="64" autocomplete="off" spellcheck="false"><button id="inspect" type="button">Inspect package</button><p id="status" role="status">No independently verified handoff loaded.</p></section><section id="releaseDownloads" hidden><h2>Verified package contents (not chain-verified)</h2><p id="releaseSummary"></p><button id="downloadGift" type="button">Save public gift record</button><div id="releaseButtons"></div><p>Open the recipient page with the public gift record, then import the unsigned PSBT for the release you intend to inspect. These files do not authorize signing.</p><a id="recipientLink" href="#">Open isolated recipient page</a></section></main><script src="./browser-integration/browser-verifier.bundle.js"></script><script>
+'use strict';
+let verified=null;
+function download(name,object){
+ const url=URL.createObjectURL(new Blob([JSON.stringify(object,null,2)+'\n'],{type:'application/json'}));
+ const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function clear(){
+ verified=null;document.getElementById('releaseDownloads').hidden=true;
+ document.getElementById('releaseButtons').replaceChildren();
+}
+document.getElementById('customerPackage').addEventListener('change',clear);
+document.getElementById('independentDigest').addEventListener('input',clear);
+document.getElementById('inspect').addEventListener('click',async()=>{
+ clear();const status=document.getElementById('status');const file=document.getElementById('customerPackage').files?.[0];
+ try{
+  if(!file||file.size>700000)throw Error('Choose a customer package smaller than 700 KB');
+  const data=JSON.parse(await file.text());
+  const digest=document.getElementById('independentDigest').value.trim().toLowerCase();
+  const result=globalThis.bc1q21ProfessionalVerifyCustomerHandoff(data,digest);
+  if(result.independentlySuppliedDigestMatches!==true)throw Error('Independent digest mismatch');
+  verified=data;
+  document.getElementById('releaseSummary').textContent=result.releaseCount+' release(s). Digest matches separately supplied value. Customer identity and Bitcoin Core state are NOT verified.';
+  document.getElementById('recipientLink').href='./recipient-gift-specific-prototype.html?a='+encodeURIComponent(data.gift.fundingAddress);
+  const buttons=document.getElementById('releaseButtons');
+  for(const evidence of data.psbts){
+   const button=document.createElement('button');button.type='button';
+   button.textContent='Save release '+evidence.releaseNumber+' unsigned PSBT';
+   button.addEventListener('click',()=>{if(verified===data)download('release-'+evidence.releaseNumber+'-unsigned-regtest.json',evidence)});
+   buttons.append(button);
+  }
+  document.getElementById('downloadGift').onclick=()=>{if(verified===data)download('public-gift-regtest.json',data.gift)};
+  document.getElementById('releaseDownloads').hidden=false;
+  status.textContent='PASS: package matches independently supplied digest and all release PSBTs match their funded outputs. No signing or broadcast authorized.';
+ }catch(error){status.textContent='Rejected customer package: '+String(error.message||error)}
+});
+</script></body></html>
