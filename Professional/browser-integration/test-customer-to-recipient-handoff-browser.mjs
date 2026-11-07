@@ -67,8 +67,18 @@ try{
  await direct.locator('#completeHandoffFile').setInputFiles(await download.path());
  await direct.locator('#completeHandoffDigest').fill(digest);
  await direct.locator('#verifyCompleteHandoff').click();
- await direct.waitForFunction(()=>/PASS: independent fingerprint|Rejected handoff/.test(
-  document.getElementById('completeHandoffStatus').textContent));
+ try{
+  await direct.waitForFunction(()=>/PASS: independent fingerprint|Rejected handoff/.test(
+   document.getElementById('completeHandoffStatus').textContent),null,{timeout:5000});
+ }catch(error){
+  console.error('Direct handoff diagnostic',await direct.evaluate(()=>({
+   status:document.getElementById('completeHandoffStatus').textContent,
+   giftStatus:document.getElementById('giftRecordStatus').textContent,
+   psbtStatus:document.getElementById('giftCameraStatus').textContent,
+   selected:document.getElementById('selectedRelease').value
+  })));
+  throw error;
+ }
  assert.match(await direct.locator('#completeHandoffStatus').textContent(),/PASS:/);
  for(let n=1;n<=5;n++){
   await direct.locator('#selectedRelease').selectOption(String(n));
