@@ -134,6 +134,16 @@ try{
  await direct.waitForFunction(()=>/Rejected handoff/.test(
   document.getElementById('completeHandoffStatus').textContent));
  assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ // A malformed package with the correct locator must clear any previously
+ // imported public gift, even when validation fails after parsing.
+ await direct.locator('#completeHandoffFile').setInputFiles({
+  name:'malformed-handoff.json',mimeType:'application/json',
+  buffer:Buffer.from('{"broken":')});
+ await direct.locator('#verifyCompleteHandoff').click();
+ await direct.waitForFunction(()=>/Rejected handoff/.test(
+  document.getElementById('completeHandoffStatus').textContent));
+ assert.match(await direct.locator('#giftRecordStatus').textContent(),/No public gift record loaded/);
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
  await direct.close();
 
  // Customer identity must not be inferred from an internally valid digest.
