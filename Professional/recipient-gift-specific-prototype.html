@@ -514,10 +514,13 @@ window.addEventListener('pagehide',stopJadeCamera);
   generation++;active=null;
   $('completeHandoffStatus').textContent='Handoff changed; reverify independent fingerprint.';
   // Immediately revoke any gift/PSBT previously supplied by this handoff.
-  $('publicGiftFile').value='';
-  $('publicGiftFile').dispatchEvent(new Event('change'));
-  $('giftPsbtFile').value='';
-  $('giftPsbtFile').dispatchEvent(new Event('change'));
+  internalSupply=true;
+  try{
+   $('publicGiftFile').value='';
+   $('publicGiftFile').dispatchEvent(new Event('change'));
+   $('giftPsbtFile').value='';
+   $('giftPsbtFile').dispatchEvent(new Event('change'));
+  }finally{internalSupply=false;}
  }
  $('completeHandoffFile').addEventListener('change',revoke);
  $('completeHandoffDigest').addEventListener('input',revoke);
