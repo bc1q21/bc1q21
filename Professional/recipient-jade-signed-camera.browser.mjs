@@ -41,6 +41,8 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
   if(!active||token!==generation)return;
   try{
    if(video.readyState>=2&&video.videoWidth>0){
+    if(video.videoWidth>4096||video.videoHeight>4096||video.videoHeight<=0)
+     throw Error('Camera frame dimensions exceed safe QR scan limits');
     canvas.width=video.videoWidth;canvas.height=video.videoHeight;
     const ctx=canvas.getContext('2d',{willReadFrequently:true});
     ctx.drawImage(video,0,0);
@@ -56,8 +58,11 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
       const bytes=decodeCborBytes(decoder.resultUR().cbor);
       if(bytes.length>100000||bytes.subarray(0,5).toString('hex')!=='70736274ff')throw Error('Invalid signed PSBT');
       stop();
+      const completedToken=generation;
       await onSignedPsbt(bytes);
-      completed=true;
+      // A user can reset or switch releases while signature verification is
+      // pending. Never report the superseded scan as complete.
+      if(generation===completedToken)completed=true;
       return;
      }
     }
