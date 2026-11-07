@@ -572,7 +572,14 @@ window.addEventListener('pagehide',stopJadeCamera);
   const data=active,n=Number($('selectedRelease').value);
   // Release switching is not a new trust decision. Do not reuse an unsigned
   // PSBT from a different release when selection becomes empty.
-  if(!data||!n){$('giftPsbtFile').value='';$('giftPsbtFile').dispatchEvent(new Event('change'));return;}
+  if(!data||!n){
+   // This is an internal reset caused by gift import or release deselection,
+   // not an external PSBT substitution; keep the package context intact.
+   internalSupply=true;
+   try{$('giftPsbtFile').value='';$('giftPsbtFile').dispatchEvent(new Event('change'));}
+   finally{internalSupply=false;}
+   return;
+  }
   const evidence=data.psbts.find(e=>e.releaseNumber===n);
   if(!evidence){$('completeHandoffStatus').textContent='Missing release PSBT';return;}
   // Defer until all existing selection listeners have cleared stale PSBT state.
