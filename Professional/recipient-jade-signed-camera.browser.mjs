@@ -26,7 +26,9 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
  let completed=false;
  const stop=()=>{
   active=false;generation++;
-  if(stream){for(const track of stream.getTracks())track.stop();stream=null;}
+  if(stream){for(const track of stream.getTracks()){
+   try{track.stop();}catch{/* continue releasing other tracks */}
+  }stream=null;}
   video.srcObject=null;
   // QR frames may contain a signed transaction. Erase the last video
   // snapshot from canvas on stop, release switch, or successful scan.
@@ -92,10 +94,14 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
     if(token!==generation)return;
     acquired=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
    }
-   if(token!==generation){for(const track of acquired.getTracks())track.stop();return;}
+   if(token!==generation){for(const track of acquired.getTracks()){
+    try{track.stop();}catch{/* permission was superseded */}
+   }return;}
    stream=acquired;video.srcObject=stream;
    await video.play();
-   if(token!==generation){for(const track of acquired.getTracks())track.stop();return;}
+   if(token!==generation){for(const track of acquired.getTracks()){
+    try{track.stop();}catch{/* permission was superseded */}
+   }return;}
    active=true;
    status('Point camera at Jade Plus signed QR');void tick(token);
   }catch(error){
