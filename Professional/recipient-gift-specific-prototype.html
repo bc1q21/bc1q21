@@ -541,6 +541,7 @@ window.addEventListener('pagehide',stopJadeCamera);
    const data=JSON.parse(await file.text());
    if(token!==generation)return;
    const digest=$('completeHandoffDigest').value.trim().toLowerCase();
+   if(!/^[0-9a-f]{64}$/.test(digest))throw Error('Independent fingerprint must be 64 hexadecimal characters');
    const result=globalThis.bc1q21ProfessionalVerifyCustomerHandoff(data,digest);
    if(result.independentlySuppliedDigestMatches!==true)throw Error('Fingerprint mismatch');
    const locator=new URLSearchParams(location.search).get('a')||
