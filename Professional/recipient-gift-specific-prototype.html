@@ -499,6 +499,11 @@ window.addEventListener('pagehide',stopJadeCamera);
  let generation=0,active=null,internalSupply=false;
  // A manually replaced gift/PSBT must revoke the previously authenticated
  // package context rather than silently reusing its release evidence.
+ // Draft and date-preview imports are not independently verified funded gifts.
+ // Never retain a previously checked handoff when switching evidence sources.
+ for(const id of ['draftGiftFile','dateGiftPreviewFile']){
+  $(id).addEventListener('change',()=>{if(active)revoke();});
+ }
  for(const id of ['publicGiftFile','giftPsbtFile']){
   $(id).addEventListener('change',()=>{
    if(internalSupply||!active)return;
