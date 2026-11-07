@@ -577,7 +577,7 @@ window.addEventListener('pagehide',stopJadeCamera);
   // PSBT from a different release when selection becomes empty.
   if(!data||!n)return;
   const evidence=data.psbts.find(e=>e.releaseNumber===n);
-  if(!evidence){$('completeHandoffStatus').textContent='Missing release PSBT';return;}
+  if(!evidence){revoke();$('completeHandoffStatus').textContent='Rejected handoff: missing selected release PSBT';return;}
   // Defer until all existing selection listeners have cleared stale PSBT state.
   queueMicrotask(()=>{if(active===data&&Number($('selectedRelease').value)===n)
    supply('giftPsbtFile','handoff-release-'+n+'.json',evidence);});
