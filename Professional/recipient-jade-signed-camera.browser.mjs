@@ -67,7 +67,12 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
      }
     }
    }
-  }catch(error){stop();status('Signed QR rejected: '+error.message);return;}
+  }catch(error){
+   // Verification may reject after a recipient has already switched releases.
+   // Do not stop the replacement scan or overwrite its current status.
+   if(token!==generation)return;
+   stop();status('Signed QR rejected: '+error.message);return;
+  }
   if(active&&token===generation)setTimeout(()=>tick(token),100);
  };
  const start=async()=>{
