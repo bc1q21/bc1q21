@@ -126,6 +126,19 @@ try{
  await direct.locator('#selectedRelease').selectOption('3');
  await direct.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record/.test(
   document.getElementById('giftCameraStatus').textContent));
+ // The alternate date-preview importer must also revoke the previously
+ // accepted handoff; planning evidence cannot inherit funded gift provenance.
+ await direct.locator('#dateGiftPreviewFile').setInputFiles({
+  name:'preview-invalid.json',mimeType:'application/json',
+  buffer:Buffer.from('{}')});
+ assert.match(await direct.locator('#completeHandoffStatus').textContent(),/reverify independent fingerprint/);
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ await direct.locator('#verifyCompleteHandoff').click();
+ await direct.waitForFunction(()=>/PASS: independent fingerprint/.test(
+  document.getElementById('completeHandoffStatus').textContent));
+ await direct.locator('#selectedRelease').selectOption('4');
+ await direct.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record/.test(
+  document.getElementById('giftCameraStatus').textContent));
  await direct.locator('#completeHandoffDigest').fill('0'.repeat(64));
  assert.match(await direct.locator('#giftRecordStatus').textContent(),/No public gift record loaded/);
  assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
