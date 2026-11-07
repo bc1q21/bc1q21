@@ -90,6 +90,19 @@ try{
  await direct.locator('#selectedRelease').selectOption('1');
  await direct.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record/.test(
   document.getElementById('giftCameraStatus').textContent));
+ // Replacing the public gift record also revokes the verified handoff and
+ // removes all PSBT QR/signature state. The caller must reverify the package.
+ await direct.locator('#publicGiftFile').setInputFiles({
+  name:'manual-gift.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify(handoff.gift))});
+ assert.match(await direct.locator('#completeHandoffStatus').textContent(),/reverify independent fingerprint/);
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ await direct.locator('#verifyCompleteHandoff').click();
+ await direct.waitForFunction(()=>/PASS: independent fingerprint/.test(
+  document.getElementById('completeHandoffStatus').textContent));
+ await direct.locator('#selectedRelease').selectOption('2');
+ await direct.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record/.test(
+  document.getElementById('giftCameraStatus').textContent));
  await direct.locator('#completeHandoffDigest').fill('0'.repeat(64));
  assert.match(await direct.locator('#giftRecordStatus').textContent(),/No public gift record loaded/);
  assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
