@@ -39,6 +39,7 @@ button{font:inherit;border:0;padding:13px 18px;border-radius:7px;color:white;bac
 <tr><td>3</td><td>150</td><td>18,000 sats</td><td><span class="status">Tested</span></td></tr>
 <tr><td>4</td><td>160</td><td>21,000 sats</td><td><span class="status">Tested</span></td></tr></tbody></table></div>
 <p class="muted" id="scheduleProvenance">These are known public synthetic fixtures from our isolated regtest work—not live balances, spendable UTXO discoveries, or dates derived from the recipient's real gift.</p></section>
+<section id="verifiedHandoffSection"><h2>Open complete customer handoff</h2><p>Import the single funded regtest handoff package and enter the SHA-256 fingerprint received through a separate authenticated channel. This replaces manually importing a gift file and five separate PSBT files. The fingerprint does not prove customer identity or blockchain funding. Signing and broadcast remain unauthorized.</p><label for="completeHandoffFile">Customer handoff package (JSON)</label> <input id="completeHandoffFile" type="file" accept=".json,application/json"><label for="completeHandoffDigest">Independent SHA-256 fingerprint</label> <input id="completeHandoffDigest" type="text" maxlength="64" size="65" autocomplete="off" spellcheck="false"><button id="verifyCompleteHandoff" type="button">Verify and load five releases</button><p id="completeHandoffStatus" role="status">No independently checked customer handoff loaded.</p></section>
 <section><h2>Selected gift release</h2><label for="selectedRelease">Choose a release to review:</label> <select id="selectedRelease"><option value="">Select release</option><option value="1">Release 1 — 12,000 sats</option><option value="2">Release 2 — 15,000 sats</option><option value="3">Release 3 — 18,000 sats</option><option value="4">Release 4 — 21,000 sats</option></select><p id="selectedReleaseStatus" role="status">No release selected. Signing remains locked.</p><p><label for="publicGiftFile">Load a public gift record (JSON, offline):</label> <input id="publicGiftFile" type="file" accept=".json,application/json"></p><p id="giftRecordStatus" role="status">No public gift record loaded. A local file is not proof of blockchain validity.</p><p><strong>Gift record source:</strong> <span id="giftRecordSource">No record loaded</span></p><p id="selectedReleaseEvidence" class="mono" aria-live="polite">No gift-specific transaction evidence loaded.</p><p id="utxoEvidenceStatus" role="status">No trusted Bitcoin Core UTXO evidence connected. Signing remains disabled.</p><p><label for="coreUtxoFile">Inspect Bitcoin Core gettxout response (JSON, offline diagnostic):</label> <input id="coreUtxoFile" type="file" accept=".json,application/json"></p><p id="coreUtxoStatus" role="status">No Core response inspected. Imported JSON cannot establish trusted RPC provenance.</p></section>
 <section><h2>Release payments — offline signer</h2>
 <div class="step"><div class="number">1</div><div>Review the matured release, destination and fee on this gift-specific page.</div></div>
@@ -487,5 +488,64 @@ startCamera.addEventListener('click',async()=>{
 stopCamera.addEventListener('click',()=>{stopJadeCamera();cameraStatus.textContent='Camera stopped.';});
 window.addEventListener('pagehide',stopJadeCamera);
 
+</script>
+<script>
+'use strict';
+// Single-package handoff uses the same independently supplied digest verifier
+// and the same gift/PSBT import handlers as the existing isolated workflow.
+// It does not grant signing, chain provenance or broadcast permission.
+(function(){
+ const $=id=>document.getElementById(id);
+ let generation=0,active=null;
+ function revoke(){
+  generation++;active=null;
+  $('completeHandoffStatus').textContent='Handoff changed; reverify independent fingerprint.';
+  // Immediately revoke any gift/PSBT previously supplied by this handoff.
+  $('publicGiftFile').value='';
+  $('publicGiftFile').dispatchEvent(new Event('change'));
+  $('giftPsbtFile').value='';
+  $('giftPsbtFile').dispatchEvent(new Event('change'));
+ }
+ $('completeHandoffFile').addEventListener('change',revoke);
+ $('completeHandoffDigest').addEventListener('input',revoke);
+ function supply(id,name,data){
+  const transfer=new DataTransfer();
+  transfer.items.add(new File([JSON.stringify(data)],name,{type:'application/json'}));
+  $(id).files=transfer.files;
+  $(id).dispatchEvent(new Event('change'));
+ }
+ $('verifyCompleteHandoff').addEventListener('click',async()=>{
+  revoke();const token=generation;
+  const status=$('completeHandoffStatus'),file=$('completeHandoffFile').files?.[0];
+  try{
+   if(!file||file.size>700000)throw Error('Choose a package smaller than 700 KB');
+   const data=JSON.parse(await file.text());
+   if(token!==generation)return;
+   const digest=$('completeHandoffDigest').value.trim().toLowerCase();
+   const result=globalThis.bc1q21ProfessionalVerifyCustomerHandoff(data,digest);
+   if(result.independentlySuppliedDigestMatches!==true)throw Error('Fingerprint mismatch');
+   const locator=new URLSearchParams(location.search).get('a')||
+    new URLSearchParams(location.search).get('address')||'';
+   if(locator!==data.gift.fundingAddress)throw Error('Package does not match recipient gift link');
+   active=data;
+   supply('publicGiftFile','verified-handoff-gift.json',data.gift);
+   await new Promise(resolve=>setTimeout(resolve,0));
+   if(token!==generation||active!==data)return;
+   if(globalThis.bc1q21ProfessionalPublicGiftRecord!==null &&
+      globalThis.bc1q21ProfessionalPublicGiftRecord!==undefined){
+    status.textContent='PASS: independent fingerprint matches. Choose a release to inspect its unsigned PSBT. Funding and customer identity NOT verified.';
+   }else throw Error('Gift import failed');
+  }catch(error){if(token===generation){active=null;status.textContent='Rejected handoff: '+String(error.message||error);}}
+ });
+ $('selectedRelease').addEventListener('change',()=>{
+  const data=active,n=Number($('selectedRelease').value);
+  if(!data||!n)return;
+  const evidence=data.psbts.find(e=>e.releaseNumber===n);
+  if(!evidence){$('completeHandoffStatus').textContent='Missing release PSBT';return;}
+  // Defer until all existing selection listeners have cleared stale PSBT state.
+  queueMicrotask(()=>{if(active===data&&Number($('selectedRelease').value)===n)
+   supply('giftPsbtFile','handoff-release-'+n+'.json',evidence);});
+ });
+})();
 </script>
 </body></html>
