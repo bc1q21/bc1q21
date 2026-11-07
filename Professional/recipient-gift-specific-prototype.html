@@ -563,6 +563,9 @@ window.addEventListener('pagehide',stopJadeCamera);
       globalThis.bc1q21ProfessionalPublicGiftRecord?.releases?.length!==data.gift.releases.length)
     throw Error('Gift import did not complete');
    status.textContent='PASS: independent fingerprint matches. Choose a release to inspect its unsigned PSBT. Funding and customer identity NOT verified.';
+   // Importing the public gift may already select release 1. Re-dispatch so
+   // the corresponding package PSBT loads even without a user selection change.
+   if($('selectedRelease').value)$('selectedRelease').dispatchEvent(new Event('change'));
   }catch(error){if(token===generation){const message=String(error.message||error);revoke();status.textContent='Rejected handoff: '+message;}}
  });
  $('selectedRelease').addEventListener('change',()=>{
