@@ -28,6 +28,13 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
   active=false;generation++;
   if(stream){for(const track of stream.getTracks())track.stop();stream=null;}
   video.srcObject=null;
+  // QR frames may contain a signed transaction. Erase the last video
+  // snapshot from canvas on stop, release switch, or successful scan.
+  try{
+   const ctx=canvas.getContext('2d');
+   if(ctx)ctx.clearRect(0,0,canvas.width,canvas.height);
+   canvas.width=0;canvas.height=0;
+  }catch{canvas.width=0;canvas.height=0;}
  };
  const reset=()=>{stop();decoder=new URDecoder();seen=new Set();completed=false;status('Ready to scan Jade signed QR');};
  const tick=async token=>{
