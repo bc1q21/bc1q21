@@ -529,12 +529,21 @@ window.addEventListener('pagehide',stopJadeCamera);
    if(locator!==data.gift.fundingAddress)throw Error('Package does not match recipient gift link');
    active=data;
    supply('publicGiftFile','verified-handoff-gift.json',data.gift);
-   await new Promise(resolve=>setTimeout(resolve,0));
+   // File.text() and its change handler finish asynchronously. Never report
+   // success before the existing gift importer has actually accepted the file.
+   for(let attempt=0;attempt<100;attempt++){
+    if(token!==generation||active!==data)return;
+    if(globalThis.bc1q21ProfessionalPublicGiftRecord===data.gift)break;
+    if(globalThis.bc1q21ProfessionalPublicGiftRecord?.fundingAddress===data.gift.fundingAddress &&
+       $('giftRecordStatus').textContent.startsWith('Public gift record loaded'))break;
+    if($('giftRecordStatus').textContent.startsWith('Rejected public gift record:'))
+     throw Error($('giftRecordStatus').textContent);
+    await new Promise(resolve=>setTimeout(resolve,20));
+   }
    if(token!==generation||active!==data)return;
-   if(globalThis.bc1q21ProfessionalPublicGiftRecord!==null &&
-      globalThis.bc1q21ProfessionalPublicGiftRecord!==undefined){
-    status.textContent='PASS: independent fingerprint matches. Choose a release to inspect its unsigned PSBT. Funding and customer identity NOT verified.';
-   }else throw Error('Gift import failed');
+   if(!$('giftRecordStatus').textContent.startsWith('Public gift record loaded'))
+    throw Error('Gift import did not complete');
+   status.textContent='PASS: independent fingerprint matches. Choose a release to inspect its unsigned PSBT. Funding and customer identity NOT verified.';
   }catch(error){if(token===generation){active=null;status.textContent='Rejected handoff: '+String(error.message||error);}}
  });
  $('selectedRelease').addEventListener('change',()=>{
