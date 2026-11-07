@@ -558,7 +558,9 @@ window.addEventListener('pagehide',stopJadeCamera);
     await new Promise(resolve=>setTimeout(resolve,20));
    }
    if(token!==generation||active!==data)return;
-   if(!$('giftRecordStatus').textContent.startsWith('Public gift record loaded'))
+   if(!$('giftRecordStatus').textContent.startsWith('Public gift record loaded') ||
+      globalThis.bc1q21ProfessionalPublicGiftRecord?.fundingAddress!==data.gift.fundingAddress ||
+      globalThis.bc1q21ProfessionalPublicGiftRecord?.releases?.length!==data.gift.releases.length)
     throw Error('Gift import did not complete');
    status.textContent='PASS: independent fingerprint matches. Choose a release to inspect its unsigned PSBT. Funding and customer identity NOT verified.';
   }catch(error){if(token===generation){const message=String(error.message||error);revoke();status.textContent='Rejected handoff: '+message;}}
