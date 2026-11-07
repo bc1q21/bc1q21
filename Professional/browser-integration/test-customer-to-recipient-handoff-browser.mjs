@@ -77,6 +77,19 @@ try{
    document.getElementById('selectedRelease').value===String(number),n);
   assert.equal(await direct.locator('#saveVerifiedJadePsbt').isDisabled(),true);
  }
+ // Replacing a handoff-controlled PSBT manually revokes the complete
+ // package context, even if the replacement is itself syntactically valid.
+ await direct.locator('#giftPsbtFile').setInputFiles({
+  name:'manual-psbt.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify(handoff.psbts[0]))});
+ assert.match(await direct.locator('#completeHandoffStatus').textContent(),/reverify independent fingerprint/);
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ await direct.locator('#verifyCompleteHandoff').click();
+ await direct.waitForFunction(()=>/PASS: independent fingerprint/.test(
+  document.getElementById('completeHandoffStatus').textContent));
+ await direct.locator('#selectedRelease').selectOption('1');
+ await direct.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record/.test(
+  document.getElementById('giftCameraStatus').textContent));
  await direct.locator('#completeHandoffDigest').fill('0'.repeat(64));
  assert.match(await direct.locator('#giftRecordStatus').textContent(),/No public gift record loaded/);
  assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
