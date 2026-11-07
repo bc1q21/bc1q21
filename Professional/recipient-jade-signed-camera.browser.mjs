@@ -26,6 +26,8 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
  let completed=false;
  const stop=()=>{
   active=false;generation++;
+  // Invalidate partial multipart UR frames immediately on camera stop.
+  decoder=new URDecoder();seen.clear();
   if(stream){for(const track of stream.getTracks()){
    try{track.stop();}catch{/* continue releasing other tracks */}
   }stream=null;}
