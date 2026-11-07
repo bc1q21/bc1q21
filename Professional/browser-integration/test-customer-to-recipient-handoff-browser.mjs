@@ -187,6 +187,16 @@ try{
   document.getElementById('completeHandoffStatus').textContent));
  assert.match(await direct.locator('#giftRecordStatus').textContent(),/No public gift record loaded/);
  assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ // An invalid fingerprint format is rejected before any gift can be
+ // loaded, regardless of whether the handoff JSON itself is well formed.
+ await direct.locator('#completeHandoffFile').setInputFiles(await download.path());
+ await direct.locator('#completeHandoffDigest').fill('not-a-sha256-fingerprint');
+ await direct.locator('#verifyCompleteHandoff').click();
+ await direct.waitForFunction(()=>/Rejected handoff/.test(
+  document.getElementById('completeHandoffStatus').textContent));
+ assert.match(await direct.locator('#completeHandoffStatus').textContent(),/64 hexadecimal characters/);
+ assert.match(await direct.locator('#giftRecordStatus').textContent(),/No public gift record loaded/);
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
  await direct.close();
 
  // Customer identity must not be inferred from an internally valid digest.
