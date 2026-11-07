@@ -8,6 +8,9 @@ function download(name,object){
 function clear(){
  ++importGeneration;verified=null;document.getElementById('releaseDownloads').hidden=true;
  document.getElementById('releaseButtons').replaceChildren();
+ document.getElementById('downloadGift').onclick=null;
+ document.getElementById('recipientLink').removeAttribute('href');
+ document.getElementById('status').textContent='Handoff changed. Reinspect package and independent digest.';
 }
 document.getElementById('customerPackage').addEventListener('change',clear);
 document.getElementById('independentDigest').addEventListener('input',clear);
