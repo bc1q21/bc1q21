@@ -537,7 +537,7 @@ window.addEventListener('pagehide',stopJadeCamera);
   revoke();const token=generation;
   const status=$('completeHandoffStatus'),file=$('completeHandoffFile').files?.[0];
   try{
-   if(!file||file.size>700000)throw Error('Choose a package smaller than 700 KB');
+   if(!file||file.size===0||file.size>700000)throw Error('Choose a nonempty package smaller than 700 KB');
    const data=JSON.parse(await file.text());
    if(token!==generation)return;
    const digest=$('completeHandoffDigest').value.trim().toLowerCase();
