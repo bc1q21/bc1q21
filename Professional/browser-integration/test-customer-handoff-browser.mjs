@@ -54,6 +54,15 @@ try{
   assert.equal(await recipient.locator('#saveVerifiedJadePsbt').isDisabled(),true);
  }
  await recipient.close();
+ await page.locator('#independentDigest').fill('0'.repeat(64));
+ assert.equal(await page.locator('#releaseDownloads').isHidden(),true);
+ assert.equal(await page.locator('#recipientLink').getAttribute('href'),null);
+ assert.equal(await page.locator('#releaseButtons button').count(),0);
+ assert.match(await page.locator('#status').textContent(),/Handoff changed/);
+ await page.locator('#independentDigest').fill(pkg.sha256);
+ await page.locator('#inspect').click();
+ await page.waitForFunction(()=>/PASS: package matches/.test(
+  document.getElementById('status').textContent));
  await page.locator('#customerPackage').setInputFiles({
   name:'tampered.json',mimeType:'application/json',
   buffer:Buffer.from(JSON.stringify({...pkg,psbts:pkg.psbts.map((p,i)=>
