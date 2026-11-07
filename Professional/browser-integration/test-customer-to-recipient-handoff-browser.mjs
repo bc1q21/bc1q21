@@ -83,6 +83,31 @@ try{
  await direct.locator('#verifyCompleteHandoff').click();
  await direct.waitForFunction(()=>/Rejected handoff/.test(document.getElementById('completeHandoffStatus').textContent));
  assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ // Reject a perfectly digest-matching package delivered through a different
+ // gift link: the independent digest does not override recipient locator.
+ const wrongLink=await browser.newPage();
+ wrongLink.on('pageerror',error=>errors.push(error.message));
+ await wrongLink.goto(pathToFileURL(resolve('../recipient-gift-specific-prototype.html')).href+
+  '?a='+encodeURIComponent('bcrt1q'+'z'.repeat(38)));
+ await wrongLink.locator('#completeHandoffFile').setInputFiles(await download.path());
+ await wrongLink.locator('#completeHandoffDigest').fill(digest);
+ await wrongLink.locator('#verifyCompleteHandoff').click();
+ await wrongLink.waitForFunction(()=>/Rejected handoff/.test(
+  document.getElementById('completeHandoffStatus').textContent));
+ assert.match(await wrongLink.locator('#completeHandoffStatus').textContent(),/does not match recipient gift link/);
+ assert.equal(await wrongLink.locator('#showUnsignedQr').isDisabled(),true);
+ await wrongLink.close();
+ // A tampered package must not be accepted with the original independent digest.
+ const tampered=structuredClone(handoff);
+ tampered.gift.releases[0].inputSats+=1;
+ await direct.locator('#completeHandoffFile').setInputFiles({
+  name:'tampered-handoff.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify(tampered))});
+ await direct.locator('#completeHandoffDigest').fill(digest);
+ await direct.locator('#verifyCompleteHandoff').click();
+ await direct.waitForFunction(()=>/Rejected handoff/.test(
+  document.getElementById('completeHandoffStatus').textContent));
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
  await direct.close();
 
  // Customer identity must not be inferred from an internally valid digest.
