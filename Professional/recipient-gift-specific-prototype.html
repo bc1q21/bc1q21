@@ -555,7 +555,7 @@ window.addEventListener('pagehide',stopJadeCamera);
    if(!$('giftRecordStatus').textContent.startsWith('Public gift record loaded'))
     throw Error('Gift import did not complete');
    status.textContent='PASS: independent fingerprint matches. Choose a release to inspect its unsigned PSBT. Funding and customer identity NOT verified.';
-  }catch(error){if(token===generation){active=null;status.textContent='Rejected handoff: '+String(error.message||error);}}
+  }catch(error){if(token===generation){const message=String(error.message||error);revoke();status.textContent='Rejected handoff: '+message;}}
  });
  $('selectedRelease').addEventListener('change',()=>{
   const data=active,n=Number($('selectedRelease').value);
