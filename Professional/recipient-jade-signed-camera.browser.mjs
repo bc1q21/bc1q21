@@ -105,7 +105,9 @@ export function createJadeSignedCameraReceiver({video,canvas,onSignedPsbt,onStat
    active=true;
    status('Point camera at Jade Plus signed QR');void tick(token);
   }catch(error){
-   if(acquired)for(const track of acquired.getTracks())track.stop();
+   if(acquired)for(const track of acquired.getTracks()){
+    try{track.stop();}catch{/* continue cleanup */}
+   }
    if(token!==generation)return;
    stop();throw error;
   }
