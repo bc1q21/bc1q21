@@ -551,6 +551,7 @@ window.addEventListener('pagehide',stopJadeCamera);
     if(token!==generation||active!==data)return;
     // The importer parses JSON into a new object; wait for its accepted status.
     if(globalThis.bc1q21ProfessionalPublicGiftRecord?.fundingAddress===data.gift.fundingAddress &&
+       globalThis.bc1q21ProfessionalPublicGiftRecord?.releases?.length===data.gift.releases.length &&
        $('giftRecordStatus').textContent.startsWith('Public gift record loaded'))break;
     if($('giftRecordStatus').textContent.startsWith('Rejected public gift record:'))
      throw Error($('giftRecordStatus').textContent);
