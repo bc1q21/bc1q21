@@ -567,7 +567,9 @@ window.addEventListener('pagehide',stopJadeCamera);
  });
  $('selectedRelease').addEventListener('change',()=>{
   const data=active,n=Number($('selectedRelease').value);
-  if(!data||!n)return;
+  // Release switching is not a new trust decision. Do not reuse an unsigned
+  // PSBT from a different release when selection becomes empty.
+  if(!data||!n){$('giftPsbtFile').value='';$('giftPsbtFile').dispatchEvent(new Event('change'));return;}
   const evidence=data.psbts.find(e=>e.releaseNumber===n);
   if(!evidence){$('completeHandoffStatus').textContent='Missing release PSBT';return;}
   // Defer until all existing selection listeners have cleared stale PSBT state.
