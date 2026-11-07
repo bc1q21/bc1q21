@@ -58,6 +58,33 @@ try{
   assert.equal(await recipientPage.locator('#saveVerifiedJadePsbt').isDisabled(),true);
  }
  await recipientPage.close();
+ // Direct recipient journey: one customer package + separately supplied digest,
+ // no manual extraction of the public gift and five PSBT files.
+ const direct=await browser.newPage();
+ direct.on('pageerror',error=>errors.push(error.message));
+ await direct.goto(pathToFileURL(resolve('../recipient-gift-specific-prototype.html')).href+
+  '?a='+encodeURIComponent(handoff.gift.fundingAddress));
+ await direct.locator('#completeHandoffFile').setInputFiles(await download.path());
+ await direct.locator('#completeHandoffDigest').fill(digest);
+ await direct.locator('#verifyCompleteHandoff').click();
+ await direct.waitForFunction(()=>/PASS: independent fingerprint|Rejected handoff/.test(
+  document.getElementById('completeHandoffStatus').textContent));
+ assert.match(await direct.locator('#completeHandoffStatus').textContent(),/PASS:/);
+ for(let n=1;n<=5;n++){
+  await direct.locator('#selectedRelease').selectOption(String(n));
+  await direct.waitForFunction(number=>/Selected gift PSBT matches supplied public gift record/.test(
+   document.getElementById('giftCameraStatus').textContent)&&
+   document.getElementById('selectedRelease').value===String(number),n);
+  assert.equal(await direct.locator('#saveVerifiedJadePsbt').isDisabled(),true);
+ }
+ await direct.locator('#completeHandoffDigest').fill('0'.repeat(64));
+ assert.match(await direct.locator('#giftRecordStatus').textContent(),/No public gift record loaded/);
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ await direct.locator('#verifyCompleteHandoff').click();
+ await direct.waitForFunction(()=>/Rejected handoff/.test(document.getElementById('completeHandoffStatus').textContent));
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ await direct.close();
+
  // Customer identity must not be inferred from an internally valid digest.
  assert.match(await recipient.locator('#releaseSummary').textContent(),/NOT verified/);
  // A changed digest immediately invalidates the recipient's previously
