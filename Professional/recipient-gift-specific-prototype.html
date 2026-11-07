@@ -496,7 +496,15 @@ window.addEventListener('pagehide',stopJadeCamera);
 // It does not grant signing, chain provenance or broadcast permission.
 (function(){
  const $=id=>document.getElementById(id);
- let generation=0,active=null;
+ let generation=0,active=null,internalSupply=false;
+ // A manually replaced gift/PSBT must revoke the previously authenticated
+ // package context rather than silently reusing its release evidence.
+ for(const id of ['publicGiftFile','giftPsbtFile']){
+  $(id).addEventListener('change',()=>{
+   if(internalSupply||!active)return;
+   revoke();
+  });
+ }
  function revoke(){
   generation++;active=null;
   $('completeHandoffStatus').textContent='Handoff changed; reverify independent fingerprint.';
@@ -511,8 +519,11 @@ window.addEventListener('pagehide',stopJadeCamera);
  function supply(id,name,data){
   const transfer=new DataTransfer();
   transfer.items.add(new File([JSON.stringify(data)],name,{type:'application/json'}));
-  $(id).files=transfer.files;
-  $(id).dispatchEvent(new Event('change'));
+  internalSupply=true;
+  try{
+   $(id).files=transfer.files;
+   $(id).dispatchEvent(new Event('change'));
+  }finally{internalSupply=false;}
  }
  $('verifyCompleteHandoff').addEventListener('click',async()=>{
   revoke();const token=generation;
