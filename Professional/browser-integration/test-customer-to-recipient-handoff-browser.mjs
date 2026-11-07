@@ -139,6 +139,13 @@ try{
  await direct.locator('#selectedRelease').selectOption('4');
  await direct.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record/.test(
   document.getElementById('giftCameraStatus').textContent));
+ // Empty selection must not preserve an actionable unsigned QR from the
+ // previously inspected release. Re-selection reloads the matching evidence.
+ await direct.locator('#selectedRelease').selectOption('');
+ assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
+ await direct.locator('#selectedRelease').selectOption('5');
+ await direct.waitForFunction(()=>/Selected gift PSBT matches supplied public gift record/.test(
+  document.getElementById('giftCameraStatus').textContent));
  await direct.locator('#completeHandoffDigest').fill('0'.repeat(64));
  assert.match(await direct.locator('#giftRecordStatus').textContent(),/No public gift record loaded/);
  assert.equal(await direct.locator('#showUnsignedQr').isDisabled(),true);
