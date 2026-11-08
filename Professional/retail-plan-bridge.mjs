@@ -5,7 +5,7 @@ export function snapshotRetailGiftPlan(wizard) {
     throw new Error('Complete Retail gift planning before continuing to Jade.');
   }
   const rows = wizard.scheduleRows;
-  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 60) {
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 24) {
     throw new Error('Invalid Retail release count.');
   }
   const releases = rows.map((row, index) => {
@@ -29,7 +29,15 @@ export function snapshotRetailGiftPlan(wizard) {
     throw new Error('Retail gift contains an output below the dust threshold.');
   }
   const totalSats = releases.reduce((sum, release) => sum + release.amountSats, 0);
-  const expected = Math.round(Number(wizard.btcAmount) * 100000000);
+  if (!Number.isSafeInteger(totalSats)) {
+    throw new Error('Gift total exceeds safe satoshi accounting range.');
+  }
+  const rawExpected = Number(wizard.btcAmount) * 100000000;
+  if (!Number.isFinite(rawExpected) || !Number.isSafeInteger(Math.round(rawExpected)) ||
+      Math.abs(rawExpected - Math.round(rawExpected)) > 0.00001) {
+    throw new Error('Gift total must represent an exact safe satoshi amount.');
+  }
+  const expected = Math.round(rawExpected);
   if (!Number.isSafeInteger(totalSats) || totalSats !== expected) {
     throw new Error('Retail release amounts do not match the gift total.');
   }
