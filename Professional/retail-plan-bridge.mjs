@@ -38,7 +38,7 @@ export function snapshotRetailGiftPlan(wizard) {
     throw new Error('Gift total must represent an exact safe satoshi amount.');
   }
   const expected = Math.round(rawExpected);
-  if (!Number.isSafeInteger(totalSats) || totalSats !== expected) {
+  if (totalSats !== expected) {
     throw new Error('Retail release amounts do not match the gift total.');
   }
   return Object.freeze({
