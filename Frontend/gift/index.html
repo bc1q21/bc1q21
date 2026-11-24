@@ -189,8 +189,8 @@
           </div>
         </div>
 
-        <h4 x-show="unlocked" x-cloak style="margin-top:1rem">Gift release schedule</h4>
-        <div class="tbl-wrap" x-show="unlocked" x-cloak>
+        <h4 style="margin-top:1rem">Gift release schedule</h4>
+        <div class="tbl-wrap">
           <table>
             <thead>
               <tr>
@@ -216,7 +216,7 @@
                   <td x-text="o.releaseDate"></td>
                   <td class="mono" x-text="o.btc.toFixed(8)"></td>
                   <td class="mono" x-text="formatUSD(o.usdAtCreation)"></td>
-                  <td class="mono" x-text="formatUSD(o.usdAtRelease)"></td>
+                  <td class="mono"><span x-show="unlocked" x-cloak x-text="formatUSD(o.usdAtRelease)"></span></td>
                   <td class="mono">
                     <a :href="mempoolAddressUrl(o.address)" target="_blank" rel="noopener noreferrer"
                       x-text="o.address"></a>
@@ -230,7 +230,7 @@
                 <td></td>
                 <td class="mono" x-text="totalBTC.toFixed(8)"></td>
                 <td class="mono" x-text="formatUSD(totalUSDAtCreation)"></td>
-                <td class="mono" x-text="formatUSD(totalUSDAtRelease)"></td>
+                <td class="mono"><span x-show="unlocked" x-cloak x-text="formatUSD(totalUSDAtRelease)"></span></td>
                 <td></td>
               </tr>
             </tfoot>
