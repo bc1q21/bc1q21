@@ -838,10 +838,11 @@ async def _attach_outspend_data(
         vout["spent"] = spent_flag
 
 
-async def _attach_price(
+    async def _attach_price(
     tx: Dict[str, Any],
     client: httpx.AsyncClient,
-) -> None:
+    use_block_timestamp: bool = False,
+    ) -> None:
     """
     Fetch block mediantime + historical price exchange rates and store them under tx.status.
     """
@@ -860,7 +861,11 @@ async def _attach_price(
     except httpx.HTTPError:
         return
 
-    mediantime = block_data.get("mediantime") or block_data.get("timestamp")
+    mediantime = (
+        block_data.get("timestamp")
+        if use_block_timestamp
+        else block_data.get("mediantime") or block_data.get("timestamp")
+    )
     if not mediantime:
         return
 
@@ -921,7 +926,7 @@ async def _fetch_mempool_address_txs(address: str) -> List[Dict[str, Any]]:
                 target_tx = _find_distribution_transaction(data)
                 if target_tx:
                     await _attach_outspend_data(target_tx, client)
-                    await _attach_price(target_tx, client)
+                    await _attach_price(target_tx, client, use_block_timestamp=True)
 
             return data
     except (httpx.HTTPError, ValueError) as e:
