@@ -838,11 +838,11 @@ async def _attach_outspend_data(
         vout["spent"] = spent_flag
 
 
-    async def _attach_price(
+async def _attach_price(
     tx: Dict[str, Any],
     client: httpx.AsyncClient,
     use_block_timestamp: bool = False,
-    ) -> None:
+) -> None:
     """
     Fetch block mediantime + historical price exchange rates and store them under tx.status.
     """
